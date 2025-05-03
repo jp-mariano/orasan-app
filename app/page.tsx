@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Orasan App",
-  description: "Privacy-first, open-source time tools.",
+  description: "Privacy-first, open-source time tools",
 };
 
 export default function Home() {
