@@ -1,8 +1,12 @@
+// Custom enum types matching our database schema
+export type ProjectStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
+export type TaskStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
+export type RateType = 'hourly' | 'monthly' | 'fixed';
+
 export interface User {
   id: string;
   email: string;
-  full_name?: string;
-  avatar_url?: string;
+  name?: string;
   created_at: string;
   updated_at: string;
   subscription_tier?: 'free' | 'pro' | 'enterprise';
@@ -13,10 +17,10 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  color?: string;
   client_name?: string;
-  hourly_rate?: number;
-  is_active: boolean;
+  rate_type: RateType;
+  price?: number;
+  status: ProjectStatus;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -28,7 +32,7 @@ export interface Task {
   description?: string;
   project_id: string;
   user_id: string;
-  is_active: boolean;
+  status: TaskStatus;
   created_at: string;
   updated_at: string;
 }
@@ -37,9 +41,9 @@ export interface TimeEntry {
   id: string;
   task_id: string;
   user_id: string;
-  start_time: string;
+  start_time?: string;
   end_time?: string;
-  duration_minutes?: number;
+  duration_minutes: number;
   description?: string;
   is_running: boolean;
   created_at: string;
@@ -69,4 +73,50 @@ export interface OfflineData {
   pending_sync: TimeEntry[];
   last_sync: string;
   is_online: boolean;
+}
+
+// Utility types for forms and API requests
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  client_name?: string;
+  rate_type: RateType;
+  price?: number;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string;
+  client_name?: string;
+  rate_type?: RateType;
+  price?: number;
+  status?: ProjectStatus;
+}
+
+export interface CreateTaskRequest {
+  name: string;
+  description?: string;
+  project_id: string;
+}
+
+export interface UpdateTaskRequest {
+  name?: string;
+  description?: string;
+  status?: TaskStatus;
+}
+
+export interface CreateTimeEntryRequest {
+  task_id: string;
+  start_time?: string;
+  end_time?: string;
+  duration_minutes: number;
+  description?: string;
+}
+
+export interface UpdateTimeEntryRequest {
+  start_time?: string;
+  end_time?: string;
+  duration_minutes?: number;
+  description?: string;
+  is_running?: boolean;
 }

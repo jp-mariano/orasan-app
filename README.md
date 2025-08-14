@@ -26,8 +26,7 @@
 ### Prerequisites
 
 - Node.js 18+ 
-- PostgreSQL (local development)
-- Supabase account
+- Supabase account (for database and authentication)
 
 ### Installation
 
@@ -45,16 +44,17 @@
 3. Set up environment variables:
    ```bash
    cp .env.local.example .env.local
-   # Edit .env.local with your Supabase credentials
+   # Edit .env.local with your Supabase credentials:
+   # - NEXT_PUBLIC_SUPABASE_URL: Your Supabase project URL
+   # - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: Your publishable key (replaces anon key)
+   # - SUPABASE_SECRET_KEY: Your secret key (replaces service role key)
    ```
 
 4. Set up the database:
    ```bash
-   # Create local database
-   createdb orasan_dev
-   
-   # Run the schema (you'll need to do this in Supabase for production)
-   psql -d orasan_dev -f database/schema.sql
+   # Copy the schema from database/schema.sql
+   # Run it in your Supabase project's SQL editor
+   # This will create all tables with RLS policies
    ```
 
 5. Start the development server:
@@ -76,6 +76,9 @@ src/
 │   └── supabase/       # Supabase client configurations
 ├── types/               # TypeScript type definitions
 └── hooks/               # Custom React hooks
+
+database/
+└── schema.sql          # Database schema for Supabase
 ```
 
 ## Database Schema
