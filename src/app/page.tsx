@@ -1,9 +1,13 @@
+'use client'
+
 import Link from 'next/link'
 import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/contexts/auth-context'
 
 export default function HomePage() {
+  const { user, signOut } = useAuth()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -20,12 +24,25 @@ export default function HomePage() {
             <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
               Pricing
             </Link>
-            <Link href="/auth/login">
-              <Button variant="outline">Sign In</Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Get Started</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="outline">Dashboard</Button>
+                </Link>
+                <Button onClick={signOut} variant="ghost">
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/signin">
+                  <Button variant="outline">Sign In</Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button>Get Started</Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -42,11 +59,19 @@ export default function HomePage() {
             Manage projects, track tasks, and stay productive with our offline-first approach.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Start Free Trial
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth/register">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Start Free Trial
+                </Button>
+              </Link>
+            )}
             <Link href="#demo">
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
                 Watch Demo
@@ -125,7 +150,7 @@ export default function HomePage() {
       <footer className="border-t bg-white/80 backdrop-blur-sm mt-24">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-gray-600">
-            <p>&copy; 2024 Orasan. Built with ❤️ for freelancers everywhere.</p>
+            <p>&copy; 2025 Orasan. Built with ❤️ for freelancers everywhere.</p>
             <p className="mt-2">
               <Link href="/license" className="text-blue-600 hover:underline">
                 MIT License
