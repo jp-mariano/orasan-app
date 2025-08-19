@@ -5,9 +5,23 @@ import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/contexts/auth-context'
+import { useState } from 'react'
 
 export default function HomePage() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, manualSignOut } = useAuth()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true)
+      await signOut()
+    } catch (error) {
+      console.error('Sign out failed, using manual fallback:', error)
+      manualSignOut()
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -29,8 +43,8 @@ export default function HomePage() {
                 <Link href="/dashboard">
                   <Button variant="outline">Dashboard</Button>
                 </Link>
-                <Button onClick={signOut} variant="ghost">
-                  Sign Out
+                <Button onClick={handleSignOut} variant="ghost" disabled={isSigningOut}>
+                  {isSigningOut ? 'Signing Out...' : 'Sign Out'}
                 </Button>
               </>
             ) : (

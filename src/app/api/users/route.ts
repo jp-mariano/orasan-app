@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+interface UpdateData {
+  email?: string
+  name?: string
+  updated_at: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -14,24 +20,62 @@ export async function POST(request: NextRequest) {
 
     const { email, name } = await request.json()
 
-    // Create/update user profile using the authenticated user context
-    const { error } = await supabase
+    // First check if user profile already exists and what the current values are
+    const { data: existingUser } = await supabase
       .from('users')
-      .upsert({
-        id: user.id,
-        email: email || user.email,
-        name: name || user.user_metadata?.full_name || user.user_metadata?.name || null,
+      .select('id, email, name')
+      .eq('id', user.id)
+      .single()
+
+    if (existingUser) {
+      // Check if there are actual changes to update
+      const emailChanged = email && email !== existingUser.email
+      const nameChanged = name && name !== existingUser.name
+      
+      if (!emailChanged && !nameChanged) {
+        console.log('No changes detected, skipping update')
+        return NextResponse.json({ success: true, message: 'No changes needed' })
+      }
+      
+      // Only update changed fields
+      const updateData: UpdateData = {
         updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'id'
-      })
+      }
+      if (emailChanged) updateData.email = email
+      if (nameChanged) updateData.name = name
+      
+      const { error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', user.id)
 
-    if (error) {
-      console.error('Error creating/updating user profile:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      if (error) {
+        console.error('Error updating user profile:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      
+      console.log('User profile updated successfully')
+      return NextResponse.json({ success: true, message: 'Profile updated' })
+    } else {
+      // Create new user profile
+      const { error } = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: email || user.email,
+          name: name || user.user_metadata?.full_name || user.user_metadata?.name || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (error) {
+        console.error('Error creating user profile:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      
+      console.log('User profile created successfully')
+      return NextResponse.json({ success: true, message: 'Profile created' })
     }
-
-    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in user profile API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

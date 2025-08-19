@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean
   signIn: (provider: 'github' | 'google' | 'twitter') => Promise<void>
   signOut: () => Promise<void>
+  manualSignOut: () => void
   refreshUser: () => Promise<void>
 }
 
@@ -19,25 +20,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const supabase = createClient()
+  const profileCreationAttempted = useRef<Set<string>>(new Set())
 
   const createOrUpdateUserProfile = useCallback(async (user: User) => {
+    // Prevent duplicate profile creation attempts for the same user
+    if (profileCreationAttempted.current.has(user.id)) {
+      console.log('Profile creation already attempted for user:', user.id)
+      return
+    }
+
+    // Mark as attempted immediately to prevent duplicates
+    profileCreationAttempted.current.add(user.id)
+
     try {
       console.log('Creating/updating user profile for:', user.email)
-      console.log('User metadata:', user.user_metadata)
-      console.log('User ID:', user.id)
-      
-      // First check if user profile already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', user.id)
-        .single()
-
-      if (existingUser) {
-        console.log('User profile already exists, skipping creation')
-        return
-      }
       
       // Use our API route to create/update user profile
       const response = await fetch('/api/users', {
@@ -60,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Error in createOrUpdateUserProfile:', error)
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     // Get initial session
@@ -86,23 +84,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-        setLoading(false)
-
-        // Only create profile for initial sign-in, not for session refreshes
-        if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            await createOrUpdateUserProfile(session.user)
-          } catch (error) {
-            console.error('Error creating user profile after sign in:', error)
+        console.log('Auth state change:', event, session?.user?.id, 'isSigningOut:', isSigningOut)
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('SIGNED_OUT event received, clearing all states')
+          setSession(null)
+          setUser(null)
+          setLoading(false)
+          setIsSigningOut(false)
+          // Clear profile creation attempts when user signs out
+          profileCreationAttempted.current.clear()
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          console.log('SIGNED_IN event received, setting user and creating profile')
+          setSession(session)
+          setUser(session.user)
+          setLoading(false)
+          // Only create profile for initial sign-in, not for session refreshes
+          await createOrUpdateUserProfile(session.user)
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('TOKEN_REFRESHED event received, updating session without changing loading')
+          // Don't change loading state for token refreshes
+          if (session) {
+            setSession(session)
+            setUser(session.user)
+          }
+        } else if (event === 'USER_UPDATED') {
+          console.log('USER_UPDATED event received, updating user')
+          if (session) {
+            setSession(session)
+            setUser(session.user)
+          }
+          if (!isSigningOut) {
+            setLoading(false)
+          }
+        } else {
+          console.log('Other auth event:', event, 'updating state')
+          // For other events, update state but don't change loading
+          setSession(session)
+          setUser(session?.user ?? null)
+          if (!isSigningOut) {
+            setLoading(false)
           }
         }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth, createOrUpdateUserProfile])
+  }, [supabase.auth, createOrUpdateUserProfile, isSigningOut])
 
   const signIn = async (provider: 'github' | 'google' | 'twitter') => {
     try {
@@ -126,19 +154,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const manualSignOut = useCallback(() => {
+    console.log('Manual sign out fallback called')
+    setIsSigningOut(false)
+    setLoading(false)
+    setUser(null)
+    setSession(null)
+    profileCreationAttempted.current.clear()
+  }, [])
+
   const signOut = async () => {
     try {
+      setIsSigningOut(true)
       setLoading(true)
+      
+      console.log('Starting sign out process...')
+      
+      // Clear cookies manually as a backup
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
       const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('Error signing out:', error)
         throw error
       }
+      
+      console.log('Supabase sign out successful, waiting for auth state change...')
+      
+      // Set a timeout to ensure loading state is cleared even if auth state change doesn't fire
+      setTimeout(() => {
+        if (isSigningOut) {
+          console.log('Timeout reached, manually clearing sign out state')
+          manualSignOut()
+        }
+      }, 2000) // Reduced to 2 second timeout
+      
+      // Also check if we're still signed in after a short delay
+      setTimeout(async () => {
+        if (isSigningOut) {
+          try {
+            const { data: { user: currentUser } } = await supabase.auth.getUser()
+            if (!currentUser) {
+              console.log('User confirmed signed out, clearing state')
+              manualSignOut()
+            } else {
+              console.log('User still signed in, forcing manual sign out')
+              manualSignOut()
+            }
+          } catch (error) {
+            console.log('Error checking user state, forcing manual sign out:', error)
+            manualSignOut()
+          }
+        }
+      }, 1000)
+      
+      // Don't set loading to false here - let the auth state change handler do it
     } catch (error) {
       console.error('Sign out error:', error)
+      // Fallback to manual sign out on error
+      manualSignOut()
       throw error
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -161,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     signIn,
     signOut,
+    manualSignOut,
     refreshUser
   }
 

@@ -82,6 +82,9 @@ ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON public.users
   FOR SELECT USING ((SELECT auth.uid()) = id);
 
+CREATE POLICY "Users can insert own profile" ON public.users
+  FOR INSERT WITH CHECK ((SELECT auth.uid()) = id);
+
 CREATE POLICY "Users can update own profile" ON public.users
   FOR UPDATE USING ((SELECT auth.uid()) = id);
 
