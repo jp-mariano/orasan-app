@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Clock, FolderOpen, TrendingUp } from 'lucide-react'
+import { Header } from '@/components/ui/header'
 
 export default function DashboardPage() {
   const { user, loading, signOut, manualSignOut } = useAuth()
@@ -98,25 +99,13 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Clock className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Orasan</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600">Welcome, {user.user_metadata?.full_name || user.user_metadata?.name || user.email}</span>
-            <Button onClick={handleSignOut} variant="outline" disabled={isSigningOut}>
-              {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-            </Button>
-            {isSigningOut && (
-              <Button onClick={handleManualSignOut} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                Force Sign Out
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header 
+        variant="minimal" 
+        onSignOut={handleSignOut}
+        isSigningOut={isSigningOut}
+        onForceSignOut={handleManualSignOut}
+        showWelcome={true}
+      />
 
       {/* Dashboard Content */}
       <main className="container mx-auto px-4 py-8">

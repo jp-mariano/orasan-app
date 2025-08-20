@@ -5,61 +5,14 @@ import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/contexts/auth-context'
-import { useState } from 'react'
+import { Header } from '@/components/ui/header'
 
 export default function HomePage() {
-  const { user, signOut, manualSignOut } = useAuth()
-  const [isSigningOut, setIsSigningOut] = useState(false)
-
-  const handleSignOut = async () => {
-    try {
-      setIsSigningOut(true)
-      await signOut()
-    } catch (error) {
-      console.error('Sign out failed, using manual fallback:', error)
-      manualSignOut()
-    } finally {
-      setIsSigningOut(false)
-    }
-  }
+  const { user } = useAuth()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Clock className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Orasan</span>
-          </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Features
-            </Link>
-            <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Pricing
-            </Link>
-            {user ? (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="outline">Dashboard</Button>
-                </Link>
-                <Button onClick={handleSignOut} variant="ghost" disabled={isSigningOut}>
-                  {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/signin">
-                  <Button variant="outline">Sign In</Button>
-                </Link>
-                <Link href="/auth/register">
-                  <Button>Get Started</Button>
-                </Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16">
@@ -86,9 +39,9 @@ export default function HomePage() {
                 </Button>
               </Link>
             )}
-            <Link href="#demo">
+            <Link href="#features">
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                Watch Demo
+                View Features
               </Button>
             </Link>
           </div>
