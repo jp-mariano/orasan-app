@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CreateProjectRequest, RateType } from '@/types/index'
+import { currencies, DEFAULT_CURRENCY } from '@/lib/currencies'
 
 interface CreateProjectModalProps {
   open: boolean
@@ -31,6 +32,7 @@ export function CreateProjectModal({
     client_name: '',
     rate_type: 'hourly' as RateType,
     price: undefined,
+    currency_code: DEFAULT_CURRENCY,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +50,7 @@ export function CreateProjectModal({
       client_name: formData.client_name?.trim() || undefined,
       rate_type: formData.rate_type,
       price: formData.price,
+      currency_code: formData.currency_code,
     })
 
     setIsSubmitting(false)
@@ -60,6 +63,7 @@ export function CreateProjectModal({
         client_name: '',
         rate_type: 'hourly' as RateType,
         price: undefined,
+        currency_code: DEFAULT_CURRENCY,
       })
       onOpenChange(false)
     } else {
@@ -152,18 +156,24 @@ export function CreateProjectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="rate_type">Rate Type</Label>
+              <Label htmlFor="currency_code">Currency</Label>
               <Select 
-                value={formData.rate_type} 
-                onValueChange={(value) => handleInputChange('rate_type', value as RateType)}
+                value={formData.currency_code} 
+                onValueChange={(value) => handleInputChange('currency_code', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select rate type" />
+                  <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="fixed">Fixed Price</SelectItem>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{currency.code}</span>
+                        <span className="text-gray-500">({currency.symbol})</span>
+                        <span className="text-gray-400">- {currency.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -180,6 +190,23 @@ export function CreateProjectModal({
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="rate_type">Rate Type</Label>
+            <Select 
+              value={formData.rate_type} 
+              onValueChange={(value) => handleInputChange('rate_type', value as RateType)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select rate type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hourly">Hourly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="fixed">Fixed Price</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter className="flex gap-2">

@@ -25,6 +25,7 @@ CREATE TABLE public.projects (
   client_name TEXT,
   rate_type rate_type DEFAULT 'hourly',
   price DECIMAL(10,2),
+  currency_code VARCHAR(3) DEFAULT 'USD',
   status project_status DEFAULT 'new',
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

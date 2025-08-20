@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FolderOpen, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { Project } from '@/types/index'
+import { getCurrencyByCode } from '@/lib/currencies'
 
 interface ProjectCardProps {
   project: Project
@@ -68,23 +69,26 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
     }
   }
 
-  const formatPrice = (price: number | null | undefined, rateType: string | null | undefined) => {
+  const formatPrice = (price: number | null | undefined, rateType: string | null | undefined, currencyCode: string) => {
     if (!price || !rateType) return null
     
+    const currency = getCurrencyByCode(currencyCode)
+    if (!currency) return `${price}`
+
     const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(price)
 
     switch (rateType) {
       case 'hourly':
-        return `${formatted}/hr`
+        return `${currency.symbol}${formatted}/hr`
       case 'monthly':
-        return `${formatted}/mo`
+        return `${currency.symbol}${formatted}/mo`
       case 'fixed':
-        return formatted
+        return `${currency.symbol}${formatted}`
       default:
-        return formatted
+        return `${currency.symbol}${formatted}`
     }
   }
 
@@ -169,9 +173,9 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
             Created {new Date(project.created_at).toLocaleDateString()}
           </div>
           
-          {formatPrice(project.price, project.rate_type) && (
+          {formatPrice(project.price, project.rate_type, project.currency_code) && (
             <div className="font-medium text-green-600">
-              {formatPrice(project.price, project.rate_type)}
+              {formatPrice(project.price, project.rate_type, project.currency_code)}
             </div>
           )}
         </div>

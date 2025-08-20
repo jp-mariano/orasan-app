@@ -20,6 +20,7 @@ export interface Project {
   client_name?: string;
   rate_type: RateType;
   price?: number;
+  currency_code: string;
   status: ProjectStatus;
   user_id: string;
   created_at: string;
@@ -82,6 +83,7 @@ export interface CreateProjectRequest {
   client_name?: string;
   rate_type: RateType;
   price?: number;
+  currency_code: string;
 }
 
 export interface UpdateProjectRequest {
@@ -90,6 +92,7 @@ export interface UpdateProjectRequest {
   client_name?: string;
   rate_type?: RateType;
   price?: number;
+  currency_code?: string;
   status?: ProjectStatus;
 }
 

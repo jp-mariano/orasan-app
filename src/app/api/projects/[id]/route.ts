@@ -47,7 +47,7 @@ export async function PATCH(
         .filter(([, value]) => value !== undefined)
         .map(([key, value]) => [
           key, 
-          ['name', 'description', 'client_name'].includes(key) && typeof value === 'string' 
+          ['name', 'description', 'client_name', 'currency_code'].includes(key) && typeof value === 'string' 
             ? value.trim() || null 
             : value
         ])

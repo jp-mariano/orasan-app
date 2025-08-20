@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
         client_name: projectData.client_name?.trim() || null,
         rate_type: projectData.rate_type || null,
         price: projectData.price || null,
+        currency_code: projectData.currency_code || 'USD',
         user_id: user.id,
         status: 'new'
       })
