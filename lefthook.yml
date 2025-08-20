@@ -50,3 +50,8 @@ pre-commit:
     type-check:
       glob: "*.{ts,tsx}"
       run: npx tsc --noEmit --project tsconfig.json
+
+pre-push:
+  commands:
+    build:
+      run: npm run build

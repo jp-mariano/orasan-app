@@ -5,13 +5,33 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Clock, FolderOpen, TrendingUp } from 'lucide-react'
+import { Clock, FolderOpen, TrendingUp, Plus } from 'lucide-react'
 import { Header } from '@/components/ui/header'
+import { useProjects } from '@/hooks/useProjects'
+import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
+import { ProjectCard } from '@/components/projects/ProjectCard'
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
+import { Project } from '@/types/index'
 
 export default function DashboardPage() {
   const { user, loading, signOut, manualSignOut } = useAuth()
   const router = useRouter()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Project management
+  const {
+    projects,
+    loading: projectsLoading,
+    error: projectsError,
+    projectCount,
+    canCreateProject,
+    createProject,
+    deleteProject,
+  } = useProjects()
 
   const handleSignOut = async () => {
     try {
@@ -44,6 +64,36 @@ export default function DashboardPage() {
     console.log('Manual sign out triggered from dashboard')
     manualSignOut()
     router.push('/')
+  }
+
+  const handleCreateProject = () => {
+    setIsCreateModalOpen(true)
+  }
+
+  const handleEditProject = (project: Project) => {
+    // For now, we'll navigate to project detail page
+    router.push(`/dashboard/projects/${project.id}`)
+  }
+
+  const handleDeleteProject = (project: Project) => {
+    setProjectToDelete(project)
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return
+    
+    setIsDeleting(true)
+    const result = await deleteProject(projectToDelete.id)
+    setIsDeleting(false)
+    
+    if (!result.success) {
+      alert(`Failed to delete project: ${result.error}`)
+    }
+  }
+
+  const handleNavigateToProject = (project: Project) => {
+    router.push(`/dashboard/projects/${project.id}`)
   }
 
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
@@ -122,9 +172,9 @@ export default function DashboardPage() {
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{projectCount}/2</div>
               <p className="text-xs text-muted-foreground">
-                No projects yet
+                {projectCount === 0 ? 'No projects yet' : `${2 - projectCount} remaining on free tier`}
               </p>
             </CardContent>
           </Card>
@@ -156,23 +206,97 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Get started with your first project
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full">
-              Create New Project
+        {/* Projects Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+              <p className="text-gray-600">Manage your projects and track progress</p>
+            </div>
+            <Button onClick={handleCreateProject}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Project
             </Button>
-            <Button variant="outline" className="w-full">
-              Start Time Tracking
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Error Message */}
+          {projectsError && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <p className="text-red-600 text-sm">{projectsError}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading State */}
+          {projectsLoading && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Projects Grid */}
+          {!projectsLoading && projects.length > 0 && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onEdit={handleEditProject}
+                  onDelete={handleDeleteProject}
+                  onNavigate={handleNavigateToProject}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!projectsLoading && projects.length === 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>No Projects Yet</CardTitle>
+                <CardDescription>
+                  Create your first project to start tracking time and managing tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleCreateProject} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Your First Project
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Create Project Modal */}
+        <CreateProjectModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          onCreateProject={createProject}
+          canCreateProject={canCreateProject}
+          currentProjectCount={projectCount}
+        />
+
+        {/* Delete Project Modal */}
+        <DeleteProjectModal
+          open={isDeleteModalOpen}
+          onOpenChange={setIsDeleteModalOpen}
+          project={projectToDelete}
+          onConfirmDelete={handleConfirmDelete}
+          isDeleting={isDeleting}
+        />
       </main>
     </div>
   )
