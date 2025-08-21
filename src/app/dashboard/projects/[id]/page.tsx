@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { ErrorDisplay } from '@/components/ui/error-display'
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
 import { Edit, Trash2 } from 'lucide-react'
 
 export default function ProjectDetailPage() {
@@ -20,6 +21,8 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [loadingProject, setLoadingProject] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const projectId = params.id as string
 
@@ -60,6 +63,34 @@ export default function ProjectDetailPage() {
 
   const handleBackToDashboard = () => {
     router.push('/dashboard')
+  }
+
+  const handleDeleteProject = () => {
+    setIsDeleteModalOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!project) return
+    
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete project')
+      }
+      
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard')
+    } catch (err) {
+      console.error('Error deleting project:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete project')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const getStatusColor = (status: Project['status']) => {
@@ -162,7 +193,12 @@ export default function ProjectDetailPage() {
         <div className="mb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-red-600 hover:text-red-700"
+                onClick={handleDeleteProject}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </Button>
@@ -264,6 +300,15 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Project Modal */}
+      <DeleteProjectModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        project={project}
+        onConfirmDelete={handleConfirmDelete}
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }
