@@ -39,7 +39,6 @@ export default function DashboardPage() {
       
       // Set a timeout to force redirect if sign out takes too long
       const timeoutId = setTimeout(() => {
-        console.log('Sign out timeout reached, forcing redirect')
         setIsSigningOut(false)
         router.push('/')
       }, 3000)
@@ -61,7 +60,6 @@ export default function DashboardPage() {
   }
 
   const handleManualSignOut = () => {
-    console.log('Manual sign out triggered from dashboard')
     manualSignOut()
     router.push('/')
   }
@@ -99,7 +97,6 @@ export default function DashboardPage() {
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
   useEffect(() => {
     if (!loading && !user && !isSigningOut) {
-      console.log('No user found, redirecting to signin')
       router.push('/auth/signin')
     }
   }, [loading, user, router, isSigningOut])

@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
       const nameChanged = name && name !== existingUser.name
       
       if (!emailChanged && !nameChanged) {
-        console.log('No changes detected, skipping update')
         return NextResponse.json({ success: true, message: 'No changes needed' })
       }
       
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
       
-      console.log('User profile updated successfully')
       return NextResponse.json({ success: true, message: 'Profile updated' })
     } else {
       // Create new user profile
@@ -73,7 +71,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
       
-      console.log('User profile created successfully')
       return NextResponse.json({ success: true, message: 'Profile created' })
     }
   } catch (error) {

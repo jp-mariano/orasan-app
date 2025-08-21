@@ -158,7 +158,7 @@ export default function ProjectDetailPage() {
           className="mb-6"
         />
 
-                {/* Project Header */}
+        {/* Project Header */}
         <div className="mb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center space-x-3">

@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: createError.message }, { status: 500 })
     }
 
-    console.log('Project created successfully:', newProject.id)
     return NextResponse.json({ 
       project: newProject,
       message: 'Project created successfully'

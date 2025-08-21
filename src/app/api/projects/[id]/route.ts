@@ -103,10 +103,9 @@ export async function PATCH(
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    console.log('Project updated successfully:', projectId)
     return NextResponse.json({ 
       project: updatedProject,
-      message: 'Project updated successfully'
+      message: 'Project updated successfully' 
     })
 
   } catch (error) {
@@ -155,7 +154,6 @@ export async function DELETE(
       return NextResponse.json({ error: deleteError.message }, { status: 500 })
     }
 
-    console.log('Project deleted successfully:', projectId)
     return NextResponse.json({ 
       message: 'Project deleted successfully',
       deletedProject: existingProject
