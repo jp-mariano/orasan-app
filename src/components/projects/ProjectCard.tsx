@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { FolderOpen, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { Project } from '@/types/index'
 import { getCurrencyByCode } from '@/lib/currencies'
@@ -113,9 +114,9 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
           </div>
           
           <div className="flex items-center space-x-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+            <Badge className={getStatusColor(project.status)}>
               {getStatusLabel(project.status)}
-            </span>
+            </Badge>
             
             <div className="relative" ref={actionsRef}>
               <Button
