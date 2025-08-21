@@ -31,7 +31,7 @@ export function CreateProjectModal({
     description: '',
     client_name: '',
     rate_type: 'hourly' as RateType,
-    price: undefined,
+    price: 0,
     currency_code: DEFAULT_CURRENCY,
   })
 
@@ -39,6 +39,10 @@ export function CreateProjectModal({
     e.preventDefault()
     
     if (!formData.name.trim()) {
+      return
+    }
+
+    if (!formData.price || formData.price <= 0) {
       return
     }
 
@@ -62,7 +66,7 @@ export function CreateProjectModal({
         description: '',
         client_name: '',
         rate_type: 'hourly' as RateType,
-        price: undefined,
+        price: 0,
         currency_code: DEFAULT_CURRENCY,
       })
       onOpenChange(false)
@@ -154,66 +158,67 @@ export function CreateProjectModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="currency_code">Currency *</Label>
+                <Select 
+                  value={formData.currency_code} 
+                  onValueChange={(value) => handleInputChange('currency_code', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium">{currency.code}</span>
+                          <span className="text-gray-500">({currency.symbol})</span>
+                          <span className="text-gray-400">- {currency.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price">Rate/Price *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.price || ''}
+                  onChange={(e) => handleInputChange('price', e.target.value ? parseFloat(e.target.value) : 0)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="currency_code">Currency</Label>
+              <Label htmlFor="rate_type">Rate Type *</Label>
               <Select 
-                value={formData.currency_code} 
-                onValueChange={(value) => handleInputChange('currency_code', value)}
+                value={formData.rate_type} 
+                onValueChange={(value) => handleInputChange('rate_type', value as RateType)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
+                  <SelectValue placeholder="Select rate type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{currency.code}</span>
-                        <span className="text-gray-500">({currency.symbol})</span>
-                        <span className="text-gray-400">- {currency.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="fixed">Fixed Price</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price">Rate/Price</Label>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price || ''}
-                onChange={(e) => handleInputChange('price', e.target.value ? parseFloat(e.target.value) : undefined)}
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="rate_type">Rate Type</Label>
-            <Select 
-              value={formData.rate_type} 
-              onValueChange={(value) => handleInputChange('rate_type', value as RateType)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select rate type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hourly">Hourly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="fixed">Fixed Price</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <DialogFooter className="flex gap-2">
             <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !formData.name.trim()}>
+            <Button type="submit" disabled={isSubmitting || !formData.name.trim() || !formData.price || formData.price <= 0}>
               {isSubmitting ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>

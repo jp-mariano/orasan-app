@@ -9,6 +9,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { Edit, Trash2 } from 'lucide-react'
 
@@ -157,16 +158,9 @@ export default function ProjectDetailPage() {
           className="mb-6"
         />
 
-        {/* Project Header */}
+                {/* Project Header */}
         <div className="mb-4">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-3">
-                <Badge className={getStatusColor(project.status)}>
-                  {getStatusLabel(project.status)}
-                </Badge>
-              </div>
-            </div>
             <div className="flex items-center space-x-3">
               <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -179,15 +173,22 @@ export default function ProjectDetailPage() {
         {/* Project Stats & Description Section */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Manage your project details and settings</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Project Information</CardTitle>
+                <CardDescription>Manage your project details and settings</CardDescription>
+              </div>
+              <Badge className={getStatusColor(project.status)}>
+                {getStatusLabel(project.status)}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Project Name */}
             <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-24 text-sm font-medium text-gray-500 flex-shrink-0">Name:</div>
-                <div className="flex-1 text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">Name</Label>
+                <div className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                   {project.name}
                 </div>
               </div>
@@ -195,16 +196,16 @@ export default function ProjectDetailPage() {
             
             {/* Description */}
             <div className="space-y-4">
-              <div className="flex items-start space-x-4">
-                <div className="w-24 text-sm font-medium text-gray-500 flex-shrink-0">Description:</div>
-                <div className="flex-1 text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">Description</Label>
+                <div className="text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                   {project.description || 'No description provided'}
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <div className="w-24 text-sm font-medium text-gray-500 flex-shrink-0">Client:</div>
-                <div className="flex-1 text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">Client</Label>
+                <div className="text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
                   {project.client_name || 'No client specified'}
                 </div>
               </div>
