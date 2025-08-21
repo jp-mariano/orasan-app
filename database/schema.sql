@@ -23,13 +23,15 @@ CREATE TABLE public.projects (
   name TEXT NOT NULL,
   description TEXT,
   client_name TEXT,
-  rate_type rate_type DEFAULT 'hourly',
-  price DECIMAL(10,2),
-  currency_code VARCHAR(3) DEFAULT 'USD',
+  rate_type rate_type NOT NULL DEFAULT 'hourly',
+  price DECIMAL(10,2) NOT NULL,
+  currency_code VARCHAR(3) NOT NULL DEFAULT 'USD',
   status project_status DEFAULT 'new',
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- Ensure positive prices
+  CONSTRAINT positive_project_price CHECK (price > 0)
 );
 
 -- Create tasks table
@@ -40,8 +42,14 @@ CREATE TABLE public.tasks (
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   status task_status DEFAULT 'new',
+  -- Rate information at task creation time (locked after creation)
+  rate_type rate_type NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  currency_code VARCHAR(3) NOT NULL DEFAULT 'USD',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- Ensure positive prices
+  CONSTRAINT positive_task_price CHECK (price > 0)
 );
 
 -- Create time_entries table

@@ -6,14 +6,13 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 
 interface HeaderProps {
-  variant?: 'default' | 'minimal' // Header variant for different use cases
   onSignOut?: () => void // Custom sign out handler (optional)
   isSigningOut?: boolean // Whether to show signing out state
   onForceSignOut?: () => void // Force sign out handler (optional)
   showWelcome?: boolean // Whether to show welcome message (default: false)
 }
 
-export function Header({ variant = 'default', onSignOut, isSigningOut, onForceSignOut, showWelcome = false }: HeaderProps) {
+export function Header({ onSignOut, isSigningOut, onForceSignOut, showWelcome = false }: HeaderProps) {
   const { user, signOut, manualSignOut } = useAuth()
 
   const handleSignOut = async () => {
@@ -45,11 +44,6 @@ export function Header({ variant = 'default', onSignOut, isSigningOut, onForceSi
           {user ? (
             // Authenticated user
             <div className="flex items-center space-x-4">
-              {variant === 'default' && (
-                <Link href="/dashboard">
-                  <Button variant="outline">Dashboard</Button>
-                </Link>
-              )}
               {showWelcome && (
                 <span className="text-gray-600">
                   Welcome, {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
