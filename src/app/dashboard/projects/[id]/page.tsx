@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { InlineEdit } from '@/components/ui/inline-edit'
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
 import { Edit, Trash2 } from 'lucide-react'
@@ -93,6 +94,33 @@ export default function ProjectDetailPage() {
     }
   }
 
+  const handleSaveField = async (field: keyof Project, value: string | number) => {
+    if (!project) return
+    
+    try {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ [field]: value }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update project')
+      }
+
+      const result = await response.json()
+      
+      // Update local project state
+      setProject(prev => prev ? { ...prev, ...result.project } : null)
+    } catch (err) {
+      console.error('Error updating project:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update project')
+    }
+  }
+
   const getStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'new':
@@ -123,20 +151,7 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const formatPrice = (price: number | null | undefined, currencyCode: string) => {
-    if (!price) return 'Not set'
-    
-    const currency = getCurrencySymbol(currencyCode)
-    return `${currency}${price.toFixed(2)}`
-  }
 
-  const getCurrencySymbol = (code: string) => {
-    const symbolMap: Record<string, string> = {
-      'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥',
-      'CAD': 'C$', 'AUD': 'A$', 'CHF': 'CHF', 'CNY': '¥'
-    }
-    return symbolMap[code] || code
-  }
 
   if (loading || loadingProject) {
     return (
@@ -224,9 +239,11 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">Name</Label>
-                <div className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-                  {project.name}
-                </div>
+                <InlineEdit
+                  value={project.name}
+                  onSave={(value) => handleSaveField('name', value)}
+                  className="text-2xl font-bold text-gray-900"
+                />
               </div>
             </div>
             
@@ -234,44 +251,61 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">Description</Label>
-                <div className="text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-                  {project.description || 'No description provided'}
-                </div>
+                <InlineEdit
+                  value={project.description}
+                  type="textarea"
+                  multiline={true}
+                  onSave={(value) => handleSaveField('description', value)}
+                  placeholder="No description provided"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">Client</Label>
-                <div className="text-gray-900 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-                  {project.client_name || 'No client specified'}
-                </div>
+                <InlineEdit
+                  value={project.client_name}
+                  onSave={(value) => handleSaveField('client_name', value)}
+                  placeholder="No client specified"
+                />
               </div>
             </div>
 
-            {/* Project Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
-              <div className="text-center">
-                <div className="text-sm text-gray-500">Rate Type</div>
-                <div className="text-lg font-semibold text-gray-900 capitalize">
-                  {project.rate_type || 'Not set'}
-                </div>
+            {/* Project Rate Type and Price/Currency */}
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500 text-center block">Rate Type</Label>
+                <InlineEdit
+                  value={project.rate_type || ''}
+                  type="rate-type"
+                  onSave={(value) => handleSaveField('rate_type', value)}
+                  placeholder="Not set"
+                  className="text-lg font-semibold text-gray-900 text-center capitalize"
+                />
               </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-500">Price</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {formatPrice(project.price, project.currency_code)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-500">Created</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {new Date(project.created_at).toLocaleDateString()}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-500">Updated</div>
-                <div className="text-lg font-semibold text-gray-900">
-                  {new Date(project.updated_at).toLocaleDateString()}
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500 text-center block">Price</Label>
+                <InlineEdit
+                  value={`${project.currency_code || 'USD'} ${project.price || '0.00'}`}
+                  type="price-currency"
+                  onSave={(value) => {
+                    // Parse the combined value format "USD|50.00"
+                    if (typeof value === 'string' && value.includes('|')) {
+                      const [currency, priceStr] = value.split('|')
+                      const price = parseFloat(priceStr)
+                      if (!isNaN(price) && price > 0) {
+                        // Update both fields
+                        handleSaveField('currency_code', currency)
+                        handleSaveField('price', price)
+                      }
+                    }
+                  }}
+                  placeholder="USD 0.00"
+                  className="text-lg font-semibold text-gray-900 text-center"
+                  projectData={{
+                    price: project.price,
+                    currency_code: project.currency_code
+                  }}
+                />
               </div>
             </div>
           </CardContent>
