@@ -284,7 +284,7 @@ export function InlineEdit({
   return (
     <div
       onClick={() => setIsEditing(true)}
-      className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
+      className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] ${multiline || type === 'textarea' ? 'whitespace-pre-wrap' : 'flex items-center'} ${className}`}
     >
       {value || placeholder}
     </div>

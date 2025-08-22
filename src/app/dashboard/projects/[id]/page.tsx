@@ -279,7 +279,7 @@ export default function ProjectDetailPage() {
                   type="rate-type"
                   onSave={(value) => handleSaveField('rate_type', value)}
                   placeholder="Not set"
-                  className="text-lg font-semibold text-gray-900 text-center capitalize"
+                  className="text-center capitalize"
                 />
               </div>
               <div className="space-y-2">
@@ -300,7 +300,7 @@ export default function ProjectDetailPage() {
                     }
                   }}
                   placeholder="USD 0.00"
-                  className="text-lg font-semibold text-gray-900 text-center"
+                  className="text-center"
                   projectData={{
                     price: project.price,
                     currency_code: project.currency_code
