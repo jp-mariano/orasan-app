@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FolderOpen, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { Project } from '@/types/index'
 import { getCurrencyByCode } from '@/lib/currencies'
+import { getStatusColor, getStatusLabel } from '@/lib/status'
 
 interface ProjectCardProps {
   project: Project
@@ -40,35 +41,9 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
     onNavigate?.(project)
   }
 
-  const getStatusColor = (status: Project['status']) => {
-    switch (status) {
-      case 'new':
-        return 'bg-blue-100 text-blue-800'
-      case 'in_progress':
-        return 'bg-green-100 text-green-800'
-      case 'on_hold':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'completed':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
-  const getStatusLabel = (status: Project['status']) => {
-    switch (status) {
-      case 'new':
-        return 'New'
-      case 'in_progress':
-        return 'In Progress'
-      case 'on_hold':
-        return 'On Hold'
-      case 'completed':
-        return 'Completed'
-      default:
-        return status
-    }
-  }
+
+
 
   const formatPrice = (price: number | null | undefined, rateType: string | null | undefined, currencyCode: string) => {
     if (!price || !rateType) return null
@@ -83,13 +58,13 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
 
     switch (rateType) {
       case 'hourly':
-        return `${currency.symbol}${formatted}/hr`
+        return `${currency.symbol} ${formatted}/hr`
       case 'monthly':
-        return `${currency.symbol}${formatted}/mo`
+        return `${currency.symbol} ${formatted}/mo`
       case 'fixed':
-        return `${currency.symbol}${formatted}`
+        return `${currency.symbol} ${formatted}`
       default:
-        return `${currency.symbol}${formatted}`
+        return `${currency.symbol} ${formatted}`
     }
   }
 
@@ -98,9 +73,6 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FolderOpen className="h-5 w-5 text-blue-600" />
-            </div>
             <div className="min-w-0 flex-1">
               <CardTitle className="text-lg font-semibold truncate">
                 {project.name}

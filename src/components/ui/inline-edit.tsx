@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Check, X } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { currencies } from '@/lib/currencies'
+import { getStatusColor, getStatusLabel } from '@/lib/status'
+import { Project } from '@/types/index'
 
 interface InlineEditProps {
   value: string | null | undefined
-  type?: 'text' | 'textarea' | 'rate-type' | 'price-currency'
+  type?: 'text' | 'textarea' | 'rate-type' | 'price-currency' | 'status'
   placeholder?: string
   className?: string
   multiline?: boolean
@@ -213,6 +215,42 @@ export function InlineEdit({
       )
     }
 
+    if (type === 'status') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="on_hold">On Hold</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center space-x-1 inline-edit-buttons">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+              tabIndex={0}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600"
+              tabIndex={0}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
 
 
     if (multiline || type === 'textarea') {
@@ -277,6 +315,20 @@ export function InlineEdit({
               <X className="h-4 w-4" />
             </Button>
         </div>
+      </div>
+    )
+  }
+
+
+
+  // For status type, render as a styled badge
+  if (type === 'status' && value) {
+    return (
+      <div
+        onClick={() => setIsEditing(true)}
+        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Project['status'])} ${className}`}
+      >
+        {getStatusLabel(value as Project['status'])}
       </div>
     )
   }
