@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { Project } from '@/types/index'
 import { getCurrencyByCode } from '@/lib/currencies'
 import { getStatusColor, getStatusLabel } from '@/lib/status'
+import { truncateTextSmart } from '@/lib/utils'
 
 interface ProjectCardProps {
   project: Project
@@ -58,18 +59,18 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
 
     switch (rateType) {
       case 'hourly':
-        return `${currency.symbol} ${formatted}/hr`
+        return `${currency.code} ${formatted}/hr`
       case 'monthly':
-        return `${currency.symbol} ${formatted}/mo`
+        return `${currency.code} ${formatted}/mo`
       case 'fixed':
-        return `${currency.symbol} ${formatted}`
+        return `${currency.code} ${formatted}`
       default:
-        return `${currency.symbol} ${formatted}`
+        return `${currency.code} ${formatted}`
     }
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group" onClick={handleCardClick}>
+    <Card className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full" onClick={handleCardClick}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
@@ -134,14 +135,16 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 flex-1">
         {project.description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-            {project.description}
+          <p className="text-sm text-gray-600">
+            {truncateTextSmart(project.description, 80)}
           </p>
         )}
-        
-        <div className="flex items-center justify-between text-sm">
+      </CardContent>
+      
+      <CardFooter className="pt-0 mt-auto">
+        <div className="flex items-center justify-between text-sm w-full">
           <div className="text-gray-500">
             Created {new Date(project.created_at).toLocaleDateString()}
           </div>
@@ -152,7 +155,7 @@ export function ProjectCard({ project, onEdit, onDelete, onNavigate }: ProjectCa
             </div>
           )}
         </div>
-      </CardContent>
+      </CardFooter>
     </Card>
   )
 }
