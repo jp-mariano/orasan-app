@@ -273,7 +273,7 @@ export default function ProjectDetailPage() {
             {/* Project Rate Type and Price/Currency */}
             <div className="grid grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 text-center block">Rate Type</Label>
+                <Label className="text-sm font-medium text-gray-500 block">Rate Type</Label>
                 <InlineEdit
                   value={project.rate_type || ''}
                   type="rate-type"
@@ -283,7 +283,7 @@ export default function ProjectDetailPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 text-center block">Price</Label>
+                <Label className="text-sm font-medium text-gray-500 block">Price</Label>
                 <InlineEdit
                   value={`${project.currency_code || 'USD'} ${project.price || '0.00'}`}
                   type="price-currency"

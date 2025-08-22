@@ -284,7 +284,7 @@ export function InlineEdit({
   return (
     <div
       onClick={() => setIsEditing(true)}
-      className={`cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors ${className}`}
+      className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
     >
       {value || placeholder}
     </div>
