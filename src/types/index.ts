@@ -42,6 +42,18 @@ export interface Task {
   updated_at: string;
 }
 
+export interface TaskWithDetails extends Task {
+  project: {
+    name: string;
+    client_name?: string;
+    status?: ProjectStatus;
+  };
+  assignee_user?: {
+    name?: string;
+    email: string;
+  };
+}
+
 export interface TimeEntry {
   id: string;
   task_id: string;

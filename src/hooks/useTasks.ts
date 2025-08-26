@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Task, CreateTaskRequest, UpdateTaskRequest } from '@/types'
+import { TaskWithDetails, CreateTaskRequest, UpdateTaskRequest } from '@/types'
 
 interface UseTasksOptions {
   projectId?: string
@@ -9,17 +9,17 @@ interface UseTasksOptions {
 }
 
 interface UseTasksReturn {
-  tasks: Task[]
+  tasks: TaskWithDetails[]
   loading: boolean
   error: string | null
-  createTask: (taskData: CreateTaskRequest) => Promise<Task | null>
-  updateTask: (id: string, updates: UpdateTaskRequest) => Promise<Task | null>
+  createTask: (taskData: CreateTaskRequest) => Promise<TaskWithDetails | null>
+  updateTask: (id: string, updates: UpdateTaskRequest) => Promise<TaskWithDetails | null>
   deleteTask: (id: string) => Promise<boolean>
   refreshTasks: () => Promise<void>
 }
 
 export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<TaskWithDetails[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
@@ -61,7 +61,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   }, [buildQueryParams])
 
   // Create task
-  const createTask = useCallback(async (taskData: CreateTaskRequest): Promise<Task | null> => {
+  const createTask = useCallback(async (taskData: CreateTaskRequest): Promise<TaskWithDetails | null> => {
     try {
       setError(null)
       
@@ -94,7 +94,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   }, [])
 
   // Update task
-  const updateTask = useCallback(async (id: string, updates: UpdateTaskRequest): Promise<Task | null> => {
+  const updateTask = useCallback(async (id: string, updates: UpdateTaskRequest): Promise<TaskWithDetails | null> => {
     try {
       setError(null)
       

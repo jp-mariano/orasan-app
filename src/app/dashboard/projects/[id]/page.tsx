@@ -14,7 +14,12 @@ import { InlineEdit } from '@/components/ui/inline-edit'
 
 import { ErrorDisplay } from '@/components/ui/error-display'
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
-import { Edit, Trash2 } from 'lucide-react'
+import { TaskList } from '@/components/tasks/TaskList'
+import { CreateTaskModal } from '@/components/tasks/CreateTaskModal'
+import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal'
+import { Trash2, Plus } from 'lucide-react'
+import { useTasks } from '@/hooks/useTasks'
+import { TaskWithDetails } from '@/types'
 
 export default function ProjectDetailPage() {
   const { user, loading } = useAuth()
@@ -26,9 +31,22 @@ export default function ProjectDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   
+  // Task management state
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<TaskWithDetails | null>(null)
+  const [isDeletingTask, setIsDeletingTask] = useState(false)
+  
 
 
   const projectId = params.id as string
+
+  // Task management
+  const {
+    tasks,
+    loading: tasksLoading,
+    createTask,
+    deleteTask
+  } = useTasks({ projectId })
 
   // Fetch project data
   useEffect(() => {
@@ -95,6 +113,45 @@ export default function ProjectDetailPage() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  // Task management handlers
+  const handleCreateTask = async (taskData: import('@/types').CreateTaskRequest) => {
+    try {
+      await createTask(taskData)
+      // Task will be automatically added to the list via the hook
+    } catch (error) {
+      console.error('Error creating task:', error)
+      throw error // Re-throw to let the modal handle the error
+    }
+  }
+
+  const handleEditTask = (task: TaskWithDetails) => {
+    // TODO: Navigate to task detail page for editing
+    console.log('Edit task:', task)
+  }
+
+  const handleDeleteTask = (task: TaskWithDetails) => {
+    setTaskToDelete(task)
+  }
+
+  const handleConfirmDeleteTask = async () => {
+    if (!taskToDelete) return
+    
+    setIsDeletingTask(true)
+    try {
+      await deleteTask(taskToDelete.id)
+      setTaskToDelete(null)
+    } catch (error) {
+      console.error('Error deleting task:', error)
+    } finally {
+      setIsDeletingTask(false)
+    }
+  }
+
+  const handleNavigateToTask = (task: TaskWithDetails) => {
+    // TODO: Navigate to task detail page
+    console.log('Navigate to task:', task)
   }
 
   const handleSaveField = async (field: keyof Project, value: string | number) => {
@@ -303,16 +360,23 @@ export default function ProjectDetailPage() {
                 <CardTitle>Tasks</CardTitle>
                 <CardDescription>Manage tasks for this project</CardDescription>
               </div>
-              <Button size="sm">
-                <Edit className="h-4 w-4 mr-2" />
+              <Button 
+                size="sm" 
+                onClick={() => setIsCreateTaskModalOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
                 Add Task
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-500">
-              <p>Tasks here... (maybe grouped by status: new, in_progress, completed, on_hold in accordion style)</p>
-            </div>
+            <TaskList
+              tasks={tasks}
+              loading={tasksLoading}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              onNavigate={handleNavigateToTask}
+            />
           </CardContent>
         </Card>
       </div>
@@ -324,6 +388,27 @@ export default function ProjectDetailPage() {
         project={project}
         onConfirmDelete={handleConfirmDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Create Task Modal */}
+      {project && (
+        <CreateTaskModal
+          open={isCreateTaskModalOpen}
+          onOpenChange={setIsCreateTaskModalOpen}
+          project={project}
+          users={[]} // TODO: Fetch users for assignee selection
+          onSubmit={handleCreateTask}
+          loading={false}
+        />
+      )}
+
+      {/* Delete Task Modal */}
+      <DeleteTaskModal
+        open={!!taskToDelete}
+        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        task={taskToDelete}
+        onConfirmDelete={handleConfirmDeleteTask}
+        isDeleting={isDeletingTask}
       />
     </div>
   )
