@@ -4,6 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create custom types for enums
 CREATE TYPE project_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed');
 CREATE TYPE task_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed');
+CREATE TYPE priority AS ENUM ('low', 'medium', 'high', 'urgent');
 CREATE TYPE rate_type AS ENUM ('hourly', 'monthly', 'fixed');
 
 -- Create users table (extends Supabase auth.users)
@@ -42,6 +43,9 @@ CREATE TABLE public.tasks (
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   status task_status DEFAULT 'new',
+  priority priority NOT NULL DEFAULT 'low',
+  due_date DATE,
+  assignee UUID REFERENCES public.users(id),
   -- Rate information at task creation time (locked after creation)
   rate_type rate_type NOT NULL,
   price DECIMAL(10,2) NOT NULL,
@@ -49,7 +53,9 @@ CREATE TABLE public.tasks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- Ensure positive prices
-  CONSTRAINT positive_task_price CHECK (price > 0)
+  CONSTRAINT positive_task_price CHECK (price > 0),
+  -- Ensure valid priority values
+  CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );
 
 -- Create time_entries table

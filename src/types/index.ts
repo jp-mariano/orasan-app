@@ -1,6 +1,7 @@
 // Custom enum types matching our database schema
 export type ProjectStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
 export type TaskStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type RateType = 'hourly' | 'monthly' | 'fixed';
 
 export interface User {
@@ -34,6 +35,9 @@ export interface Task {
   project_id: string;
   user_id: string;
   status: TaskStatus;
+  priority: Priority;
+  due_date?: string;
+  assignee?: string;
   created_at: string;
   updated_at: string;
 }
@@ -100,12 +104,18 @@ export interface CreateTaskRequest {
   name: string;
   description?: string;
   project_id: string;
+  priority?: Priority;
+  due_date?: string;
+  assignee?: string;
 }
 
 export interface UpdateTaskRequest {
   name?: string;
   description?: string;
   status?: TaskStatus;
+  priority?: Priority;
+  due_date?: string;
+  assignee?: string;
 }
 
 export interface CreateTimeEntryRequest {
