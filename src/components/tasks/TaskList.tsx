@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -92,11 +91,11 @@ export function TaskList({ tasks, loading = false, onDelete }: TaskListProps) {
 
   if (loading) {
     return (
-      <Card className="animate-pulse">
-        <CardHeader className="pb-2">
+      <div className="animate-pulse">
+        <div className="pb-2">
           <div className="h-4 w-16 bg-gray-200 rounded"></div>
-        </CardHeader>
-        <CardContent className="pt-0">
+        </div>
+        <div className="pt-0">
           <div className="space-y-3">
             {priorityGroups.map(group => (
               <div
@@ -119,141 +118,133 @@ export function TaskList({ tasks, loading = false, onDelete }: TaskListProps) {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (tasks.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">
-                No tasks yet
-              </h3>
-              <p className="text-gray-500 mt-1">
-                Get started by creating your first task
-              </p>
-            </div>
+      <div className="p-8 text-center">
+        <div className="space-y-4">
+          <div>
+            <p className="font-medium text-gray-900">No tasks yet</p>
+            <p className="text-gray-500 mt-1">
+              Get started by creating your first task
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardContent className="pt-0">
-        <div className="space-y-3">
-          {priorityGroups.map(group => {
-            const priorityTasks = getTasksByPriority(group.priority);
-            const taskCount = getTotalTasksByPriority(group.priority);
-            const isExpanded = expandedPriorities.has(group.priority);
+    <div className="space-y-3">
+      {priorityGroups.map(group => {
+        const priorityTasks = getTasksByPriority(group.priority);
+        const taskCount = getTotalTasksByPriority(group.priority);
+        const isExpanded = expandedPriorities.has(group.priority);
 
-            if (taskCount === 0) return null;
+        if (taskCount === 0) return null;
 
-            return (
-              <div
-                key={group.priority}
-                className="border-l-4 pl-3"
-                style={{
-                  borderLeftColor: getPriorityBorderColor(group.priority),
-                }}
+        return (
+          <div
+            key={group.priority}
+            className="border-l-4 pl-3"
+            style={{
+              borderLeftColor: getPriorityBorderColor(group.priority),
+            }}
+          >
+            {/* Priority Header */}
+            <div
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+              onClick={() => togglePriority(group.priority)}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-transparent"
               >
-                {/* Priority Header */}
-                <div
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
-                  onClick={() => togglePriority(group.priority)}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                  </Button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{group.label}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Tasks */}
-                {isExpanded && (
-                  <div className="space-y-0.5 ml-6">
-                    {priorityTasks.map(task => (
-                      <TaskCard key={task.id} task={task} onDelete={onDelete} />
-                    ))}
-                  </div>
+                {isExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
                 )}
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">{group.label}</span>
+                <Badge variant="secondary" className="text-xs">
+                  {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
+                </Badge>
               </div>
-            );
-          })}
+            </div>
 
-          {/* Completed Tasks Section */}
-          {(() => {
-            const completedTasks = tasks
-              .filter(task => task.status === 'completed')
-              .sort(
-                (a, b) =>
-                  new Date(b.updated_at).getTime() -
-                  new Date(a.updated_at).getTime()
-              );
-            const completedCount = completedTasks.length;
+            {/* Tasks */}
+            {isExpanded && (
+              <div className="space-y-0.5 ml-6">
+                {priorityTasks.map(task => (
+                  <TaskCard key={task.id} task={task} onDelete={onDelete} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
-            if (completedCount === 0) return null;
+      {/* Completed Tasks Section */}
+      {(() => {
+        const completedTasks = tasks
+          .filter(task => task.status === 'completed')
+          .sort(
+            (a, b) =>
+              new Date(b.updated_at).getTime() -
+              new Date(a.updated_at).getTime()
+          );
+        const completedCount = completedTasks.length;
 
-            return (
-              <div className="border-l-4 pl-3 border-gray-300">
-                {/* Completed Header */}
-                <div
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
-                  onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                  >
-                    {isCompletedExpanded ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                  </Button>
+        if (completedCount === 0) return null;
 
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-gray-600">
-                      Completed
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {completedCount} {completedCount === 1 ? 'task' : 'tasks'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Completed Tasks */}
-                {isCompletedExpanded && (
-                  <div className="space-y-0.5 ml-6">
-                    {completedTasks.map(task => (
-                      <TaskCard key={task.id} task={task} onDelete={onDelete} />
-                    ))}
-                  </div>
+        return (
+          <div className="border-l-4 pl-3 border-gray-300">
+            {/* Completed Header */}
+            <div
+              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+              onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+              >
+                {isCompletedExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
                 )}
+              </Button>
+
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm text-gray-600">
+                  Completed
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {completedCount} {completedCount === 1 ? 'task' : 'tasks'}
+                </Badge>
               </div>
-            );
-          })()}
-        </div>
-      </CardContent>
-    </Card>
+            </div>
+
+            {/* Completed Tasks */}
+            {isCompletedExpanded && (
+              <div className="space-y-0.5 ml-6">
+                {completedTasks.map(task => (
+                  <TaskCard key={task.id} task={task} onDelete={onDelete} />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+    </div>
   );
 }
