@@ -41,17 +41,26 @@
 #     - script: "hello.go"
 #       runner: go run
 
+# Pre-commit hook: Runs before each commit to ensure code quality
 pre-commit:
   parallel: true
   commands:
+    # Check if staged files are properly formatted
+    format-check:
+      glob: '*.{js,jsx,ts,tsx,json,md,yml,yaml}'
+      run: npx prettier --check {staged_files}
+    # Run ESLint on staged TypeScript/JavaScript files
     lint:
-      glob: "*.{js,jsx,ts,tsx}"
+      glob: '*.{js,jsx,ts,tsx}'
       run: npx eslint {staged_files}
+    # TypeScript type checking on staged files
     type-check:
-      glob: "*.{ts,tsx}"
+      glob: '*.{ts,tsx}'
       run: npx tsc --noEmit --project tsconfig.json
 
+# Pre-push hook: Runs before pushing to ensure the app builds successfully
 pre-push:
   commands:
+    # Build the application to catch any build-time errors
     build:
       run: npm run build

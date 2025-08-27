@@ -1,14 +1,19 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/contexts/auth-context'
-import { Header } from '@/components/ui/header'
+import Link from 'next/link';
+import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useAuth } from '@/contexts/auth-context';
+import { Header } from '@/components/ui/header';
 
 export default function HomePage() {
-  const { user } = useAuth()
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -22,8 +27,9 @@ export default function HomePage() {
             <span className="text-blue-600">Boost Productivity</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Orasan is a Filipino-inspired time tracking app designed for freelancers. 
-            Manage projects, track tasks, and stay productive with our offline-first approach.
+            Orasan is a Filipino-inspired time tracking app designed for
+            freelancers. Manage projects, track tasks, and stay productive with
+            our offline-first approach.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
@@ -48,13 +54,17 @@ export default function HomePage() {
         </div>
 
         {/* Features Grid */}
-        <div id="features" className="mt-24 grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div
+          id="features"
+          className="mt-24 grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
               <Clock className="h-12 w-12 text-blue-600 mb-4" />
               <CardTitle>Smart Time Tracking</CardTitle>
               <CardDescription>
-                Start, stop, and pause timers with ease. Track time spent on tasks and projects automatically.
+                Start, stop, and pause timers with ease. Track time spent on
+                tasks and projects automatically.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -64,7 +74,8 @@ export default function HomePage() {
               <FolderOpen className="h-12 w-12 text-green-600 mb-4" />
               <CardTitle>Project Management</CardTitle>
               <CardDescription>
-                Organize your work with projects and tasks. Set hourly rates and track client work efficiently.
+                Organize your work with projects and tasks. Set hourly rates and
+                track client work efficiently.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -74,7 +85,8 @@ export default function HomePage() {
               <Shield className="h-12 w-12 text-purple-600 mb-4" />
               <CardTitle>Privacy First</CardTitle>
               <CardDescription>
-                Your data is protected with row-level security. Full control over your information.
+                Your data is protected with row-level security. Full control
+                over your information.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -84,7 +96,8 @@ export default function HomePage() {
               <Wifi className="h-12 w-12 text-orange-600 mb-4" />
               <CardTitle>Offline Capable</CardTitle>
               <CardDescription>
-                Work without internet. Your data syncs automatically when connection is restored.
+                Work without internet. Your data syncs automatically when
+                connection is restored.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -94,7 +107,8 @@ export default function HomePage() {
               <Zap className="h-12 w-12 text-yellow-600 mb-4" />
               <CardTitle>Lightning Fast</CardTitle>
               <CardDescription>
-                Built with Next.js 15 and modern technologies for the best performance.
+                Built with Next.js 15 and modern technologies for the best
+                performance.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -106,7 +120,8 @@ export default function HomePage() {
               </div>
               <CardTitle>Subscription Ready</CardTitle>
               <CardDescription>
-                Free tier available. Upgrade to Pro for unlimited projects and advanced features.
+                Free tier available. Upgrade to Pro for unlimited projects and
+                advanced features.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -127,5 +142,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

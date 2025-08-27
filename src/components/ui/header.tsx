@@ -1,33 +1,38 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { Clock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/contexts/auth-context'
+import Link from 'next/link';
+import { Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/auth-context';
 
 interface HeaderProps {
-  onSignOut?: () => void // Custom sign out handler (optional)
-  isSigningOut?: boolean // Whether to show signing out state
-  onForceSignOut?: () => void // Force sign out handler (optional)
-  showWelcome?: boolean // Whether to show welcome message (default: false)
+  onSignOut?: () => void; // Custom sign out handler (optional)
+  isSigningOut?: boolean; // Whether to show signing out state
+  onForceSignOut?: () => void; // Force sign out handler (optional)
+  showWelcome?: boolean; // Whether to show welcome message (default: false)
 }
 
-export function Header({ onSignOut, isSigningOut, onForceSignOut, showWelcome = false }: HeaderProps) {
-  const { user, signOut, manualSignOut } = useAuth()
+export function Header({
+  onSignOut,
+  isSigningOut,
+  onForceSignOut,
+  showWelcome = false,
+}: HeaderProps) {
+  const { user, signOut, manualSignOut } = useAuth();
 
   const handleSignOut = async () => {
     if (onSignOut) {
-      onSignOut()
-      return
+      onSignOut();
+      return;
     }
-    
+
     try {
-      await signOut()
+      await signOut();
     } catch (error) {
-      console.error('Sign out failed, using manual fallback:', error)
-      manualSignOut()
+      console.error('Sign out failed, using manual fallback:', error);
+      manualSignOut();
     }
-  }
+  };
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-sm">
@@ -46,14 +51,26 @@ export function Header({ onSignOut, isSigningOut, onForceSignOut, showWelcome = 
             <div className="flex items-center space-x-4">
               {showWelcome && (
                 <span className="text-gray-600">
-                  Welcome, {user.user_metadata?.full_name || user.user_metadata?.name || user.email}
+                  Welcome,{' '}
+                  {user.user_metadata?.full_name ||
+                    user.user_metadata?.name ||
+                    user.email}
                 </span>
               )}
-              <Button onClick={handleSignOut} variant="ghost" disabled={isSigningOut}>
+              <Button
+                onClick={handleSignOut}
+                variant="ghost"
+                disabled={isSigningOut}
+              >
                 {isSigningOut ? 'Signing Out...' : 'Sign Out'}
               </Button>
               {isSigningOut && onForceSignOut && (
-                <Button onClick={onForceSignOut} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                <Button
+                  onClick={onForceSignOut}
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700"
+                >
                   Force Sign Out
                 </Button>
               )}
@@ -72,5 +89,5 @@ export function Header({ onSignOut, isSigningOut, onForceSignOut, showWelcome = 
         </nav>
       </div>
     </header>
-  )
+  );
 }

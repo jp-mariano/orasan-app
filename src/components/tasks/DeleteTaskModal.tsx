@@ -1,35 +1,42 @@
-'use client'
+'use client';
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { AlertTriangle, Loader2 } from 'lucide-react'
-import { TaskWithDetails } from '@/types'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Loader2 } from 'lucide-react';
+import { TaskWithDetails } from '@/types';
 
 interface DeleteTaskModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  task: TaskWithDetails | null
-  onConfirmDelete: () => Promise<void>
-  isDeleting: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  task: TaskWithDetails | null;
+  onConfirmDelete: () => Promise<void>;
+  isDeleting: boolean;
 }
 
-export function DeleteTaskModal({ 
-  open, 
-  onOpenChange, 
-  task, 
-  onConfirmDelete, 
-  isDeleting 
+export function DeleteTaskModal({
+  open,
+  onOpenChange,
+  task,
+  onConfirmDelete,
+  isDeleting,
 }: DeleteTaskModalProps) {
   const handleConfirmDelete = async () => {
     try {
-      await onConfirmDelete()
-      onOpenChange(false)
+      await onConfirmDelete();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Error deleting task:', error)
+      console.error('Error deleting task:', error);
     }
-  }
+  };
 
-  if (!task) return null
+  if (!task) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,12 +64,14 @@ export function DeleteTaskModal({
               </div>
               {task.project?.name && (
                 <div>
-                  <span className="font-medium">Project:</span> {task.project.name}
+                  <span className="font-medium">Project:</span>{' '}
+                  {task.project.name}
                 </div>
               )}
               {task.description && (
                 <div>
-                  <span className="font-medium">Description:</span> {task.description}
+                  <span className="font-medium">Description:</span>{' '}
+                  {task.description}
                 </div>
               )}
             </div>
@@ -74,8 +83,9 @@ export function DeleteTaskModal({
               <div className="text-sm text-red-800">
                 <p className="font-medium mb-1">Warning</p>
                 <p>
-                  Deleting this task will also remove all associated time entries and cannot be undone. 
-                  Make sure you want to proceed with this action.
+                  Deleting this task will also remove all associated time
+                  entries and cannot be undone. Make sure you want to proceed
+                  with this action.
                 </p>
               </div>
             </div>
@@ -103,5 +113,5 @@ export function DeleteTaskModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

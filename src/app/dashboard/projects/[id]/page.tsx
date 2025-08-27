@@ -1,168 +1,180 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { Project } from '@/types/index'
-import { Header } from '@/components/ui/header'
-import { Breadcrumb } from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
+import { Project } from '@/types/index';
+import { Header } from '@/components/ui/header';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
-import { Label } from '@/components/ui/label'
-import { InlineEdit } from '@/components/ui/inline-edit'
+import { Label } from '@/components/ui/label';
+import { InlineEdit } from '@/components/ui/inline-edit';
 
-import { ErrorDisplay } from '@/components/ui/error-display'
-import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
-import { TaskList } from '@/components/tasks/TaskList'
-import { CreateTaskModal } from '@/components/tasks/CreateTaskModal'
-import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal'
-import { Plus, MoreVertical, Trash2 } from 'lucide-react'
-import { useTasks } from '@/hooks/useTasks'
-import { TaskWithDetails } from '@/types'
+import { ErrorDisplay } from '@/components/ui/error-display';
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
+import { TaskList } from '@/components/tasks/TaskList';
+import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
+import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { Plus, MoreVertical, Trash2 } from 'lucide-react';
+import { useTasks } from '@/hooks/useTasks';
+import { TaskWithDetails } from '@/types';
 
 export default function ProjectDetailPage() {
-  const { user, loading } = useAuth()
-  const params = useParams()
-  const router = useRouter()
-  const [project, setProject] = useState<Project | null>(null)
-  const [loadingProject, setLoadingProject] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [showActions, setShowActions] = useState(false)
-  const actionsRef = useRef<HTMLDivElement>(null)
-  
+  const { user, loading } = useAuth();
+  const params = useParams();
+  const router = useRouter();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loadingProject, setLoadingProject] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
+
   // Task management state
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState<TaskWithDetails | null>(null)
-  const [isDeletingTask, setIsDeletingTask] = useState(false)
-  
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<TaskWithDetails | null>(
+    null
+  );
+  const [isDeletingTask, setIsDeletingTask] = useState(false);
 
-
-  const projectId = params.id as string
+  const projectId = params.id as string;
 
   // Task management
   const {
     tasks,
     loading: tasksLoading,
     createTask,
-    deleteTask
-  } = useTasks({ projectId })
+    deleteTask,
+  } = useTasks({ projectId });
 
   // Fetch project data
   useEffect(() => {
-    if (!projectId) return
+    if (!projectId) return;
 
     const fetchProject = async () => {
       try {
-        setLoadingProject(true)
-        setError(null)
-        
-        const response = await fetch(`/api/projects/${projectId}`)
-        const data = await response.json()
-        
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch project')
-        }
-        
-        setProject(data.project)
-      } catch (err) {
-        console.error('Error fetching project:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch project')
-      } finally {
-        setLoadingProject(false)
-      }
-    }
+        setLoadingProject(true);
+        setError(null);
 
-    fetchProject()
-  }, [projectId])
+        const response = await fetch(`/api/projects/${projectId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch project');
+        }
+
+        setProject(data.project);
+      } catch (err) {
+        console.error('Error fetching project:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch project'
+        );
+      } finally {
+        setLoadingProject(false);
+      }
+    };
+
+    fetchProject();
+  }, [projectId]);
 
   // Auth redirect effect
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/auth/signin')
+      router.push('/auth/signin');
     }
-  }, [loading, user, router])
+  }, [loading, user, router]);
 
   const handleBackToDashboard = () => {
-    router.push('/dashboard')
-  }
+    router.push('/dashboard');
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
-        setShowActions(false)
+      if (
+        actionsRef.current &&
+        !actionsRef.current.contains(event.target as Node)
+      ) {
+        setShowActions(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleConfirmDelete = async () => {
-    if (!project) return
-    
-    setIsDeleting(true)
+    if (!project) return;
+
+    setIsDeleting(true);
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'DELETE',
-      })
-      
+      });
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete project')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete project');
       }
-      
+
       // Redirect to dashboard after successful deletion
-      router.push('/dashboard')
+      router.push('/dashboard');
     } catch (err) {
-      console.error('Error deleting project:', err)
-      setError(err instanceof Error ? err.message : 'Failed to delete project')
+      console.error('Error deleting project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete project');
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   // Task management handlers
-  const handleCreateTask = async (taskData: import('@/types').CreateTaskRequest) => {
+  const handleCreateTask = async (
+    taskData: import('@/types').CreateTaskRequest
+  ) => {
     try {
-      await createTask(taskData)
+      await createTask(taskData);
       // Task will be automatically added to the list via the hook
     } catch (error) {
-      console.error('Error creating task:', error)
-      throw error // Re-throw to let the modal handle the error
+      console.error('Error creating task:', error);
+      throw error; // Re-throw to let the modal handle the error
     }
-  }
-
-
+  };
 
   const handleDeleteTask = (task: TaskWithDetails) => {
-    setTaskToDelete(task)
-  }
+    setTaskToDelete(task);
+  };
 
   const handleConfirmDeleteTask = async () => {
-    if (!taskToDelete) return
-    
-    setIsDeletingTask(true)
+    if (!taskToDelete) return;
+
+    setIsDeletingTask(true);
     try {
-      await deleteTask(taskToDelete.id)
-      setTaskToDelete(null)
+      await deleteTask(taskToDelete.id);
+      setTaskToDelete(null);
     } catch (error) {
-      console.error('Error deleting task:', error)
+      console.error('Error deleting task:', error);
     } finally {
-      setIsDeletingTask(false)
+      setIsDeletingTask(false);
     }
-  }
+  };
 
+  const handleSaveField = async (
+    field: keyof Project,
+    value: string | number
+  ) => {
+    if (!project) return;
 
-
-  const handleSaveField = async (field: keyof Project, value: string | number) => {
-    if (!project) return
-    
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: 'PATCH',
@@ -170,30 +182,22 @@ export default function ProjectDetailPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ [field]: value }),
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update project')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update project');
       }
 
-      const result = await response.json()
-      
+      const result = await response.json();
+
       // Update local project state
-      setProject(prev => prev ? { ...prev, ...result.project } : null)
+      setProject(prev => (prev ? { ...prev, ...result.project } : null));
     } catch (err) {
-      console.error('Error updating project:', err)
-      setError(err instanceof Error ? err.message : 'Failed to update project')
+      console.error('Error updating project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update project');
     }
-  }
-
-
-
-
-
-
-
-
+  };
 
   if (loading || loadingProject) {
     return (
@@ -206,7 +210,7 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -219,7 +223,7 @@ export default function ProjectDetailPage() {
         showIssueBadge={true}
         issueCount={1}
       />
-    )
+    );
   }
 
   if (!project) {
@@ -230,7 +234,7 @@ export default function ProjectDetailPage() {
         onBack={handleBackToDashboard}
         backLabel="Back to Dashboard"
       />
-    )
+    );
   }
 
   return (
@@ -238,10 +242,10 @@ export default function ProjectDetailPage() {
       <Header showWelcome={false} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <Breadcrumb 
+        <Breadcrumb
           items={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: project.name, href: `/dashboard/projects/${project.id}` }
+            { label: project.name, href: `/dashboard/projects/${project.id}` },
           ]}
           className="mb-6"
         />
@@ -252,75 +256,83 @@ export default function ProjectDetailPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Project Information</CardTitle>
-                <CardDescription>Manage your project details and settings</CardDescription>
+                <CardDescription>
+                  Manage your project details and settings
+                </CardDescription>
               </div>
-                  <div className="flex items-center space-x-2">
-                  <InlineEdit
-                    value={project.status}
-                    type="status"
-                    onSave={(value) => handleSaveField('status', value)}
-                    className="text-base px-4 py-2"
-                  />
-                  
-                  <div className="relative" ref={actionsRef}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowActions(!showActions)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                    
-                    {showActions && (
-                      <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
-                        <button
-                          onClick={() => {
-                            setIsDeleteModalOpen(true)
-                            setShowActions(false)
-                          }}
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+              <div className="flex items-center space-x-2">
+                <InlineEdit
+                  value={project.status}
+                  type="status"
+                  onSave={value => handleSaveField('status', value)}
+                  className="text-base px-4 py-2"
+                />
+
+                <div className="relative" ref={actionsRef}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowActions(!showActions)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+
+                  {showActions && (
+                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                      <button
+                        onClick={() => {
+                          setIsDeleteModalOpen(true);
+                          setShowActions(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Project Name */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">Name</Label>
+                <Label className="text-sm font-medium text-gray-500">
+                  Name
+                </Label>
                 <InlineEdit
                   value={project.name}
-                  onSave={(value) => handleSaveField('name', value)}
+                  onSave={value => handleSaveField('name', value)}
                   className="text-2xl font-bold text-gray-900"
                 />
               </div>
             </div>
-            
+
             {/* Description */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">Description</Label>
+                <Label className="text-sm font-medium text-gray-500">
+                  Description
+                </Label>
                 <InlineEdit
                   value={project.description}
                   type="textarea"
                   multiline={true}
-                  onSave={(value) => handleSaveField('description', value)}
+                  onSave={value => handleSaveField('description', value)}
                   placeholder="No description provided"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">Client</Label>
+                <Label className="text-sm font-medium text-gray-500">
+                  Client
+                </Label>
                 <InlineEdit
                   value={project.client_name}
-                  onSave={(value) => handleSaveField('client_name', value)}
+                  onSave={value => handleSaveField('client_name', value)}
                   placeholder="No client specified"
                 />
               </div>
@@ -329,29 +341,33 @@ export default function ProjectDetailPage() {
             {/* Project Rate Type and Price/Currency */}
             <div className="grid grid-cols-2 gap-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 block">Rate Type</Label>
+                <Label className="text-sm font-medium text-gray-500 block">
+                  Rate Type
+                </Label>
                 <InlineEdit
                   value={project.rate_type || ''}
                   type="rate-type"
-                  onSave={(value) => handleSaveField('rate_type', value)}
+                  onSave={value => handleSaveField('rate_type', value)}
                   placeholder="Not set"
                   className="text-center capitalize"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 block">Price</Label>
+                <Label className="text-sm font-medium text-gray-500 block">
+                  Price
+                </Label>
                 <InlineEdit
                   value={`${project.currency_code || 'USD'} ${project.price || '0.00'}`}
                   type="price-currency"
-                  onSave={(value) => {
+                  onSave={value => {
                     // Parse the combined value format "USD|50.00"
                     if (typeof value === 'string' && value.includes('|')) {
-                      const [currency, priceStr] = value.split('|')
-                      const price = parseFloat(priceStr)
+                      const [currency, priceStr] = value.split('|');
+                      const price = parseFloat(priceStr);
                       if (!isNaN(price) && price > 0) {
                         // Update both fields
-                        handleSaveField('currency_code', currency)
-                        handleSaveField('price', price)
+                        handleSaveField('currency_code', currency);
+                        handleSaveField('price', price);
                       }
                     }
                   }}
@@ -359,15 +375,13 @@ export default function ProjectDetailPage() {
                   className="text-center"
                   projectData={{
                     price: project.price,
-                    currency_code: project.currency_code
+                    currency_code: project.currency_code,
                   }}
                 />
               </div>
             </div>
           </CardContent>
         </Card>
-
-
 
         {/* Tasks Section */}
         <Card>
@@ -377,21 +391,18 @@ export default function ProjectDetailPage() {
                 <CardTitle>Tasks</CardTitle>
                 <CardDescription>Manage tasks for this project</CardDescription>
               </div>
-              <Button 
-                size="sm" 
-                onClick={() => setIsCreateTaskModalOpen(true)}
-              >
+              <Button size="sm" onClick={() => setIsCreateTaskModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Task
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-                             <TaskList
-                   tasks={tasks}
-                   loading={tasksLoading}
-                   onDelete={handleDeleteTask}
-                 />
+            <TaskList
+              tasks={tasks}
+              loading={tasksLoading}
+              onDelete={handleDeleteTask}
+            />
           </CardContent>
         </Card>
       </div>
@@ -419,11 +430,11 @@ export default function ProjectDetailPage() {
       {/* Delete Task Modal */}
       <DeleteTaskModal
         open={!!taskToDelete}
-        onOpenChange={(open) => !open && setTaskToDelete(null)}
+        onOpenChange={open => !open && setTaskToDelete(null)}
         task={taskToDelete}
         onConfirmDelete={handleConfirmDeleteTask}
         isDeleting={isDeletingTask}
       />
     </div>
-  )
+  );
 }

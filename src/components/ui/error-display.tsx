@@ -1,30 +1,31 @@
-'use client'
+'use client';
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { AlertTriangle, ArrowLeft, X } from 'lucide-react'
-import { useState } from 'react'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { AlertTriangle, ArrowLeft, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface ErrorDisplayProps {
-  title: string
-  message: string
-  onBack?: () => void
-  backLabel?: string
-  showIssueBadge?: boolean
-  issueCount?: number
-  className?: string
+  title: string;
+  message: string;
+  onBack?: () => void;
+  backLabel?: string;
+  showIssueBadge?: boolean;
+  issueCount?: number;
+  className?: string;
 }
 
-export function ErrorDisplay({ 
-  title, 
-  message, 
-  onBack, 
-  backLabel = "Back to Dashboard",
+export function ErrorDisplay({
+  title,
+  message,
+  onBack,
+  backLabel = 'Back to Dashboard',
   showIssueBadge = false,
   issueCount = 0,
-  className = ""
+  className = '',
 }: ErrorDisplayProps) {
-  const [isIssueBadgeVisible, setIsIssueBadgeVisible] = useState(showIssueBadge)
+  const [isIssueBadgeVisible, setIsIssueBadgeVisible] =
+    useState(showIssueBadge);
 
   return (
     <div className={`min-h-screen bg-gray-50 relative ${className}`}>
@@ -36,15 +37,19 @@ export function ErrorDisplay({
                 <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
               <div className="flex-1">
-                <h1 className="text-xl font-semibold text-red-800 mb-2">{title}</h1>
-                <p className="text-red-600 text-sm leading-relaxed">{message}</p>
+                <h1 className="text-xl font-semibold text-red-800 mb-2">
+                  {title}
+                </h1>
+                <p className="text-red-600 text-sm leading-relaxed">
+                  {message}
+                </p>
               </div>
             </div>
-            
+
             {onBack && (
-              <Button 
-                onClick={onBack} 
-                variant="outline" 
+              <Button
+                onClick={onBack}
+                variant="outline"
                 className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -60,7 +65,7 @@ export function ErrorDisplay({
         <div className="fixed bottom-4 left-4">
           <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2">
             <span>⚠️ {issueCount} Issue</span>
-            <button 
+            <button
               onClick={() => setIsIssueBadgeVisible(false)}
               className="ml-2 hover:bg-red-700 rounded px-1"
             >
@@ -70,5 +75,5 @@ export function ErrorDisplay({
         </div>
       )}
     </div>
-  )
+  );
 }

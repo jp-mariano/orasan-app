@@ -30,12 +30,14 @@ const excludedCurrencies = new Set([
 ]);
 
 // Get all available currencies from the package and filter out excluded ones
-const allCurrencies = currencyCodes.codes().filter(code => !excludedCurrencies.has(code));
+const allCurrencies = currencyCodes
+  .codes()
+  .filter(code => !excludedCurrencies.has(code));
 
 // Create a comprehensive currency list with symbols
 export const currencies: Currency[] = allCurrencies.map(code => {
   const currencyData = currencyCodes.code(code);
-  
+
   if (!currencyData) {
     return {
       code,
@@ -44,10 +46,10 @@ export const currencies: Currency[] = allCurrencies.map(code => {
       digits: 2,
     };
   }
-  
+
   // Get currency symbol based on code
   const symbol = getCurrencySymbol(code);
-  
+
   return {
     code: currencyData.code,
     name: currencyData.currency,
@@ -59,53 +61,51 @@ export const currencies: Currency[] = allCurrencies.map(code => {
 // Currency symbol mapping for major currencies
 function getCurrencySymbol(code: string): string {
   const symbolMap: Record<string, string> = {
-    'USD': '$',
-    'EUR': '€',
-    'GBP': '£',
-    'JPY': '¥',
-    'CAD': 'C$',
-    'AUD': 'A$',
-    'CHF': 'CHF',
-    'CNY': '¥',
-    'SEK': 'kr',
-    'NOK': 'kr',
-    'DKK': 'kr',
-    'PLN': 'zł',
-    'CZK': 'Kč',
-    'HUF': 'Ft',
-    'RUB': '₽',
-    'TRY': '₺',
-    'KRW': '₩',
-    'SGD': 'S$',
-    'HKD': 'HK$',
-    'TWD': 'NT$',
-    'THB': '฿',
-    'MYR': 'RM',
-    'IDR': 'Rp',
-    'PHP': '₱',
-    'INR': '₹',
-    'MXN': '$',
-    'BRL': 'R$',
-    'ARS': '$',
-    'CLP': '$',
-    'COP': '$',
-    'PEN': 'S/',
-    'ZAR': 'R',
-    'EGP': '£',
-    'NGN': '₦',
-    'KES': 'KSh',
-    'MAD': 'MAD',
-    'SAR': 'ر.س',
-    'AED': 'د.إ',
-    'ILS': '₪',
-    'NZD': 'NZ$',
-    'FJD': 'FJ$',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    CAD: 'C$',
+    AUD: 'A$',
+    CHF: 'CHF',
+    CNY: '¥',
+    SEK: 'kr',
+    NOK: 'kr',
+    DKK: 'kr',
+    PLN: 'zł',
+    CZK: 'Kč',
+    HUF: 'Ft',
+    RUB: '₽',
+    TRY: '₺',
+    KRW: '₩',
+    SGD: 'S$',
+    HKD: 'HK$',
+    TWD: 'NT$',
+    THB: '฿',
+    MYR: 'RM',
+    IDR: 'Rp',
+    PHP: '₱',
+    INR: '₹',
+    MXN: '$',
+    BRL: 'R$',
+    ARS: '$',
+    CLP: '$',
+    COP: '$',
+    PEN: 'S/',
+    ZAR: 'R',
+    EGP: '£',
+    NGN: '₦',
+    KES: 'KSh',
+    MAD: 'MAD',
+    SAR: 'ر.س',
+    AED: 'د.إ',
+    ILS: '₪',
+    NZD: 'NZ$',
+    FJD: 'FJ$',
   };
-  
+
   return symbolMap[code] || code;
 }
-
-
 
 // Helper function to get currency by code
 export function getCurrencyByCode(code: string): Currency | undefined {
@@ -113,10 +113,13 @@ export function getCurrencyByCode(code: string): Currency | undefined {
 }
 
 // Helper function to format price with currency
-export function formatPriceWithCurrency(price: number, currencyCode: string): string {
+export function formatPriceWithCurrency(
+  price: number,
+  currencyCode: string
+): string {
   const currency = getCurrencyByCode(currencyCode);
   if (!currency) return `${price}`;
-  
+
   return `${currency.symbol}${price}`;
 }
 

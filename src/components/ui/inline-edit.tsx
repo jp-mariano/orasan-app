@@ -1,28 +1,33 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Check, X } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { currencies } from '@/lib/currencies'
-import { getStatusColor, getStatusLabel } from '@/lib/status'
-import { Project } from '@/types/index'
+import React, { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Check, X } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { currencies } from '@/lib/currencies';
+import { getStatusColor, getStatusLabel } from '@/lib/status';
+import { Project } from '@/types/index';
 
 interface InlineEditProps {
-  value: string | null | undefined
-  type?: 'text' | 'textarea' | 'rate-type' | 'price-currency' | 'status'
-  placeholder?: string
-  className?: string
-  multiline?: boolean
-  rows?: number
-  onSave: (value: string | number) => void
+  value: string | null | undefined;
+  type?: 'text' | 'textarea' | 'rate-type' | 'price-currency' | 'status';
+  placeholder?: string;
+  className?: string;
+  multiline?: boolean;
+  rows?: number;
+  onSave: (value: string | number) => void;
   projectData?: {
-    price?: number | null
-    currency_code?: string | null
-  }
-
+    price?: number | null;
+    currency_code?: string | null;
+  };
 }
 
 export function InlineEdit({
@@ -33,37 +38,37 @@ export function InlineEdit({
   multiline = false,
   rows = 3,
   onSave,
-  projectData
+  projectData,
 }: InlineEditProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState(value || '')
-  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || '');
+
   // Local state for price-currency type
   const [localCurrency, setLocalCurrency] = useState(() => {
     if (type === 'price-currency' && value) {
       // Parse the value "USD 50.00" to get currency
-      const parts = value.toString().split(' ')
-      return parts[0] || 'USD'
+      const parts = value.toString().split(' ');
+      return parts[0] || 'USD';
     }
-    return projectData?.currency_code || 'USD'
-  })
+    return projectData?.currency_code || 'USD';
+  });
   const [localPrice, setLocalPrice] = useState(() => {
     if (type === 'price-currency' && value) {
       // Parse the value "USD 50.00" to get price
-      const parts = value.toString().split(' ')
-      return parseFloat(parts[1]) || 0
+      const parts = value.toString().split(' ');
+      return parseFloat(parts[1]) || 0;
     }
-    return projectData?.price || 0
-  })
+    return projectData?.price || 0;
+  });
 
   // Update local states when value prop changes
   useEffect(() => {
     if (type === 'price-currency' && value) {
-      const parts = value.toString().split(' ')
-      setLocalCurrency(parts[0] || 'USD')
-      setLocalPrice(parseFloat(parts[1]) || 0)
+      const parts = value.toString().split(' ');
+      setLocalCurrency(parts[0] || 'USD');
+      setLocalPrice(parseFloat(parts[1]) || 0);
     }
-  }, [value, type])
+  }, [value, type]);
 
   const handleSave = () => {
     if (editValue !== value) {
@@ -71,51 +76,53 @@ export function InlineEdit({
         // For price-currency, use the local states directly
         if (localPrice > 0) {
           // We'll call onSave with a special format that the parent can handle
-          onSave(`${localCurrency}|${localPrice}`)
+          onSave(`${localCurrency}|${localPrice}`);
         } else {
-          return
+          return;
         }
       } else {
-        onSave(editValue)
+        onSave(editValue);
       }
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   const handleCancel = () => {
-    setEditValue(value || '')
+    setEditValue(value || '');
     // Reset local states for price-currency
     if (projectData) {
-      setLocalCurrency(projectData.currency_code || 'USD')
-      setLocalPrice(projectData.price || 0)
+      setLocalCurrency(projectData.currency_code || 'USD');
+      setLocalPrice(projectData.price || 0);
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   const handleBlur = (e: React.FocusEvent) => {
     // Check if the related target (what we're focusing to) is one of our buttons
-    const relatedTarget = e.relatedTarget as HTMLElement
+    const relatedTarget = e.relatedTarget as HTMLElement;
     if (relatedTarget && relatedTarget.closest('.inline-edit-buttons')) {
       // We're focusing to a button, don't cancel
-      return
+      return;
     }
     // We're focusing away from the edit area, cancel the edit
-    handleCancel()
-  }
+    handleCancel();
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setEditValue(e.target.value)
-  }
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setEditValue(e.target.value);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSave()
+      e.preventDefault();
+      handleSave();
     }
     if (e.key === 'Escape') {
-      handleCancel()
+      handleCancel();
     }
-  }
+  };
 
   if (isEditing) {
     if (type === 'rate-type') {
@@ -150,27 +157,25 @@ export function InlineEdit({
             </Button>
           </div>
         </div>
-      )
+      );
     }
-
-
 
     if (type === 'price-currency') {
       return (
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2 flex-1">
-            <Select 
-              value={localCurrency} 
-              onValueChange={(currency) => {
-                setLocalCurrency(currency)
-                setEditValue(`${currency} ${localPrice}`)
+            <Select
+              value={localCurrency}
+              onValueChange={currency => {
+                setLocalCurrency(currency);
+                setEditValue(`${currency} ${localPrice}`);
               }}
             >
               <SelectTrigger className="w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {currencies.map((currency) => (
+                {currencies.map(currency => (
                   <SelectItem key={currency.code} value={currency.code}>
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{currency.code}</span>
@@ -184,10 +189,10 @@ export function InlineEdit({
               step="0.01"
               min="0.01"
               value={localPrice.toString()}
-              onChange={(e) => {
-                const price = parseFloat(e.target.value) || 0
-                setLocalPrice(price)
-                setEditValue(`${localCurrency} ${price}`)
+              onChange={e => {
+                const price = parseFloat(e.target.value) || 0;
+                setLocalPrice(price);
+                setEditValue(`${localCurrency} ${price}`);
               }}
               className="flex-1"
               placeholder="0.00"
@@ -212,7 +217,7 @@ export function InlineEdit({
             </Button>
           </div>
         </div>
-      )
+      );
     }
 
     if (type === 'status') {
@@ -248,10 +253,8 @@ export function InlineEdit({
             </Button>
           </div>
         </div>
-      )
+      );
     }
-
-
 
     if (multiline || type === 'textarea') {
       return (
@@ -284,7 +287,7 @@ export function InlineEdit({
             </Button>
           </div>
         </div>
-      )
+      );
     }
 
     return (
@@ -312,14 +315,12 @@ export function InlineEdit({
             className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600"
             tabIndex={0}
           >
-              <X className="h-4 w-4" />
-            </Button>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
-    )
+    );
   }
-
-
 
   // For status type, render as a styled badge
   if (type === 'status' && value) {
@@ -330,7 +331,7 @@ export function InlineEdit({
       >
         {getStatusLabel(value as Project['status'])}
       </div>
-    )
+    );
   }
 
   return (
@@ -340,5 +341,5 @@ export function InlineEdit({
     >
       {value || placeholder}
     </div>
-  )
+  );
 }

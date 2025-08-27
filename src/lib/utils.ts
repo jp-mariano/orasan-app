@@ -1,8 +1,8 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -11,17 +11,18 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted date string (e.g., "Dec 15, 2024")
  */
 export function formatDate(dateString: string | Date): string {
-  if (!dateString) return ''
-  
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString
-  
-  if (isNaN(date.getTime())) return ''
-  
+  if (!dateString) return '';
+
+  const date =
+    typeof dateString === 'string' ? new Date(dateString) : dateString;
+
+  if (isNaN(date.getTime())) return '';
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
-  })
+    year: 'numeric',
+  });
 }
 
 /**
@@ -31,20 +32,25 @@ export function formatDate(dateString: string | Date): string {
  * @param ellipsis - Custom ellipsis string (default: '...')
  * @returns Truncated text with ellipsis
  */
-export function truncateText(text: string, maxLength: number, ellipsis: string = '...'): string {
+export function truncateText(
+  text: string,
+  maxLength: number,
+  ellipsis: string = '...'
+): string {
   if (!text || text.length <= maxLength) {
-    return text
+    return text;
   }
-  
+
   // Ensure we don't cut words in the middle if possible
-  const truncated = text.substring(0, maxLength).trim()
-  const lastSpaceIndex = truncated.lastIndexOf(' ')
-  
-  if (lastSpaceIndex > maxLength * 0.8) { // If we can find a space in the last 20%
-    return truncated.substring(0, lastSpaceIndex) + ellipsis
+  const truncated = text.substring(0, maxLength).trim();
+  const lastSpaceIndex = truncated.lastIndexOf(' ');
+
+  if (lastSpaceIndex > maxLength * 0.8) {
+    // If we can find a space in the last 20%
+    return truncated.substring(0, lastSpaceIndex) + ellipsis;
   }
-  
-  return truncated + ellipsis
+
+  return truncated + ellipsis;
 }
 
 /**
@@ -54,22 +60,26 @@ export function truncateText(text: string, maxLength: number, ellipsis: string =
  * @param ellipsis - Custom ellipsis string (default: '...')
  * @returns Truncated text with ellipsis
  */
-export function truncateTextSmart(text: string, maxLength: number, ellipsis: string = '...'): string {
+export function truncateTextSmart(
+  text: string,
+  maxLength: number,
+  ellipsis: string = '...'
+): string {
   if (!text || text.length <= maxLength) {
-    return text
+    return text;
   }
-  
+
   // Find the last complete word within the limit
-  const words = text.split(' ')
-  let result = ''
-  
+  const words = text.split(' ');
+  let result = '';
+
   for (const word of words) {
     if ((result + ' ' + word).length <= maxLength) {
-      result += (result ? ' ' : '') + word
+      result += (result ? ' ' : '') + word;
     } else {
-      break
+      break;
     }
   }
-  
-  return result + ellipsis
+
+  return result + ellipsis;
 }

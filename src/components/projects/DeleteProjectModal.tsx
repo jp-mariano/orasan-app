@@ -1,31 +1,38 @@
-'use client'
+'use client';
 
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Project } from '@/types/index'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Project } from '@/types/index';
+import { Trash2, AlertTriangle } from 'lucide-react';
 
 interface DeleteProjectModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  project: Project | null
-  onConfirmDelete: () => Promise<void>
-  isDeleting: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  project: Project | null;
+  onConfirmDelete: () => Promise<void>;
+  isDeleting: boolean;
 }
 
-export function DeleteProjectModal({ 
-  open, 
-  onOpenChange, 
-  project, 
-  onConfirmDelete, 
-  isDeleting 
+export function DeleteProjectModal({
+  open,
+  onOpenChange,
+  project,
+  onConfirmDelete,
+  isDeleting,
 }: DeleteProjectModalProps) {
-  if (!project) return null
+  if (!project) return null;
 
   const handleConfirm = async () => {
-    await onConfirmDelete()
-    onOpenChange(false)
-  }
+    await onConfirmDelete();
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,10 +45,11 @@ export function DeleteProjectModal({
             <DialogTitle>Delete Project</DialogTitle>
           </div>
           <DialogDescription>
-            Are you sure you want to delete &quot;{project.name}&quot;? This action cannot be undone.
+            Are you sure you want to delete &quot;{project.name}&quot;? This
+            action cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-700">
@@ -56,11 +64,15 @@ export function DeleteProjectModal({
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="destructive" 
+          <Button
+            variant="destructive"
             onClick={handleConfirm}
             disabled={isDeleting}
           >
@@ -79,5 +91,5 @@ export function DeleteProjectModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

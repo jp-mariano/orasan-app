@@ -25,23 +25,26 @@
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Supabase account (for database and authentication)
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <your-repo-url>
    cd orasan-app
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up environment variables:
+
    ```bash
    cp .env.local.example .env.local
    # Edit .env.local with your Supabase credentials:
@@ -51,6 +54,7 @@
    ```
 
 4. Set up the database:
+
    ```bash
    # Copy the schema from database/schema.sql
    # Run it in your Supabase project's SQL editor
@@ -84,6 +88,7 @@ database/
 ## Database Schema
 
 The app uses PostgreSQL with the following main tables:
+
 - `users` - User profiles and subscription information
 - `projects` - Project definitions with client and rate information
 - `tasks` - Tasks within projects
@@ -96,6 +101,7 @@ All tables have Row Level Security (RLS) enabled for data privacy.
 ### Git Hooks
 
 This project uses Lefthook for pre-commit hooks:
+
 - Linting with ESLint
 - Type checking with TypeScript
 

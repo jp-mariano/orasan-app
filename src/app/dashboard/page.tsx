@@ -1,27 +1,33 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Clock, FolderOpen, TrendingUp, Plus } from 'lucide-react'
-import { Header } from '@/components/ui/header'
-import { useProjects } from '@/hooks/useProjects'
-import { CreateProjectModal } from '@/components/projects/CreateProjectModal'
-import { ProjectCard } from '@/components/projects/ProjectCard'
-import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
-import { Project } from '@/types/index'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Clock, FolderOpen, TrendingUp, Plus } from 'lucide-react';
+import { Header } from '@/components/ui/header';
+import { useProjects } from '@/hooks/useProjects';
+import { CreateProjectModal } from '@/components/projects/CreateProjectModal';
+import { ProjectCard } from '@/components/projects/ProjectCard';
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
+import { Project } from '@/types/index';
 
 export default function DashboardPage() {
-  const { user, loading, signOut, manualSignOut } = useAuth()
-  const router = useRouter()
-  const [isSigningOut, setIsSigningOut] = useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
+  const { user, loading, signOut, manualSignOut } = useAuth();
+  const router = useRouter();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Project management
   const {
     projects,
@@ -31,77 +37,75 @@ export default function DashboardPage() {
     canCreateProject,
     createProject,
     deleteProject,
-  } = useProjects()
+  } = useProjects();
 
   const handleSignOut = async () => {
     try {
-      setIsSigningOut(true)
-      
+      setIsSigningOut(true);
+
       // Set a timeout to force redirect if sign out takes too long
       const timeoutId = setTimeout(() => {
-        setIsSigningOut(false)
-        router.push('/')
-      }, 3000)
-      
-      await signOut()
-      
+        setIsSigningOut(false);
+        router.push('/');
+      }, 3000);
+
+      await signOut();
+
       // Clear timeout if sign out completes normally
-      clearTimeout(timeoutId)
-      
+      clearTimeout(timeoutId);
+
       // Force redirect after sign out
-      router.push('/')
+      router.push('/');
     } catch (error) {
-      console.error('Sign out failed, using manual fallback:', error)
-      manualSignOut()
-      router.push('/')
+      console.error('Sign out failed, using manual fallback:', error);
+      manualSignOut();
+      router.push('/');
     } finally {
-      setIsSigningOut(false)
+      setIsSigningOut(false);
     }
-  }
+  };
 
   const handleManualSignOut = () => {
-    manualSignOut()
-    router.push('/')
-  }
+    manualSignOut();
+    router.push('/');
+  };
 
   const handleCreateProject = () => {
-    setIsCreateModalOpen(true)
-  }
+    setIsCreateModalOpen(true);
+  };
 
   const handleEditProject = (project: Project) => {
     // For now, we'll navigate to project detail page
-    router.push(`/dashboard/projects/${project.id}`)
-  }
+    router.push(`/dashboard/projects/${project.id}`);
+  };
 
   const handleDeleteProject = (project: Project) => {
-    setProjectToDelete(project)
-    setIsDeleteModalOpen(true)
-  }
+    setProjectToDelete(project);
+    setIsDeleteModalOpen(true);
+  };
 
   const handleConfirmDelete = async () => {
-    if (!projectToDelete) return
-    
-    setIsDeleting(true)
-    const result = await deleteProject(projectToDelete.id)
-    setIsDeleting(false)
-    
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    const result = await deleteProject(projectToDelete.id);
+    setIsDeleting(false);
+
     if (!result.success) {
-      alert(`Failed to delete project: ${result.error}`)
+      alert(`Failed to delete project: ${result.error}`);
     }
-  }
+  };
 
   const handleNavigateToProject = (project: Project) => {
-    router.push(`/dashboard/projects/${project.id}`)
-  }
+    router.push(`/dashboard/projects/${project.id}`);
+  };
 
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
   useEffect(() => {
     if (!loading && !user && !isSigningOut) {
-      router.push('/auth/signin')
+      router.push('/auth/signin');
     }
-  }, [loading, user, router, isSigningOut])
-
-
+  }, [loading, user, router, isSigningOut]);
 
   // Show loading screen only when auth context is loading
   if (loading && !isSigningOut) {
@@ -114,7 +118,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // If signing out, show signing out state instead of loading
@@ -125,10 +129,10 @@ export default function DashboardPage() {
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Signing out...</p>
-            <Button 
-              onClick={handleManualSignOut} 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              onClick={handleManualSignOut}
+              variant="ghost"
+              size="sm"
               className="mt-4 text-red-600 hover:text-red-700"
             >
               Force Sign Out
@@ -136,17 +140,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null // Will redirect to signin
+    return null; // Will redirect to signin
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <Header 
+      <Header
         onSignOut={handleSignOut}
         isSigningOut={isSigningOut}
         onForceSignOut={handleManualSignOut}
@@ -157,20 +161,26 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Track your time and manage your projects</p>
+          <p className="text-gray-600">
+            Track your time and manage your projects
+          </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Projects
+              </CardTitle>
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{projectCount}/2</div>
               <p className="text-xs text-muted-foreground">
-                {projectCount === 0 ? 'No projects yet' : `${2 - projectCount} remaining on free tier`}
+                {projectCount === 0
+                  ? 'No projects yet'
+                  : `${2 - projectCount} remaining on free tier`}
               </p>
             </CardContent>
           </Card>
@@ -207,7 +217,9 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-              <p className="text-gray-600">Manage your projects and track progress</p>
+              <p className="text-gray-600">
+                Manage your projects and track progress
+              </p>
             </div>
             <Button onClick={handleCreateProject}>
               <Plus className="h-4 w-4 mr-2" />
@@ -227,7 +239,7 @@ export default function DashboardPage() {
           {/* Loading State */}
           {projectsLoading && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map(i => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="h-6 bg-gray-200 rounded w-3/4"></div>
@@ -245,7 +257,7 @@ export default function DashboardPage() {
           {/* Projects Grid */}
           {!projectsLoading && projects.length > 0 && (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
+              {projects.map(project => (
                 <ProjectCard
                   key={project.id}
                   project={project}
@@ -263,7 +275,8 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>No Projects Yet</CardTitle>
                 <CardDescription>
-                  Create your first project to start tracking time and managing tasks
+                  Create your first project to start tracking time and managing
+                  tasks
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -295,5 +308,5 @@ export default function DashboardPage() {
         />
       </main>
     </div>
-  )
+  );
 }

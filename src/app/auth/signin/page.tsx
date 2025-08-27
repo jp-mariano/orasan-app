@@ -1,28 +1,36 @@
-'use client'
+'use client';
 
-import { useState, Suspense } from 'react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Github, Mail, Twitter } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/contexts/auth-context'
+import { useState, Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Github, Mail, Twitter } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { useAuth } from '@/contexts/auth-context';
 
 function LoginPageContent() {
-  const [isLoading, setIsLoading] = useState<string | null>(null)
-  const { signIn } = useAuth()
-  const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const { signIn } = useAuth();
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
 
-  const handleOAuthSignIn = async (provider: 'github' | 'google' | 'twitter') => {
+  const handleOAuthSignIn = async (
+    provider: 'github' | 'google' | 'twitter'
+  ) => {
     try {
-      setIsLoading(provider)
-      await signIn(provider)
+      setIsLoading(provider);
+      await signIn(provider);
     } catch (error) {
-      console.error(`Error signing in with ${provider}:`, error)
-      setIsLoading(null)
+      console.error(`Error signing in with ${provider}:`, error);
+      setIsLoading(null);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -32,16 +40,14 @@ function LoginPageContent() {
             <Mail className="h-6 w-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Welcome to Orasan</CardTitle>
-          <CardDescription>
-            Sign in to your account to continue
-          </CardDescription>
+          <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error === 'auth_callback_failed' 
-                ? 'Authentication failed. Please try again.' 
+              {error === 'auth_callback_failed'
+                ? 'Authentication failed. Please try again.'
                 : 'An error occurred. Please try again.'}
             </div>
           )}
@@ -92,7 +98,10 @@ function LoginPageContent() {
 
           <div className="text-center text-sm text-gray-600">
             Don&apos;t have an account?{' '}
-            <Link href="/auth/register" className="text-blue-600 hover:underline">
+            <Link
+              href="/auth/register"
+              className="text-blue-600 hover:underline"
+            >
               Sign up
             </Link>
           </div>
@@ -105,22 +114,24 @@ function LoginPageContent() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
       <LoginPageContent />
     </Suspense>
-  )
+  );
 }

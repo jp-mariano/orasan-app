@@ -1,139 +1,165 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Project, CreateProjectRequest, UpdateProjectRequest } from '@/types/index'
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Project,
+  CreateProjectRequest,
+  UpdateProjectRequest,
+} from '@/types/index';
 
 interface UseProjectsReturn {
-  projects: Project[]
-  loading: boolean
-  error: string | null
-  projectCount: number
-  canCreateProject: boolean
-  createProject: (data: CreateProjectRequest) => Promise<{ success: boolean; error?: string }>
-  updateProject: (id: string, data: UpdateProjectRequest) => Promise<{ success: boolean; error?: string }>
-  deleteProject: (id: string) => Promise<{ success: boolean; error?: string }>
-  refreshProjects: () => Promise<void>
+  projects: Project[];
+  loading: boolean;
+  error: string | null;
+  projectCount: number;
+  canCreateProject: boolean;
+  createProject: (
+    data: CreateProjectRequest
+  ) => Promise<{ success: boolean; error?: string }>;
+  updateProject: (
+    id: string,
+    data: UpdateProjectRequest
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteProject: (id: string) => Promise<{ success: boolean; error?: string }>;
+  refreshProjects: () => Promise<void>;
 }
 
-const MAX_FREE_PROJECTS = 2
+const MAX_FREE_PROJECTS = 2;
 
 export function useProjects(): UseProjectsReturn {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await fetch('/api/projects')
-      const data = await response.json()
-      
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/projects');
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch projects')
+        throw new Error(data.error || 'Failed to fetch projects');
       }
-      
-      setProjects(data.projects || [])
+
+      setProjects(data.projects || []);
     } catch (err) {
-      console.error('Error fetching projects:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch projects')
+      console.error('Error fetching projects:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch projects');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  const createProject = useCallback(async (data: CreateProjectRequest) => {
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        return { success: false, error: result.error || 'Failed to create project' }
-      }
-      
-      // Refresh projects list
-      await fetchProjects()
-      return { success: true }
-    } catch (err) {
-      console.error('Error creating project:', err)
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to create project' 
-      }
-    }
-  }, [fetchProjects])
+  const createProject = useCallback(
+    async (data: CreateProjectRequest) => {
+      try {
+        const response = await fetch('/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
 
-  const updateProject = useCallback(async (id: string, data: UpdateProjectRequest) => {
-    try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        return { success: false, error: result.error || 'Failed to update project' }
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: result.error || 'Failed to create project',
+          };
+        }
+
+        // Refresh projects list
+        await fetchProjects();
+        return { success: true };
+      } catch (err) {
+        console.error('Error creating project:', err);
+        return {
+          success: false,
+          error:
+            err instanceof Error ? err.message : 'Failed to create project',
+        };
       }
-      
-      // Update local state
-      setProjects(prev => 
-        prev.map(project => 
-          project.id === id ? { ...project, ...result.project } : project
-        )
-      )
-      
-      return { success: true }
-    } catch (err) {
-      console.error('Error updating project:', err)
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to update project' 
+    },
+    [fetchProjects]
+  );
+
+  const updateProject = useCallback(
+    async (id: string, data: UpdateProjectRequest) => {
+      try {
+        const response = await fetch(`/api/projects/${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: result.error || 'Failed to update project',
+          };
+        }
+
+        // Update local state
+        setProjects(prev =>
+          prev.map(project =>
+            project.id === id ? { ...project, ...result.project } : project
+          )
+        );
+
+        return { success: true };
+      } catch (err) {
+        console.error('Error updating project:', err);
+        return {
+          success: false,
+          error:
+            err instanceof Error ? err.message : 'Failed to update project',
+        };
       }
-    }
-  }, [])
+    },
+    []
+  );
 
   const deleteProject = useCallback(async (id: string) => {
     try {
       const response = await fetch(`/api/projects/${id}`, {
         method: 'DELETE',
-      })
-      
-      const result = await response.json()
-      
+      });
+
+      const result = await response.json();
+
       if (!response.ok) {
-        return { success: false, error: result.error || 'Failed to delete project' }
+        return {
+          success: false,
+          error: result.error || 'Failed to delete project',
+        };
       }
-      
+
       // Remove from local state
-      setProjects(prev => prev.filter(project => project.id !== id))
-      return { success: true }
+      setProjects(prev => prev.filter(project => project.id !== id));
+      return { success: true };
     } catch (err) {
-      console.error('Error deleting project:', err)
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to delete project' 
-      }
+      console.error('Error deleting project:', err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to delete project',
+      };
     }
-  }, [])
+  }, []);
 
   const refreshProjects = useCallback(async () => {
-    await fetchProjects()
-  }, [fetchProjects])
+    await fetchProjects();
+  }, [fetchProjects]);
 
   // Fetch projects on mount
   useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
+    fetchProjects();
+  }, [fetchProjects]);
 
   return {
     projects,
@@ -145,5 +171,5 @@ export function useProjects(): UseProjectsReturn {
     updateProject,
     deleteProject,
     refreshProjects,
-  }
+  };
 }
