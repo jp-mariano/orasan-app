@@ -413,7 +413,6 @@ export default function ProjectDetailPage() {
           project={project}
           users={[]} // TODO: Fetch users for assignee selection
           onSubmit={handleCreateTask}
-          loading={false}
         />
       )}
 

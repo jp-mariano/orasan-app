@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Loader2 } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { CreateTaskRequest, Priority, Project, User } from '@/types'
@@ -20,7 +20,6 @@ interface CreateTaskModalProps {
   project: Project
   users?: User[]
   onSubmit: (taskData: CreateTaskRequest) => Promise<void>
-  loading?: boolean
 }
 
 export function CreateTaskModal({ 
@@ -28,8 +27,7 @@ export function CreateTaskModal({
   onOpenChange, 
   project, 
   users = [], 
-  onSubmit, 
-  loading = false 
+  onSubmit
 }: CreateTaskModalProps) {
   const [formData, setFormData] = useState<CreateTaskRequest>({
     name: '',
@@ -41,6 +39,7 @@ export function CreateTaskModal({
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Check if form is valid for submit button
   const isFormValid = formData.name.trim().length > 0
@@ -69,6 +68,8 @@ export function CreateTaskModal({
       assignee: formData.assignee === 'none' ? undefined : formData.assignee
     }
 
+    setIsSubmitting(true)
+    
     try {
       await onSubmit(taskData)
       // Reset form and close modal on success
@@ -84,6 +85,8 @@ export function CreateTaskModal({
     } catch (error) {
       // Handle error (error will be handled by parent component)
       console.error('Error creating task:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -216,13 +219,12 @@ export function CreateTaskModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !isFormValid}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Task
+            <Button type="submit" disabled={isSubmitting || !isFormValid}>
+              {isSubmitting ? 'Creating...' : 'Create Task'}
             </Button>
           </DialogFooter>
         </form>

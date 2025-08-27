@@ -215,7 +215,7 @@ export function CreateProjectModal({
             </div>
 
           <DialogFooter className="flex gap-2">
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || !formData.name.trim() || !formData.price || formData.price <= 0}>
