@@ -20,12 +20,10 @@ import { formatDate } from '@/lib/utils'
 
 interface TaskCardProps {
   task: TaskWithDetails
-  onEdit?: (task: TaskWithDetails) => void
   onDelete?: (task: TaskWithDetails) => void
-  onNavigate?: (task: TaskWithDetails) => void
 }
 
-export function TaskCard({ task, onEdit, onDelete, onNavigate }: TaskCardProps) {
+export function TaskCard({ task, onDelete }: TaskCardProps) {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [showActions, setShowActions] = useState(false)
   const actionsRef = useRef<HTMLDivElement>(null)
@@ -55,21 +53,20 @@ export function TaskCard({ task, onEdit, onDelete, onNavigate }: TaskCardProps) 
   }
 
   const handleEdit = () => {
-    onEdit?.(task)
+    // Navigate to task page for editing
+    window.location.href = `/dashboard/tasks/${task.id}`
   }
 
   const handleDelete = () => {
     onDelete?.(task)
   }
 
-  const handleNavigate = () => {
-    onNavigate?.(task)
-  }
+
 
   return (
     <Card 
       className="hover:shadow-md transition-shadow cursor-pointer group mb-3"
-      onClick={handleNavigate}
+      onClick={() => window.location.href = `/dashboard/tasks/${task.id}`}
     >
       <CardContent>
         <div className="flex items-center justify-between">

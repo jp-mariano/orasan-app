@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Project } from '@/types/index'
@@ -17,7 +17,7 @@ import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal'
 import { TaskList } from '@/components/tasks/TaskList'
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal'
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal'
-import { Trash2, Plus } from 'lucide-react'
+import { Plus, MoreVertical, Trash2 } from 'lucide-react'
 import { useTasks } from '@/hooks/useTasks'
 import { TaskWithDetails } from '@/types'
 
@@ -30,6 +30,8 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showActions, setShowActions] = useState(false)
+  const actionsRef = useRef<HTMLDivElement>(null)
   
   // Task management state
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false)
@@ -87,9 +89,19 @@ export default function ProjectDetailPage() {
     router.push('/dashboard')
   }
 
-  const handleDeleteProject = () => {
-    setIsDeleteModalOpen(true)
-  }
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+        setShowActions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const handleConfirmDelete = async () => {
     if (!project) return
@@ -126,10 +138,7 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleEditTask = (task: TaskWithDetails) => {
-    // TODO: Navigate to task detail page for editing
-    console.log('Edit task:', task)
-  }
+
 
   const handleDeleteTask = (task: TaskWithDetails) => {
     setTaskToDelete(task)
@@ -149,10 +158,7 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const handleNavigateToTask = (task: TaskWithDetails) => {
-    // TODO: Navigate to task detail page
-    console.log('Navigate to task:', task)
-  }
+
 
   const handleSaveField = async (field: keyof Project, value: string | number) => {
     if (!project) return
@@ -240,23 +246,6 @@ export default function ProjectDetailPage() {
           className="mb-6"
         />
 
-        {/* Project Header */}
-        <div className="mb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-red-600 hover:text-red-700"
-                onClick={handleDeleteProject}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Project Stats & Description Section */}
         <Card className="mb-6">
           <CardHeader>
@@ -265,12 +254,40 @@ export default function ProjectDetailPage() {
                 <CardTitle>Project Information</CardTitle>
                 <CardDescription>Manage your project details and settings</CardDescription>
               </div>
-              <InlineEdit
-                value={project.status}
-                type="status"
-                onSave={(value) => handleSaveField('status', value)}
-                className="text-base px-4 py-2"
-              />
+                  <div className="flex items-center space-x-2">
+                  <InlineEdit
+                    value={project.status}
+                    type="status"
+                    onSave={(value) => handleSaveField('status', value)}
+                    className="text-base px-4 py-2"
+                  />
+                  
+                  <div className="relative" ref={actionsRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowActions(!showActions)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                    
+                    {showActions && (
+                      <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            setIsDeleteModalOpen(true)
+                            setShowActions(false)
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -370,13 +387,11 @@ export default function ProjectDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <TaskList
-              tasks={tasks}
-              loading={tasksLoading}
-              onEdit={handleEditTask}
-              onDelete={handleDeleteTask}
-              onNavigate={handleNavigateToTask}
-            />
+                             <TaskList
+                   tasks={tasks}
+                   loading={tasksLoading}
+                   onDelete={handleDeleteTask}
+                 />
           </CardContent>
         </Card>
       </div>

@@ -15,9 +15,7 @@ import { getPriorityBorderColor } from '@/lib/status'
 interface TaskListProps {
   tasks: TaskWithDetails[]
   loading?: boolean
-  onEdit?: (task: TaskWithDetails) => void
   onDelete?: (task: TaskWithDetails) => void
-  onNavigate?: (task: TaskWithDetails) => void
 }
 
 interface PriorityGroup {
@@ -30,9 +28,7 @@ interface PriorityGroup {
 export function TaskList({ 
   tasks, 
   loading = false, 
-  onEdit, 
-  onDelete, 
-  onNavigate
+  onDelete
 }: TaskListProps) {
   const [expandedPriorities, setExpandedPriorities] = useState<Set<string>>(new Set(['urgent']))
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false)
@@ -140,9 +136,9 @@ export function TaskList({
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      {/* <CardHeader className="pb-2">
         <CardTitle className="text-base">Tasks</CardTitle>
-      </CardHeader>
+      </CardHeader> */}
       
       <CardContent className="pt-0">
         <div className="space-y-3">
@@ -185,15 +181,13 @@ export function TaskList({
                 {/* Tasks */}
                 {isExpanded && (
                   <div className="space-y-0.5 ml-6">
-                    {priorityTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onNavigate={onNavigate}
-                      />
-                    ))}
+                                      {priorityTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onDelete={onDelete}
+                    />
+                  ))}
                   </div>
                 )}
               </div>
@@ -239,15 +233,13 @@ export function TaskList({
                 {/* Completed Tasks */}
                 {isCompletedExpanded && (
                   <div className="space-y-0.5 ml-6">
-                    {completedTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onNavigate={onNavigate}
-                      />
-                    ))}
+                                      {completedTasks.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onDelete={onDelete}
+                    />
+                  ))}
                   </div>
                 )}
               </div>
