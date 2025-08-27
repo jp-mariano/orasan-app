@@ -35,6 +35,7 @@ export function TaskList({
   onNavigate
 }: TaskListProps) {
   const [expandedPriorities, setExpandedPriorities] = useState<Set<string>>(new Set(['urgent']))
+  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false)
 
   // Define priority groups with their properties
   const priorityGroups: PriorityGroup[] = [
@@ -77,7 +78,15 @@ export function TaskList({
   }
 
   const getTasksByPriority = (priority: string) => {
-    return tasks.filter(task => task.priority === priority)
+    const priorityTasks = tasks.filter(task => task.priority === priority && task.status !== 'completed')
+    
+    // Sort by status: In Progress → On Hold → New
+    return priorityTasks.sort((a, b) => {
+      const statusOrder: Record<string, number> = { 'in_progress': 1, 'on_hold': 2, 'new': 3 }
+      const aOrder = statusOrder[a.status] || 4
+      const bOrder = statusOrder[b.status] || 4
+      return aOrder - bOrder
+    })
   }
 
   const getTotalTasksByPriority = (priority: string) => {
@@ -190,6 +199,60 @@ export function TaskList({
               </div>
             )
           })}
+
+          {/* Completed Tasks Section */}
+          {(() => {
+            const completedTasks = tasks
+              .filter(task => task.status === 'completed')
+              .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+            const completedCount = completedTasks.length
+            
+            if (completedCount === 0) return null
+            
+            return (
+              <div className="border-l-4 pl-3 border-gray-300">
+                {/* Completed Header */}
+                <div 
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+                  onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                  >
+                    {isCompletedExpanded ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-gray-600">Completed</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {completedCount} {completedCount === 1 ? 'task' : 'tasks'}
+                    </Badge>
+                  </div>
+                </div>
+                
+                {/* Completed Tasks */}
+                {isCompletedExpanded && (
+                  <div className="space-y-0.5 ml-6">
+                    {completedTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onNavigate={onNavigate}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </CardContent>
     </Card>

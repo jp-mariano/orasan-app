@@ -120,43 +120,47 @@ export function TaskCard({ task, onEdit, onDelete, onNavigate }: TaskCardProps) 
               
               {showActions && (
                 <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[140px]">
-                  {/* Time Tracking Actions */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handlePlayPause()
-                      setShowActions(false)
-                    }}
-                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                  >
-                    {!isTimerRunning ? (
-                      <>
-                        <Play className="h-4 w-4" />
-                        <span>Start Timer</span>
-                      </>
-                    ) : (
-                      <>
-                        <Pause className="h-4 w-4" />
-                        <span>Pause Timer</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  {isTimerRunning && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleStop()
-                        setShowActions(false)
-                      }}
-                      className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                    >
-                      <Square className="h-4 w-4" />
-                      <span>Stop Timer</span>
-                    </button>
+                  {/* Time Tracking Actions - Only show for non-completed tasks */}
+                  {task.status !== 'completed' && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handlePlayPause()
+                          setShowActions(false)
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                      >
+                        {!isTimerRunning ? (
+                          <>
+                            <Play className="h-4 w-4" />
+                            <span>Start Timer</span>
+                          </>
+                        ) : (
+                          <>
+                            <Pause className="h-4 w-4" />
+                            <span>Pause Timer</span>
+                          </>
+                        )}
+                      </button>
+                      
+                      {isTimerRunning && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleStop()
+                            setShowActions(false)
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        >
+                          <Square className="h-4 w-4" />
+                          <span>Stop Timer</span>
+                        </button>
+                      )}
+                      
+                      <div className="border-t my-1"></div>
+                    </>
                   )}
-                  
-                  <div className="border-t my-1"></div>
                   
                   {/* Edit Action */}
                   <button
