@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const supabase = createClient();
   const profileCreationAttempted = useRef<Set<string>>(new Set());
+  const isInitialized = useRef(false);
 
   const createOrUpdateUserProfile = useCallback(async (user: User) => {
     // Prevent duplicate profile creation attempts for the same user
@@ -64,6 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Prevent duplicate initialization
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
@@ -128,7 +133,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth, createOrUpdateUserProfile, isSigningOut]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // No dependencies needed - this effect should only run once
 
   const signIn = async (provider: 'github' | 'google' | 'twitter') => {
     try {
