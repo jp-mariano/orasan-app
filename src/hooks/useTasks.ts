@@ -29,12 +29,11 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   // Build query parameters
   const buildQueryParams = useCallback(() => {
     const params = new URLSearchParams();
-    if (options.projectId) params.append('project_id', options.projectId);
     if (options.status) params.append('status', options.status);
     if (options.priority) params.append('priority', options.priority);
     if (options.assignee) params.append('assignee', options.assignee);
     return params.toString();
-  }, [options.projectId, options.status, options.priority, options.assignee]);
+  }, [options.status, options.priority, options.assignee]);
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
@@ -42,8 +41,15 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       setLoading(true);
       setError(null);
 
+      if (!options.projectId) {
+        setError('Project ID is required to fetch tasks');
+        return;
+      }
+
       const queryParams = buildQueryParams();
-      const url = queryParams ? `/api/tasks?${queryParams}` : '/api/tasks';
+      const url = queryParams
+        ? `/api/projects/${options.projectId}/tasks?${queryParams}`
+        : `/api/projects/${options.projectId}/tasks`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -60,7 +66,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     } finally {
       setLoading(false);
     }
-  }, [buildQueryParams]);
+  }, [buildQueryParams, options.projectId]);
 
   // Create task
   const createTask = useCallback(
@@ -68,13 +74,20 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       try {
         setError(null);
 
-        const response = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(taskData),
-        });
+        if (!options.projectId) {
+          throw new Error('Project ID is required to create a task');
+        }
+
+        const response = await fetch(
+          `/api/projects/${options.projectId}/tasks`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData),
+          }
+        );
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -96,7 +109,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    []
+    [options.projectId]
   );
 
   // Update task
@@ -108,13 +121,20 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       try {
         setError(null);
 
-        const response = await fetch(`/api/tasks/${id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updates),
-        });
+        if (!options.projectId) {
+          throw new Error('Project ID is required to update a task');
+        }
+
+        const response = await fetch(
+          `/api/projects/${options.projectId}/tasks/${id}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updates),
+          }
+        );
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -138,35 +158,45 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return null;
       }
     },
-    []
+    [options.projectId]
   );
 
   // Delete task
-  const deleteTask = useCallback(async (id: string): Promise<boolean> => {
-    try {
-      setError(null);
+  const deleteTask = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        setError(null);
 
-      const response = await fetch(`/api/tasks/${id}`, {
-        method: 'DELETE',
-      });
+        if (!options.projectId) {
+          throw new Error('Project ID is required to delete a task');
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete task');
+        const response = await fetch(
+          `/api/projects/${options.projectId}/tasks/${id}`,
+          {
+            method: 'DELETE',
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete task');
+        }
+
+        // Remove from local state
+        setTasks(prev => prev.filter(task => task.id !== id));
+
+        return true;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to delete task';
+        setError(errorMessage);
+        console.error('Error deleting task:', err);
+        return false;
       }
-
-      // Remove from local state
-      setTasks(prev => prev.filter(task => task.id !== id));
-
-      return true;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to delete task';
-      setError(errorMessage);
-      console.error('Error deleting task:', err);
-      return false;
-    }
-  }, []);
+    },
+    [options.projectId]
+  );
 
   // Refresh tasks
   const refreshTasks = useCallback(async () => {

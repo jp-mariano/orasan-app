@@ -20,7 +20,7 @@ import { ErrorDisplay } from '@/components/ui/error-display';
 import { Trash2 } from 'lucide-react';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
 
-export default function TaskDetailPage() {
+export default function ProjectTaskDetailPage() {
   const { user, loading } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -31,12 +31,18 @@ export default function TaskDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const taskId = params.id as string;
+  const projectId = params.id as string;
+  const taskId = params.taskId as string;
 
   const fetchTask = useCallback(async () => {
     try {
       setLoadingTask(true);
-      const response = await fetch(`/api/tasks/${taskId}`);
+      setError(null);
+
+      // Now we can use the project-scoped API directly
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`
+      );
 
       if (!response.ok) {
         throw new Error('Failed to fetch task');
@@ -49,7 +55,7 @@ export default function TaskDetailPage() {
     } finally {
       setLoadingTask(false);
     }
-  }, [taskId]);
+  }, [projectId, taskId]);
 
   useEffect(() => {
     if (user && !loading) {
@@ -68,13 +74,16 @@ export default function TaskDetailPage() {
     if (!task) return;
 
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ [field]: value }),
-      });
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ [field]: value }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update task');
@@ -98,16 +107,19 @@ export default function TaskDetailPage() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to delete task');
       }
 
       // Redirect back to project page
-      router.push(`/dashboard/projects/${task.project_id}`);
+      router.push(`/dashboard/projects/${projectId}`);
     } catch (err) {
       console.error('Error deleting task:', err);
       setError('Failed to delete task');
@@ -139,7 +151,7 @@ export default function TaskDetailPage() {
           <ErrorDisplay
             title="Error Loading Task"
             message={error}
-            onBack={() => router.push('/dashboard')}
+            onBack={() => router.push(`/dashboard/projects/${projectId}`)}
           />
         </div>
       </div>
@@ -154,7 +166,7 @@ export default function TaskDetailPage() {
           <ErrorDisplay
             title="Task Not Found"
             message="The requested task could not be found."
-            onBack={() => router.push('/dashboard')}
+            onBack={() => router.push(`/dashboard/projects/${projectId}`)}
           />
         </div>
       </div>
@@ -164,7 +176,6 @@ export default function TaskDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <Breadcrumb
@@ -172,10 +183,14 @@ export default function TaskDetailPage() {
             { label: 'Dashboard', href: '/dashboard' },
             {
               label: task.project?.name || 'Project',
-              href: `/dashboard/projects/${task.project_id}`,
+              href: `/dashboard/projects/${projectId}`,
             },
-            { label: task.name, href: `/dashboard/tasks/${task.id}` },
+            {
+              label: task.name,
+              href: `/dashboard/projects/${projectId}/tasks/${taskId}`,
+            },
           ]}
+          className="mb-6"
         />
 
         {/* Task Details Card */}
@@ -247,6 +262,7 @@ export default function TaskDetailPage() {
               <Label>Priority</Label>
               <InlineEdit
                 value={task.priority}
+                type="status"
                 onSave={value => handleSaveField('priority', value)}
                 className="text-gray-700"
               />

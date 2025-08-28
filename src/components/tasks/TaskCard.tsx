@@ -56,8 +56,8 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
   };
 
   const handleEdit = () => {
-    // Navigate to task page for editing
-    window.location.href = `/dashboard/tasks/${task.id}`;
+    // Navigate to task page for editing (nested under project)
+    window.location.href = `/dashboard/projects/${task.project_id}/tasks/${task.id}`;
   };
 
   const handleDelete = () => {
@@ -67,7 +67,9 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
   return (
     <Card
       className="hover:shadow-md transition-shadow cursor-pointer group mb-3"
-      onClick={() => (window.location.href = `/dashboard/tasks/${task.id}`)}
+      onClick={() =>
+        (window.location.href = `/dashboard/projects/${task.project_id}/tasks/${task.id}`)
+      }
     >
       <CardContent>
         <div className="flex items-center justify-between">
