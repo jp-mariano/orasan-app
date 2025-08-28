@@ -26,15 +26,6 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Build query parameters
-  const buildQueryParams = useCallback(() => {
-    const params = new URLSearchParams();
-    if (options.status) params.append('status', options.status);
-    if (options.priority) params.append('priority', options.priority);
-    if (options.assignee) params.append('assignee', options.assignee);
-    return params.toString();
-  }, [options.status, options.priority, options.assignee]);
-
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
     try {
@@ -46,7 +37,13 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return;
       }
 
-      const queryParams = buildQueryParams();
+      // Build query parameters inline
+      const params = new URLSearchParams();
+      if (options.status) params.append('status', options.status);
+      if (options.priority) params.append('priority', options.priority);
+      if (options.assignee) params.append('assignee', options.assignee);
+      const queryParams = params.toString();
+
       const url = queryParams
         ? `/api/projects/${options.projectId}/tasks?${queryParams}`
         : `/api/projects/${options.projectId}/tasks`;
@@ -66,7 +63,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     } finally {
       setLoading(false);
     }
-  }, [buildQueryParams, options.projectId]);
+  }, [options.projectId, options.status, options.priority, options.assignee]);
 
   // Create task
   const createTask = useCallback(

@@ -70,8 +70,8 @@ export function useProjects(): UseProjectsReturn {
           };
         }
 
-        // Refresh projects list
-        await fetchProjects();
+        // Add new project to local state instead of refetching
+        setProjects(prev => [result.project, ...prev]);
         return { success: true };
       } catch (err) {
         console.error('Error creating project:', err);
@@ -82,7 +82,7 @@ export function useProjects(): UseProjectsReturn {
         };
       }
     },
-    [fetchProjects]
+    [] // No dependencies needed
   );
 
   const updateProject = useCallback(
@@ -153,8 +153,27 @@ export function useProjects(): UseProjectsReturn {
   }, []);
 
   const refreshProjects = useCallback(async () => {
-    await fetchProjects();
-  }, [fetchProjects]);
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/projects');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch projects');
+      }
+
+      setProjects(data.projects || []);
+    } catch (err) {
+      console.error('Error refreshing projects:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to refresh projects'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []); // No dependencies needed
 
   // Fetch projects on mount
   useEffect(() => {
