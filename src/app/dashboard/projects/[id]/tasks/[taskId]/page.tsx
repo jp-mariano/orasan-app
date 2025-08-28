@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { TaskWithDetails } from '@/types';
@@ -34,34 +34,35 @@ export default function ProjectTaskDetailPage() {
   const projectId = params.id as string;
   const taskId = params.taskId as string;
 
-  const fetchTask = useCallback(async () => {
-    try {
-      setLoadingTask(true);
-      setError(null);
-
-      // Now we can use the project-scoped API directly
-      const response = await fetch(
-        `/api/projects/${projectId}/tasks/${taskId}`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch task');
-      }
-
-      const data = await response.json();
-      setTask(data.task);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch task');
-    } finally {
-      setLoadingTask(false);
-    }
-  }, [projectId, taskId]);
-
+  // Fetch task data - same pattern as Project page
   useEffect(() => {
-    if (user && !loading) {
-      fetchTask();
-    }
-  }, [user, loading, fetchTask]);
+    if (!projectId || !taskId) return;
+
+    const fetchTask = async () => {
+      try {
+        setLoadingTask(true);
+        setError(null);
+
+        // Now we can use the project-scoped API directly
+        const response = await fetch(
+          `/api/projects/${projectId}/tasks/${taskId}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch task');
+        }
+
+        const data = await response.json();
+        setTask(data.task);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch task');
+      } finally {
+        setLoadingTask(false);
+      }
+    };
+
+    fetchTask();
+  }, [projectId, taskId]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -93,8 +94,18 @@ export default function ProjectTaskDetailPage() {
       setTask(data.task);
     } catch (err) {
       console.error('Error updating task:', err);
-      // Revert the change on error
-      fetchTask();
+      // Revert the change on error by refetching the task
+      try {
+        const response = await fetch(
+          `/api/projects/${projectId}/tasks/${taskId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setTask(data.task);
+        }
+      } catch (refetchError) {
+        console.error('Error refetching task:', refetchError);
+      }
     }
   };
 
