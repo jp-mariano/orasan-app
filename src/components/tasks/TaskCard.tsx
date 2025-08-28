@@ -117,7 +117,6 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
                   e.stopPropagation(); // Prevent card click when clicking options
                   setShowActions(!showActions);
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
