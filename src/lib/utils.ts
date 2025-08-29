@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { RateType } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -82,4 +83,43 @@ export function truncateTextSmart(
   }
 
   return result + ellipsis;
+}
+
+/**
+ * Converts empty strings to null for string fields
+ * @param value - The string value to check and convert
+ * @returns The original value or null if it's an empty string
+ */
+export function convertEmptyToNull(
+  value: string | null | undefined
+): string | null | undefined {
+  if (typeof value === 'string' && value.trim() === '') {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Converts empty strings to null specifically for rate_type fields
+ * @param value - The rate type value to check and convert
+ * @returns The original value or null if it's an empty string
+ */
+export function convertRateTypeEmptyToNull(
+  value: RateType | null | undefined
+): RateType | null | undefined {
+  if (typeof value === 'string' && value.trim() === '') {
+    return null;
+  }
+  return value;
+}
+
+/**
+ * Converts empty strings to null specifically for currency_code fields
+ * @param value - The currency code value to check and convert
+ * @returns The original value or null if it's an empty string
+ */
+export function convertCurrencyEmptyToNull(
+  value: string | null | undefined
+): string | null | undefined {
+  return convertEmptyToNull(value);
 }
