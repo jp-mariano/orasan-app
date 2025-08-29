@@ -5,15 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-import {
-  Edit,
-  Trash2,
-  Play,
-  Pause,
-  Square,
-  User,
-  MoreVertical,
-} from 'lucide-react';
+import { Trash2, Play, Pause, Square, User, MoreVertical } from 'lucide-react';
 import { TaskWithDetails } from '@/types';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import { formatDate } from '@/lib/utils';
@@ -53,11 +45,6 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
   const handleStop = () => {
     setIsTimerRunning(false);
     // TODO: Implement actual time tracking
-  };
-
-  const handleEdit = () => {
-    // Navigate to task page for editing (nested under project)
-    window.location.href = `/dashboard/projects/${task.project_id}/tasks/${task.id}`;
   };
 
   const handleDelete = () => {
@@ -164,19 +151,6 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
                       <div className="border-t my-1"></div>
                     </>
                   )}
-
-                  {/* Edit Action */}
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleEdit();
-                      setShowActions(false);
-                    }}
-                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit Task</span>
-                  </button>
 
                   {/* Delete Action */}
                   <button
