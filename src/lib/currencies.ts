@@ -122,6 +122,3 @@ export function formatPriceWithCurrency(
 
   return `${currency.symbol}${price}`;
 }
-
-// Default currency
-export const DEFAULT_CURRENCY = 'USD';
