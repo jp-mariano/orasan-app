@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +26,11 @@ import {
   Project,
   RateType,
 } from '@/types/index';
-import { currencies, DEFAULT_CURRENCY } from '@/lib/currencies';
+import { currencies } from '@/lib/currencies';
+import {
+  convertRateTypeEmptyToNull,
+  convertCurrencyEmptyToNull,
+} from '@/lib/utils';
 
 interface ProjectModalProps {
   open: boolean;
@@ -53,39 +57,62 @@ export function ProjectModal({
 }: ProjectModalProps) {
   const isEditMode = !!project;
 
+  // Default values for create mode (these are placeholders, not actual values)
+  const defaultFormData = useMemo<CreateProjectRequest>(
+    () => ({
+      name: '',
+      description: '',
+      client_name: '',
+      rate_type: '' as RateType, // Empty string for placeholder
+      price: 0,
+      currency_code: '', // Empty string for placeholder
+    }),
+    []
+  );
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open && !isEditMode) {
+      setFormData(defaultFormData);
+      setModifiedFields(new Set());
+    }
+  }, [open, isEditMode, defaultFormData]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<CreateProjectRequest>({
-    name: '',
-    description: '',
-    client_name: '',
-    rate_type: 'hourly' as RateType,
-    price: 0,
-    currency_code: DEFAULT_CURRENCY,
-  });
+
+  // Track which fields have been modified by the user
+  const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
+
+  const [formData, setFormData] =
+    useState<CreateProjectRequest>(defaultFormData);
+
+  // Check if there are any changes in edit mode
+  const hasChanges = useMemo(() => {
+    if (!isEditMode || !project) return true; // Always allow submit in create mode
+
+    return modifiedFields.size > 0;
+  }, [isEditMode, project, modifiedFields]);
 
   // Initialize form data when project changes (for edit mode)
   useEffect(() => {
     if (project) {
+      // Edit mode: populate with existing project data
       setFormData({
         name: project.name,
         description: project.description || '',
         client_name: project.client_name || '',
-        rate_type: project.rate_type || 'hourly',
+        rate_type: project.rate_type || null,
         price: project.price || 0,
-        currency_code: project.currency_code || DEFAULT_CURRENCY,
+        currency_code: project.currency_code || '',
       });
+      // In edit mode, start with no modified fields (user hasn't made changes yet)
+      setModifiedFields(new Set());
     } else {
-      // Reset to defaults for create mode
-      setFormData({
-        name: '',
-        description: '',
-        client_name: '',
-        rate_type: 'hourly' as RateType,
-        price: 0,
-        currency_code: DEFAULT_CURRENCY,
-      });
+      // Create mode: reset to defaults
+      setFormData(defaultFormData);
+      setModifiedFields(new Set());
     }
-  }, [project]);
+  }, [project, defaultFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,26 +125,48 @@ export function ProjectModal({
 
     let result: { success: boolean; error?: string };
 
+    // Helper function to determine if a field should be submitted
+    const shouldSubmitField = (fieldName: string) => {
+      if (isEditMode) return true; // In edit mode, always submit all fields
+      return modifiedFields.has(fieldName); // In create mode, only submit modified fields
+    };
+
     if (isEditMode && onUpdateProject) {
       // Edit mode
-      result = await onUpdateProject({
+      const updateData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || undefined,
         client_name: formData.client_name?.trim() || undefined,
-        rate_type: formData.rate_type || undefined,
-        price: formData.price || undefined,
-        currency_code: formData.currency_code || undefined,
-      });
+        rate_type: shouldSubmitField('rate_type')
+          ? convertRateTypeEmptyToNull(formData.rate_type)
+          : undefined,
+        price: shouldSubmitField('price')
+          ? formData.price || undefined
+          : undefined,
+        currency_code: shouldSubmitField('currency_code')
+          ? convertCurrencyEmptyToNull(formData.currency_code)
+          : undefined,
+      };
+
+      result = await onUpdateProject(updateData);
     } else if (!isEditMode && onCreateProject) {
       // Create mode
-      result = await onCreateProject({
+      const createData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || undefined,
         client_name: formData.client_name?.trim() || undefined,
-        rate_type: formData.rate_type || undefined,
-        price: formData.price || undefined,
-        currency_code: formData.currency_code || undefined,
-      });
+        rate_type: shouldSubmitField('rate_type')
+          ? convertRateTypeEmptyToNull(formData.rate_type)
+          : undefined,
+        price: shouldSubmitField('price')
+          ? formData.price || undefined
+          : undefined,
+        currency_code: shouldSubmitField('currency_code')
+          ? convertCurrencyEmptyToNull(formData.currency_code)
+          : undefined,
+      };
+
+      result = await onCreateProject(createData);
     } else {
       result = { success: false, error: 'Invalid operation' };
     }
@@ -127,6 +176,11 @@ export function ProjectModal({
     if (result.success) {
       // Close modal on success
       onOpenChange(false);
+      // Reset form and modified fields for next use
+      if (!isEditMode) {
+        setFormData(defaultFormData);
+        setModifiedFields(new Set());
+      }
     } else {
       // Handle error (you might want to show a toast or error message)
       console.error(
@@ -144,6 +198,9 @@ export function ProjectModal({
       ...prev,
       [field]: value,
     }));
+
+    // Track that this field has been modified (in both create and edit modes)
+    setModifiedFields(prev => new Set([...prev, field]));
   };
 
   // Show warning modal when project limit is reached (only for create mode)
@@ -219,13 +276,13 @@ export function ProjectModal({
             <div className="space-y-2">
               <Label htmlFor="currency_code">Currency</Label>
               <Select
-                value={formData.currency_code || ''}
+                value={formData.currency_code || undefined}
                 onValueChange={value =>
                   handleInputChange('currency_code', value)
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
+                  <SelectValue placeholder="Select currency (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map(currency => (
@@ -257,7 +314,7 @@ export function ProjectModal({
                     e.target.value ? parseFloat(e.target.value) : 0
                   )
                 }
-                placeholder="0.00"
+                placeholder="Enter amount (optional)"
               />
             </div>
           </div>
@@ -265,13 +322,13 @@ export function ProjectModal({
           <div className="space-y-2">
             <Label htmlFor="rate_type">Rate Type</Label>
             <Select
-              value={formData.rate_type || ''}
+              value={formData.rate_type || undefined}
               onValueChange={value =>
                 handleInputChange('rate_type', value as RateType)
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select rate type" />
+                <SelectValue placeholder="Select rate type (optional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="hourly">Hourly</SelectItem>
@@ -292,14 +349,16 @@ export function ProjectModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.name.trim()}
+              disabled={isSubmitting || !formData.name.trim() || !hasChanges}
             >
               {isSubmitting
                 ? isEditMode
                   ? 'Updating...'
                   : 'Creating...'
                 : isEditMode
-                  ? 'Update Project'
+                  ? hasChanges
+                    ? 'Update Project'
+                    : 'No Changes'
                   : 'Create Project'}
             </Button>
           </DialogFooter>
