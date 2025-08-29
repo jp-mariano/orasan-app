@@ -138,7 +138,9 @@ export function CreateTaskModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Task Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Task Name *</Label>
+            <Label htmlFor="name">
+              Task Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               value={formData.name}
