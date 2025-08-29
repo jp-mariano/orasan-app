@@ -313,73 +313,81 @@ export default function ProjectDetailPage() {
 
             {/* Description */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">
-                  Description
-                </Label>
-                <InlineEdit
-                  value={project.description}
-                  type="textarea"
-                  multiline={true}
-                  onSave={value => handleSaveField('description', value)}
-                  placeholder="No description provided"
-                />
-              </div>
+              {/* Description - Only show if it has a value */}
+              {project.description ? (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">
+                    Description
+                  </Label>
+                  <InlineEdit
+                    value={project.description}
+                    type="textarea"
+                    multiline={true}
+                    onSave={value => handleSaveField('description', value)}
+                    placeholder="No description provided"
+                  />
+                </div>
+              ) : null}
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">
-                  Client
-                </Label>
-                <InlineEdit
-                  value={project.client_name}
-                  onSave={value => handleSaveField('client_name', value)}
-                  placeholder="No client specified"
-                />
-              </div>
+              {/* Client Name - Only show if it has a value */}
+              {project.client_name ? (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">
+                    Client
+                  </Label>
+                  <InlineEdit
+                    value={project.client_name}
+                    onSave={value => handleSaveField('client_name', value)}
+                    placeholder="No client specified"
+                  />
+                </div>
+              ) : null}
             </div>
 
-            {/* Project Rate Type and Price/Currency */}
-            <div className="grid grid-cols-2 gap-4 py-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 block">
-                  Rate Type
-                </Label>
-                <InlineEdit
-                  value={project.rate_type || ''}
-                  type="rate-type"
-                  onSave={value => handleSaveField('rate_type', value)}
-                  placeholder="Not set"
-                  className="text-center capitalize"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500 block">
-                  Price
-                </Label>
-                <InlineEdit
-                  value={`${project.currency_code || 'USD'} ${project.price || '0.00'}`}
-                  type="price-currency"
-                  onSave={value => {
-                    // Parse the combined value format "USD|50.00"
-                    if (typeof value === 'string' && value.includes('|')) {
-                      const [currency, priceStr] = value.split('|');
-                      const price = parseFloat(priceStr);
-                      if (!isNaN(price) && price > 0) {
-                        // Update both fields
-                        handleSaveField('currency_code', currency);
-                        handleSaveField('price', price);
+            {/* Project Rate Type and Price/Currency - Only show if they have values */}
+            {project.rate_type && project.price !== null ? (
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500 block">
+                    Rate Type
+                  </Label>
+                  <InlineEdit
+                    value={project.rate_type}
+                    type="rate-type"
+                    onSave={value => handleSaveField('rate_type', value)}
+                    placeholder="Not set"
+                    className="text-center capitalize"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500 block">
+                    Price
+                  </Label>
+                  <InlineEdit
+                    value={`${project.currency_code || 'USD'} ${project.price}`}
+                    type="price-currency"
+                    onSave={value => {
+                      // Parse the combined value format "USD|50.00"
+                      if (typeof value === 'string' && value.includes('|')) {
+                        const [currency, priceStr] = value.split('|');
+                        const price = parseFloat(priceStr);
+                        if (!isNaN(price) && price >= 0) {
+                          // Update both fields
+                          handleSaveField('currency_code', currency);
+                          handleSaveField('price', price);
+                        }
                       }
-                    }
-                  }}
-                  placeholder="USD 0.00"
-                  className="text-center"
-                  projectData={{
-                    price: project.price,
-                    currency_code: project.currency_code,
-                  }}
-                />
+                    }}
+                    placeholder="USD 0.00"
+                    className="text-center"
+                    projectData={{
+                      price: project.price,
+                      currency_code: project.currency_code,
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            ) : null}
           </CardContent>
         </Card>
 

@@ -24,15 +24,15 @@ CREATE TABLE public.projects (
   name TEXT NOT NULL,
   description TEXT,
   client_name TEXT,
-  rate_type rate_type NOT NULL DEFAULT 'hourly',
-  price DECIMAL(10,2) NOT NULL,
-  currency_code VARCHAR(3) NOT NULL DEFAULT 'USD',
+  rate_type rate_type DEFAULT NULL,
+  price DECIMAL(10,2) DEFAULT NULL,
+  currency_code VARCHAR(3) DEFAULT NULL,
   status project_status DEFAULT 'new',
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Ensure positive prices
-  CONSTRAINT positive_project_price CHECK (price > 0)
+  -- Allow NULL for unpriced projects, or positive prices
+  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0)
 );
 
 -- Create tasks table
@@ -47,13 +47,13 @@ CREATE TABLE public.tasks (
   due_date DATE,
   assignee UUID REFERENCES public.users(id),
   -- Rate information at task creation time (locked after creation)
-  rate_type rate_type NOT NULL,
-  price DECIMAL(10,2) NOT NULL,
-  currency_code VARCHAR(3) NOT NULL DEFAULT 'USD',
+  rate_type rate_type DEFAULT NULL,
+  price DECIMAL(10,2) DEFAULT NULL,
+  currency_code VARCHAR(3) DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Ensure positive prices
-  CONSTRAINT positive_task_price CHECK (price > 0),
+  -- Allow NULL for unpriced tasks, or positive prices
+  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0),
   -- Ensure valid priority values
   CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );

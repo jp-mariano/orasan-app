@@ -60,9 +60,9 @@ export function ProjectCard({
   const formatPrice = (
     price: number | null | undefined,
     rateType: string | null | undefined,
-    currencyCode: string
+    currencyCode: string | null | undefined
   ) => {
-    if (!price || !rateType) return null;
+    if (!price || !rateType || !currencyCode) return null;
 
     const currency = getCurrencyByCode(currencyCode);
     if (!currency) return `${price}`;

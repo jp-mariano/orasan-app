@@ -57,19 +57,15 @@ export function CreateProjectModal({
       return;
     }
 
-    if (!formData.price || formData.price <= 0) {
-      return;
-    }
-
     setIsSubmitting(true);
 
     const result = await onCreateProject({
       name: formData.name.trim(),
       description: formData.description?.trim() || undefined,
       client_name: formData.client_name?.trim() || undefined,
-      rate_type: formData.rate_type,
-      price: formData.price,
-      currency_code: formData.currency_code,
+      rate_type: formData.rate_type || undefined,
+      price: formData.price || undefined,
+      currency_code: formData.currency_code || undefined,
     });
 
     setIsSubmitting(false);
@@ -177,9 +173,9 @@ export function CreateProjectModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="currency_code">Currency *</Label>
+              <Label htmlFor="currency_code">Currency</Label>
               <Select
-                value={formData.currency_code}
+                value={formData.currency_code || ''}
                 onValueChange={value =>
                   handleInputChange('currency_code', value)
                 }
@@ -204,11 +200,11 @@ export function CreateProjectModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Rate/Price *</Label>
+              <Label htmlFor="price">Rate/Price</Label>
               <Input
                 id="price"
                 type="number"
-                min="0.01"
+                min="0"
                 step="0.01"
                 value={formData.price || ''}
                 onChange={e =>
@@ -218,15 +214,14 @@ export function CreateProjectModal({
                   )
                 }
                 placeholder="0.00"
-                required
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="rate_type">Rate Type *</Label>
+            <Label htmlFor="rate_type">Rate Type</Label>
             <Select
-              value={formData.rate_type}
+              value={formData.rate_type || ''}
               onValueChange={value =>
                 handleInputChange('rate_type', value as RateType)
               }
@@ -253,12 +248,7 @@ export function CreateProjectModal({
             </Button>
             <Button
               type="submit"
-              disabled={
-                isSubmitting ||
-                !formData.name.trim() ||
-                !formData.price ||
-                formData.price <= 0
-              }
+              disabled={isSubmitting || !formData.name.trim()}
             >
               {isSubmitting ? 'Creating...' : 'Create Project'}
             </Button>

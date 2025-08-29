@@ -19,9 +19,9 @@ export interface Project {
   name: string;
   description?: string;
   client_name?: string;
-  rate_type: RateType;
-  price: number;
-  currency_code: string;
+  rate_type?: RateType | null;
+  price?: number | null;
+  currency_code?: string | null;
   status: ProjectStatus;
   user_id: string;
   created_at: string;
@@ -38,6 +38,9 @@ export interface Task {
   priority: Priority;
   due_date?: string;
   assignee?: string;
+  rate_type?: RateType | null;
+  price?: number | null;
+  currency_code?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -97,18 +100,18 @@ export interface CreateProjectRequest {
   name: string;
   description?: string;
   client_name?: string;
-  rate_type: RateType;
-  price: number;
-  currency_code: string;
+  rate_type?: RateType | null;
+  price?: number | null;
+  currency_code?: string | null;
 }
 
 export interface UpdateProjectRequest {
   name?: string;
   description?: string;
   client_name?: string;
-  rate_type?: RateType;
-  price?: number;
-  currency_code?: string;
+  rate_type?: RateType | null;
+  price?: number | null;
+  currency_code?: string | null;
   status?: ProjectStatus;
 }
 
