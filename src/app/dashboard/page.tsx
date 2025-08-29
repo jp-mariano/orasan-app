@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, FolderOpen, TrendingUp, Plus } from 'lucide-react';
 import { Header } from '@/components/ui/header';
 import { useProjects } from '@/hooks/useProjects';
-import { CreateProjectModal } from '@/components/projects/CreateProjectModal';
+import { ProjectModal } from '@/components/projects/ProjectModal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { Project } from '@/types/index';
@@ -72,11 +72,6 @@ export default function DashboardPage() {
 
   const handleCreateProject = () => {
     setIsCreateModalOpen(true);
-  };
-
-  const handleEditProject = (project: Project) => {
-    // For now, we'll navigate to project detail page
-    router.push(`/dashboard/projects/${project.id}`);
   };
 
   const handleDeleteProject = (project: Project) => {
@@ -261,7 +256,6 @@ export default function DashboardPage() {
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onEdit={handleEditProject}
                   onDelete={handleDeleteProject}
                   onNavigate={handleNavigateToProject}
                 />
@@ -290,7 +284,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Create Project Modal */}
-        <CreateProjectModal
+        <ProjectModal
           open={isCreateModalOpen}
           onOpenChange={setIsCreateModalOpen}
           onCreateProject={createProject}

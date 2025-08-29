@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,26 +20,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CreateProjectRequest, RateType } from '@/types/index';
+import {
+  CreateProjectRequest,
+  UpdateProjectRequest,
+  Project,
+  RateType,
+} from '@/types/index';
 import { currencies, DEFAULT_CURRENCY } from '@/lib/currencies';
 
-interface CreateProjectModalProps {
+interface ProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (
+  project?: Project | null; // If provided, we're editing; if not, we're creating
+  onCreateProject?: (
     data: CreateProjectRequest
   ) => Promise<{ success: boolean; error?: string }>;
-  canCreateProject: boolean;
-  currentProjectCount: number;
+  onUpdateProject?: (
+    data: UpdateProjectRequest
+  ) => Promise<{ success: boolean; error?: string }>;
+  canCreateProject?: boolean;
+  currentProjectCount?: number;
 }
 
-export function CreateProjectModal({
+export function ProjectModal({
   open,
   onOpenChange,
+  project,
   onCreateProject,
-  canCreateProject,
-  currentProjectCount,
-}: CreateProjectModalProps) {
+  onUpdateProject,
+  canCreateProject = true,
+  currentProjectCount = 0,
+}: ProjectModalProps) {
+  const isEditMode = !!project;
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<CreateProjectRequest>({
     name: '',
@@ -50,6 +63,30 @@ export function CreateProjectModal({
     currency_code: DEFAULT_CURRENCY,
   });
 
+  // Initialize form data when project changes (for edit mode)
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        name: project.name,
+        description: project.description || '',
+        client_name: project.client_name || '',
+        rate_type: project.rate_type || 'hourly',
+        price: project.price || 0,
+        currency_code: project.currency_code || DEFAULT_CURRENCY,
+      });
+    } else {
+      // Reset to defaults for create mode
+      setFormData({
+        name: '',
+        description: '',
+        client_name: '',
+        rate_type: 'hourly' as RateType,
+        price: 0,
+        currency_code: DEFAULT_CURRENCY,
+      });
+    }
+  }, [project]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -59,31 +96,43 @@ export function CreateProjectModal({
 
     setIsSubmitting(true);
 
-    const result = await onCreateProject({
-      name: formData.name.trim(),
-      description: formData.description?.trim() || undefined,
-      client_name: formData.client_name?.trim() || undefined,
-      rate_type: formData.rate_type || undefined,
-      price: formData.price || undefined,
-      currency_code: formData.currency_code || undefined,
-    });
+    let result: { success: boolean; error?: string };
+
+    if (isEditMode && onUpdateProject) {
+      // Edit mode
+      result = await onUpdateProject({
+        name: formData.name.trim(),
+        description: formData.description?.trim() || undefined,
+        client_name: formData.client_name?.trim() || undefined,
+        rate_type: formData.rate_type || undefined,
+        price: formData.price || undefined,
+        currency_code: formData.currency_code || undefined,
+      });
+    } else if (!isEditMode && onCreateProject) {
+      // Create mode
+      result = await onCreateProject({
+        name: formData.name.trim(),
+        description: formData.description?.trim() || undefined,
+        client_name: formData.client_name?.trim() || undefined,
+        rate_type: formData.rate_type || undefined,
+        price: formData.price || undefined,
+        currency_code: formData.currency_code || undefined,
+      });
+    } else {
+      result = { success: false, error: 'Invalid operation' };
+    }
 
     setIsSubmitting(false);
 
     if (result.success) {
-      // Reset form and close modal
-      setFormData({
-        name: '',
-        description: '',
-        client_name: '',
-        rate_type: 'hourly' as RateType,
-        price: 0,
-        currency_code: DEFAULT_CURRENCY,
-      });
+      // Close modal on success
       onOpenChange(false);
     } else {
       // Handle error (you might want to show a toast or error message)
-      console.error('Failed to create project:', result.error);
+      console.error(
+        `Failed to ${isEditMode ? 'update' : 'create'} project:`,
+        result.error
+      );
     }
   };
 
@@ -97,32 +146,20 @@ export function CreateProjectModal({
     }));
   };
 
-  // Show warning modal when project limit is reached
-  if (!canCreateProject) {
+  // Show warning modal when project limit is reached (only for create mode)
+  if (!isEditMode && !canCreateProject) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Project Limit Reached</DialogTitle>
             <DialogDescription>
-              You have reached the maximum number of projects (
-              {currentProjectCount}/2) for the free tier.
+              You have reached the maximum number of projects allowed in your
+              current plan. Please upgrade your plan to create more projects.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              To create a new project, you can either:
-            </p>
-            <ul className="text-sm text-gray-600 space-y-2 ml-4">
-              <li>• Delete an existing project to make room</li>
-              <li>• Upgrade your account for unlimited projects</li>
-            </ul>
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-            <Button>Upgrade Account</Button>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -131,16 +168,23 @@ export function CreateProjectModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle>
+            {isEditMode ? 'Edit Project' : 'Create New Project'}
+          </DialogTitle>
           <DialogDescription>
-            Add a new project to start tracking your time and tasks.
+            {isEditMode
+              ? 'Update your project details and settings.'
+              : `Fill in the details below to create your ${currentProjectCount + 1}${getOrdinalSuffix(currentProjectCount + 1)} project.`}
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Project Name *</Label>
+            <Label htmlFor="name">
+              Project Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               value={formData.name}
@@ -156,7 +200,7 @@ export function CreateProjectModal({
               id="description"
               value={formData.description}
               onChange={e => handleInputChange('description', e.target.value)}
-              placeholder="Project description (optional)"
+              placeholder="Describe your project (optional)"
               rows={3}
             />
           </div>
@@ -250,11 +294,33 @@ export function CreateProjectModal({
               type="submit"
               disabled={isSubmitting || !formData.name.trim()}
             >
-              {isSubmitting ? 'Creating...' : 'Create Project'}
+              {isSubmitting
+                ? isEditMode
+                  ? 'Updating...'
+                  : 'Creating...'
+                : isEditMode
+                  ? 'Update Project'
+                  : 'Create Project'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
+}
+
+// Helper function to get ordinal suffix (1st, 2nd, 3rd, etc.)
+function getOrdinalSuffix(num: number): string {
+  const j = num % 10;
+  const k = num % 100;
+  if (j === 1 && k !== 11) {
+    return 'st';
+  }
+  if (j === 2 && k !== 12) {
+    return 'nd';
+  }
+  if (j === 3 && k !== 13) {
+    return 'rd';
+  }
+  return 'th';
 }

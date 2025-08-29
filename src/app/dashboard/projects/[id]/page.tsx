@@ -20,11 +20,13 @@ import { InlineEdit } from '@/components/ui/inline-edit';
 
 import { ErrorDisplay } from '@/components/ui/error-display';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
+import { ProjectModal } from '@/components/projects/ProjectModal';
 import { TaskList } from '@/components/tasks/TaskList';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
-import { Plus, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, MoreVertical, Trash2, Edit } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
+import { useProjects } from '@/hooks/useProjects';
 import { TaskWithDetails } from '@/types';
 
 export default function ProjectDetailPage() {
@@ -35,6 +37,7 @@ export default function ProjectDetailPage() {
   const [loadingProject, setLoadingProject] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -55,6 +58,9 @@ export default function ProjectDetailPage() {
     createTask,
     deleteTask,
   } = useTasks({ projectId });
+
+  // Project management
+  const { updateProject } = useProjects();
 
   // Fetch project data
   useEffect(() => {
@@ -169,6 +175,30 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleUpdateProject = async (
+    data: import('@/types').UpdateProjectRequest
+  ) => {
+    if (!project) return { success: false, error: 'No project to update' };
+
+    try {
+      const result = await updateProject(project.id, data);
+
+      if (result.success) {
+        // Update local project state
+        setProject(prev => (prev ? { ...prev, ...data } : null));
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error updating project:', error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to update project',
+      };
+    }
+  };
+
   const handleSaveField = async (
     field: keyof Project,
     value: string | number
@@ -280,6 +310,16 @@ export default function ProjectDetailPage() {
 
                   {showActions && (
                     <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                      <button
+                        onClick={() => {
+                          setIsEditModalOpen(true);
+                          setShowActions(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>Edit</span>
+                      </button>
                       <button
                         onClick={() => {
                           setIsDeleteModalOpen(true);
@@ -422,6 +462,14 @@ export default function ProjectDetailPage() {
         project={project}
         onConfirmDelete={handleConfirmDelete}
         isDeleting={isDeleting}
+      />
+
+      {/* Edit Project Modal */}
+      <ProjectModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        project={project}
+        onUpdateProject={handleUpdateProject}
       />
 
       {/* Create Task Modal */}

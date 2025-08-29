@@ -11,7 +11,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import { Project } from '@/types/index';
 import { getCurrencyByCode } from '@/lib/currencies';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
@@ -26,7 +26,6 @@ interface ProjectCardProps {
 
 export function ProjectCard({
   project,
-  onEdit,
   onDelete,
   onNavigate,
 }: ProjectCardProps) {
@@ -123,17 +122,6 @@ export function ProjectCard({
 
               {showActions && (
                 <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
-                  <button
-                    onClick={e => {
-                      e.stopPropagation(); // Prevent card click
-                      onEdit?.(project);
-                      setShowActions(false);
-                    }}
-                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit</span>
-                  </button>
                   <button
                     onClick={e => {
                       e.stopPropagation(); // Prevent card click
