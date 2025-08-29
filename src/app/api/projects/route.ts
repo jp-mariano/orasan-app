@@ -54,10 +54,23 @@ export async function POST(request: NextRequest) {
 
     const projectData: CreateProjectData = await request.json();
 
-    // Validate required fields
-    if (!projectData.name || projectData.name.trim() === '') {
+    // Enhanced validation with better error messages
+    const validationErrors: string[] = [];
+
+    if (!projectData.name?.trim()) {
+      validationErrors.push('Project name is required');
+    }
+
+    if (projectData.name && projectData.name.trim().length > 100) {
+      validationErrors.push('Project name must be less than 100 characters');
+    }
+
+    if (validationErrors.length > 0) {
       return NextResponse.json(
-        { error: 'Project name is required' },
+        {
+          error: 'Validation failed',
+          details: validationErrors,
+        },
         { status: 400 }
       );
     }
@@ -94,19 +107,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the project
+    // Create the project with clean data mapping
+    const projectInsertData = {
+      name: projectData.name.trim(),
+      description: projectData.description?.trim() || null,
+      client_name: projectData.client_name?.trim() || null,
+      rate_type: projectData.rate_type || null,
+      price: projectData.price || null,
+      currency_code: projectData.currency_code || null,
+      user_id: user.id,
+      status: 'new' as const,
+    };
+
     const { data: newProject, error: createError } = await supabase
       .from('projects')
-      .insert({
-        name: projectData.name.trim(),
-        description: projectData.description?.trim() || null,
-        client_name: projectData.client_name?.trim() || null,
-        rate_type: projectData.rate_type || null,
-        price: projectData.price || null,
-        currency_code: projectData.currency_code || 'USD',
-        user_id: user.id,
-        status: 'new',
-      })
+      .insert(projectInsertData)
       .select()
       .single();
 
