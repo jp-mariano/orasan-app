@@ -442,6 +442,19 @@ export default function ProjectDetailPage() {
               onSave={value => handleSaveField('status', value)}
               className="text-base px-4 py-2"
             />
+
+            {/* Created/Updated Info */}
+            <div className="pt-4 border-t">
+              <div className="text-sm text-gray-500 space-y-1">
+                <div>
+                  Created: {new Date(project.created_at).toLocaleDateString()}
+                </div>
+                <div>
+                  Last updated:{' '}
+                  {new Date(project.updated_at).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
