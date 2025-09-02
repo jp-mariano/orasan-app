@@ -1,5 +1,8 @@
 'use client';
 
+import { AlertTriangle, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, Trash2 } from 'lucide-react';
 import { TaskWithDetails } from '@/types';
 
 interface DeleteTaskModalProps {

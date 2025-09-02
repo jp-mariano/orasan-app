@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
+
+import { Clock, FolderOpen, Plus, TrendingUp } from 'lucide-react';
+
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
+import { ProjectCard } from '@/components/projects/ProjectCard';
+import { ProjectModal } from '@/components/projects/ProjectModal';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -10,13 +17,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Clock, FolderOpen, TrendingUp, Plus } from 'lucide-react';
 import { Header } from '@/components/ui/header';
+import { useAuth } from '@/contexts/auth-context';
 import { useProjects } from '@/hooks/useProjects';
-import { ProjectModal } from '@/components/projects/ProjectModal';
-import { ProjectCard } from '@/components/projects/ProjectCard';
-import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { Project } from '@/types/index';
 
 export default function DashboardPage() {

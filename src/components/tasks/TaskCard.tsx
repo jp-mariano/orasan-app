@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useEffect, useRef, useState } from 'react';
+
+import { MoreVertical, Pause, Play, Square, Trash2, User } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
-import { Trash2, Play, Pause, Square, User, MoreVertical } from 'lucide-react';
-import { TaskWithDetails } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import { formatDate } from '@/lib/utils';
+import { TaskWithDetails } from '@/types';
 
 interface TaskCardProps {
   task: TaskWithDetails;

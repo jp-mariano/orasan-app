@@ -1,6 +1,9 @@
 'use client';
 
-import { Clock, Shield, Zap, Users } from 'lucide-react';
+import Link from 'next/link';
+
+import { Clock, Shield, Users, Zap } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Link from 'next/link';
 
 export default function RegisterPage() {
   return (

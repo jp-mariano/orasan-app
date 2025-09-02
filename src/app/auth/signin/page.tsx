@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense, useState } from 'react';
+
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+
 import { Github, Mail, Twitter } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,

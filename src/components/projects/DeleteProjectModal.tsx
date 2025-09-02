@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertTriangle, Trash2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,7 +12,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Project } from '@/types/index';
-import { Trash2, AlertTriangle } from 'lucide-react';
 
 interface DeleteProjectModalProps {
   open: boolean;

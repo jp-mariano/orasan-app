@@ -1,4 +1,4 @@
-import { Project, Priority } from '@/types/index';
+import { Priority, Project } from '@/types/index';
 
 export const getStatusColor = (status: Project['status']) => {
   switch (status) {

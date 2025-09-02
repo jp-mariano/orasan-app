@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { TaskWithDetails } from '@/types';
-import { TaskCard } from './TaskCard';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { getPriorityBorderColor } from '@/lib/status';
+import { TaskWithDetails } from '@/types';
+
+import { TaskCard } from './TaskCard';
 
 interface TaskListProps {
   tasks: TaskWithDetails[];

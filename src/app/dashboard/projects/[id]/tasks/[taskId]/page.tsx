@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
-import { TaskWithDetails } from '@/types';
-import { Header } from '@/components/ui/header';
+
+import { Edit, MoreVertical, Trash2 } from 'lucide-react';
+
+import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,12 +17,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { InlineEdit } from '@/components/ui/inline-edit';
 import { ErrorDisplay } from '@/components/ui/error-display';
-import { Trash2, MoreVertical, Edit } from 'lucide-react';
-import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
-import { TaskModal } from '@/components/tasks/TaskModal';
+import { Header } from '@/components/ui/header';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/auth-context';
+import { TaskWithDetails } from '@/types';
 
 export default function ProjectTaskDetailPage() {
   const { user, loading } = useAuth();

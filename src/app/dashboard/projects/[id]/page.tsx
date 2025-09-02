@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/auth-context';
-import { Project } from '@/types/index';
-import { Header } from '@/components/ui/header';
+
+import { Edit, MoreVertical, Plus, Trash2 } from 'lucide-react';
+
+import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
+import { ProjectModal } from '@/components/projects/ProjectModal';
+import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { TaskList } from '@/components/tasks/TaskList';
+import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,20 +20,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-
-import { Label } from '@/components/ui/label';
-import { InlineEdit } from '@/components/ui/inline-edit';
-
 import { ErrorDisplay } from '@/components/ui/error-display';
-import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
-import { ProjectModal } from '@/components/projects/ProjectModal';
-import { TaskList } from '@/components/tasks/TaskList';
-import { TaskModal } from '@/components/tasks/TaskModal';
-import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
-import { Plus, MoreVertical, Trash2, Edit } from 'lucide-react';
-import { useTasks } from '@/hooks/useTasks';
+import { Header } from '@/components/ui/header';
+import { InlineEdit } from '@/components/ui/inline-edit';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/auth-context';
 import { useProjects } from '@/hooks/useProjects';
+import { useTasks } from '@/hooks/useTasks';
 import { TaskWithDetails } from '@/types';
+import { Project } from '@/types/index';
 
 export default function ProjectDetailPage() {
   const { user, loading } = useAuth();

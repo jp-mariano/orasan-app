@@ -1,17 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -20,18 +11,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  CreateProjectRequest,
-  UpdateProjectRequest,
-  Project,
-  RateType,
-  ProjectStatus,
-} from '@/types/index';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
 import {
-  convertRateTypeEmptyToNull,
   convertCurrencyEmptyToNull,
+  convertRateTypeEmptyToNull,
 } from '@/lib/utils';
+import {
+  CreateProjectRequest,
+  Project,
+  ProjectStatus,
+  RateType,
+  UpdateProjectRequest,
+} from '@/types/index';
 
 interface ProjectModalProps {
   open: boolean;

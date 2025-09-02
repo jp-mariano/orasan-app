@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from 'react';
+
 import { Check, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -12,14 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
 import {
-  getStatusColor,
-  getStatusLabel,
   getPriorityColor,
   getPriorityLabel,
+  getStatusColor,
+  getStatusLabel,
 } from '@/lib/status';
-import { Project, Priority } from '@/types/index';
+import { Priority, Project } from '@/types/index';
 
 interface InlineEditProps {
   value: string | null | undefined;

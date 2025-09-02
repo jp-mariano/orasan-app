@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+
 import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,8 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
 import { Header } from '@/components/ui/header';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function HomePage() {
   const { user } = useAuth();
