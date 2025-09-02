@@ -259,27 +259,77 @@ export function TaskModal({
             />
           </div>
 
-          {/* Status and Priority Row */}
+          {/* Due Date and Assignee Row */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Status - Only show in edit mode */}
-            {isEditMode && (
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={taskStatus} onValueChange={handleStatusChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+            {/* Due Date */}
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !formData.due_date && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.due_date
+                      ? format(new Date(formData.due_date), 'PPP')
+                      : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={
+                      formData.due_date
+                        ? new Date(formData.due_date)
+                        : undefined
+                    }
+                    onSelect={date =>
+                      handleInputChange('due_date', date?.toISOString())
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Assignee */}
+            <div className="space-y-2">
+              <Label htmlFor="assignee">Assignee</Label>
+              <Select
+                value={formData.assignee || 'none'}
+                onValueChange={value => handleInputChange('assignee', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignee (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No assignee</SelectItem>
+                  {currentUser && (
+                    <SelectItem value={currentUser.id}>
+                      {currentUser.user_metadata?.full_name ||
+                        currentUser.user_metadata?.name ||
+                        currentUser.email}{' '}
+                      (You)
+                    </SelectItem>
+                  )}
+                  {users
+                    .filter(user => user.id !== currentUser?.id)
+                    .map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name || user.email}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
+          {/* Priority and Status Row */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Priority */}
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
@@ -301,70 +351,25 @@ export function TaskModal({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Due Date */}
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !formData.due_date && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.due_date
-                    ? format(new Date(formData.due_date), 'PPP')
-                    : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={
-                    formData.due_date ? new Date(formData.due_date) : undefined
-                  }
-                  onSelect={date =>
-                    handleInputChange('due_date', date?.toISOString())
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Assignee */}
-          <div className="space-y-2">
-            <Label htmlFor="assignee">Assignee</Label>
-            <Select
-              value={formData.assignee || 'none'}
-              onValueChange={value => handleInputChange('assignee', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select assignee (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No assignee</SelectItem>
-                {currentUser && (
-                  <SelectItem value={currentUser.id}>
-                    {currentUser.user_metadata?.full_name ||
-                      currentUser.user_metadata?.name ||
-                      currentUser.email}{' '}
-                    (You)
-                  </SelectItem>
-                )}
-                {users
-                  .filter(user => user.id !== currentUser?.id)
-                  .map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name || user.email}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            {/* Status - Only show in edit mode */}
+            {isEditMode && (
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={taskStatus} onValueChange={handleStatusChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
