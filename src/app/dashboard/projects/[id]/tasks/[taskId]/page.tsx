@@ -275,7 +275,7 @@ export default function ProjectTaskDetailPage() {
               </Label>
               <InlineEdit
                 value={task.priority}
-                type="status"
+                type="priority"
                 onSave={value => handleSaveField('priority', value)}
                 className="text-gray-700"
               />

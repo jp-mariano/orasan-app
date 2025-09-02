@@ -13,12 +13,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { currencies } from '@/lib/currencies';
-import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { Project } from '@/types/index';
+import {
+  getStatusColor,
+  getStatusLabel,
+  getPriorityColor,
+  getPriorityLabel,
+} from '@/lib/status';
+import { Project, Priority } from '@/types/index';
 
 interface InlineEditProps {
   value: string | null | undefined;
-  type?: 'text' | 'textarea' | 'rate-type' | 'price-currency' | 'status';
+  type?:
+    | 'text'
+    | 'textarea'
+    | 'rate-type'
+    | 'price-currency'
+    | 'status'
+    | 'priority';
   placeholder?: string;
   className?: string;
   multiline?: boolean;
@@ -256,6 +267,42 @@ export function InlineEdit({
       );
     }
 
+    if (type === 'priority') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="urgent">Urgent</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center space-x-1 inline-edit-buttons">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+              tabIndex={0}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600"
+              tabIndex={0}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (multiline || type === 'textarea') {
       return (
         <div className="flex items-start space-x-2">
@@ -330,6 +377,18 @@ export function InlineEdit({
         className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Project['status'])} ${className}`}
       >
         {getStatusLabel(value as Project['status'])}
+      </div>
+    );
+  }
+
+  // For priority type, render as a styled badge
+  if (type === 'priority' && value) {
+    return (
+      <div
+        onClick={() => setIsEditing(true)}
+        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getPriorityColor(value as Priority)} ${className}`}
+      >
+        {getPriorityLabel(value as Priority)}
       </div>
     );
   }
