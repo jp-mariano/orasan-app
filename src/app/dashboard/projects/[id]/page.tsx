@@ -22,7 +22,7 @@ import { ErrorDisplay } from '@/components/ui/error-display';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectModal } from '@/components/projects/ProjectModal';
 import { TaskList } from '@/components/tasks/TaskList';
-import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
+import { TaskModal } from '@/components/tasks/TaskModal';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
 import { Plus, MoreVertical, Trash2, Edit } from 'lucide-react';
 import { useTasks } from '@/hooks/useTasks';
@@ -147,10 +147,19 @@ export default function ProjectDetailPage() {
 
   // Task management handlers
   const handleCreateTask = async (
-    taskData: import('@/types').CreateTaskRequest
+    taskData:
+      | import('@/types').CreateTaskRequest
+      | import('@/types').UpdateTaskRequest
   ) => {
     try {
-      await createTask(taskData);
+      if ('project_id' in taskData) {
+        // This is a CreateTaskRequest
+        await createTask(taskData as import('@/types').CreateTaskRequest);
+      } else {
+        // This is an UpdateTaskRequest - we shouldn't reach here in create mode
+        console.error('Unexpected UpdateTaskRequest in create mode');
+        throw new Error('Invalid task data for creation');
+      }
       // Task will be automatically added to the list via the hook
     } catch (error) {
       console.error('Error creating task:', error);
@@ -353,7 +362,7 @@ export default function ProjectDetailPage() {
                 <InlineEdit
                   value={project.name}
                   onSave={value => handleSaveField('name', value)}
-                  className="text-2xl font-bold text-gray-900"
+                  className="text-xl font-semibold"
                 />
               </div>
             </div>
@@ -507,7 +516,7 @@ export default function ProjectDetailPage() {
 
       {/* Create Task Modal */}
       {project && (
-        <CreateTaskModal
+        <TaskModal
           open={isCreateTaskModalOpen}
           onOpenChange={setIsCreateTaskModalOpen}
           project={project}

@@ -209,7 +209,7 @@ export default function ProjectTaskDetailPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl">Task Details</CardTitle>
+                <CardTitle>Task Details</CardTitle>
                 <CardDescription>
                   Manage task information and settings
                 </CardDescription>
