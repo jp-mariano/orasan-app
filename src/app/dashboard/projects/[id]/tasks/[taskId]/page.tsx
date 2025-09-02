@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { TaskWithDetails } from '@/types';
@@ -17,8 +17,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { ErrorDisplay } from '@/components/ui/error-display';
-import { Trash2 } from 'lucide-react';
+import { Trash2, MoreVertical, Edit } from 'lucide-react';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { TaskModal } from '@/components/tasks/TaskModal';
 
 export default function ProjectTaskDetailPage() {
   const { user, loading } = useAuth();
@@ -30,6 +31,9 @@ export default function ProjectTaskDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const actionsRef = useRef<HTMLDivElement>(null);
 
   const projectId = params.id as string;
   const taskId = params.taskId as string;
@@ -71,6 +75,23 @@ export default function ProjectTaskDetailPage() {
     }
   }, [user, loading, router]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        actionsRef.current &&
+        !actionsRef.current.contains(event.target as Node)
+      ) {
+        setShowActions(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleSaveField = async (field: string, value: string | number) => {
     if (!task) return;
 
@@ -111,6 +132,36 @@ export default function ProjectTaskDetailPage() {
 
   const handleDeleteTask = () => {
     setShowDeleteModal(true);
+  };
+
+  const handleUpdateTask = async (
+    taskData: import('@/types').UpdateTaskRequest
+  ) => {
+    if (!task) return;
+
+    try {
+      const response = await fetch(
+        `/api/projects/${projectId}/tasks/${taskId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(taskData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to update task');
+      }
+
+      const data = await response.json();
+      setTask(data.task);
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error('Error updating task:', err);
+      throw err;
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -214,15 +265,43 @@ export default function ProjectTaskDetailPage() {
                   Manage task information and settings
                 </CardDescription>
               </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDeleteTask}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Task
-              </Button>
+              <div className="flex items-center space-x-2">
+                <div className="relative" ref={actionsRef}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowActions(!showActions)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+
+                  {showActions && (
+                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                      <button
+                        onClick={() => {
+                          setIsEditModalOpen(true);
+                          setShowActions(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                      >
+                        <Edit className="h-4 w-4" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleDeleteTask();
+                          setShowActions(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </CardHeader>
 
@@ -329,6 +408,24 @@ export default function ProjectTaskDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Task Modal */}
+      {task && (
+        <TaskModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          project={{
+            id: projectId,
+            name: task.project?.name || 'Unknown Project',
+            status: 'new',
+            user_id: user?.id || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }}
+          task={task}
+          onSubmit={handleUpdateTask}
+        />
+      )}
 
       {/* Delete Task Modal */}
       <DeleteTaskModal
