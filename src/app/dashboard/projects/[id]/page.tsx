@@ -291,13 +291,6 @@ export default function ProjectDetailPage() {
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
-                <InlineEdit
-                  value={project.status}
-                  type="status"
-                  onSave={value => handleSaveField('status', value)}
-                  className="text-base px-4 py-2"
-                />
-
                 <div className="relative" ref={actionsRef}>
                   <Button
                     variant="ghost"
@@ -428,6 +421,13 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
             ) : null}
+
+            <InlineEdit
+              value={project.status}
+              type="status"
+              onSave={value => handleSaveField('status', value)}
+              className="text-base px-4 py-2"
+            />
           </CardContent>
         </Card>
 
