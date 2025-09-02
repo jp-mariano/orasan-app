@@ -13,11 +13,16 @@ import { formatDate } from '@/lib/utils';
 interface TaskCardProps {
   task: TaskWithDetails;
   onDelete?: (task: TaskWithDetails) => void;
+  onUpdate?: (
+    taskId: string,
+    updates: Partial<TaskWithDetails>
+  ) => Promise<void>;
 }
 
-export function TaskCard({ task, onDelete }: TaskCardProps) {
+export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -49,6 +54,20 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
 
   const handleDelete = () => {
     onDelete?.(task);
+  };
+
+  const handleMarkAsCompleted = async () => {
+    if (!onUpdate || task.status === 'completed') return;
+
+    try {
+      setIsUpdating(true);
+      await onUpdate(task.id, { status: 'completed' });
+      setShowActions(false);
+    } catch (error) {
+      console.error('Failed to mark task as completed:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -110,9 +129,26 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
 
               {showActions && (
                 <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[140px]">
+                  {/* Mark as Completed - Only show for non-completed tasks */}
+                  {task.status !== 'completed' && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleMarkAsCompleted();
+                      }}
+                      disabled={isUpdating}
+                      className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>
+                        {isUpdating ? 'Marking...' : 'Mark as Completed'}
+                      </span>
+                    </button>
+                  )}
+
                   {/* Time Tracking Actions - Only show for non-completed tasks */}
                   {task.status !== 'completed' && (
                     <>
+                      <div className="border-t my-1"></div>
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -147,12 +183,11 @@ export function TaskCard({ task, onDelete }: TaskCardProps) {
                           <span>Stop Timer</span>
                         </button>
                       )}
-
-                      <div className="border-t my-1"></div>
                     </>
                   )}
 
                   {/* Delete Action */}
+                  <div className="border-t my-1"></div>
                   <button
                     onClick={e => {
                       e.stopPropagation();

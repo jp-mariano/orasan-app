@@ -56,6 +56,7 @@ export default function ProjectDetailPage() {
     tasks,
     loading: tasksLoading,
     createTask,
+    updateTask,
     deleteTask,
   } = useTasks({ projectId });
 
@@ -159,6 +160,19 @@ export default function ProjectDetailPage() {
 
   const handleDeleteTask = (task: TaskWithDetails) => {
     setTaskToDelete(task);
+  };
+
+  const handleUpdateTask = async (
+    taskId: string,
+    updates: Partial<TaskWithDetails>
+  ) => {
+    try {
+      await updateTask(taskId, updates);
+      // Task will be automatically updated in the list via the hook
+    } catch (error) {
+      console.error('Error updating task:', error);
+      throw error;
+    }
   };
 
   const handleConfirmDeleteTask = async () => {
@@ -450,6 +464,7 @@ export default function ProjectDetailPage() {
               tasks={tasks}
               loading={tasksLoading}
               onDelete={handleDeleteTask}
+              onUpdate={handleUpdateTask}
             />
           </CardContent>
         </Card>

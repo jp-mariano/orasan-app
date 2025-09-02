@@ -22,14 +22,17 @@ interface ProjectCardProps {
   onEdit?: (project: Project) => void;
   onDelete?: (project: Project) => void;
   onNavigate?: (project: Project) => void;
+  onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
 }
 
 export function ProjectCard({
   project,
   onDelete,
   onNavigate,
+  onUpdate,
 }: ProjectCardProps) {
   const [showActions, setShowActions] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   // Auto-close actions menu when clicking outside
@@ -54,6 +57,20 @@ export function ProjectCard({
 
   const handleCardClick = () => {
     onNavigate?.(project);
+  };
+
+  const handleMarkAsCompleted = async () => {
+    if (!onUpdate || project.status === 'completed') return;
+
+    try {
+      setIsUpdating(true);
+      await onUpdate(project.id, { status: 'completed' });
+      setShowActions(false);
+    } catch (error) {
+      console.error('Failed to mark project as completed:', error);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const formatPrice = (
@@ -122,6 +139,24 @@ export function ProjectCard({
 
               {showActions && (
                 <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                  {/* Mark as Completed - Only show for non-completed projects */}
+                  {project.status !== 'completed' && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleMarkAsCompleted();
+                      }}
+                      disabled={isUpdating}
+                      className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>
+                        {isUpdating ? 'Marking...' : 'Mark as Completed'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Delete Action */}
+                  <div className="border-t my-1"></div>
                   <button
                     onClick={e => {
                       e.stopPropagation(); // Prevent card click

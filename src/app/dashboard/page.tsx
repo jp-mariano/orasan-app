@@ -36,6 +36,7 @@ export default function DashboardPage() {
     projectCount,
     canCreateProject,
     createProject,
+    updateProject,
     deleteProject,
   } = useProjects();
 
@@ -93,6 +94,21 @@ export default function DashboardPage() {
 
   const handleNavigateToProject = (project: Project) => {
     router.push(`/dashboard/projects/${project.id}`);
+  };
+
+  const handleUpdateProject = async (
+    projectId: string,
+    updates: Partial<Project>
+  ) => {
+    try {
+      const result = await updateProject(projectId, updates);
+      if (!result.success) {
+        console.error('Failed to update project:', result.error);
+      }
+    } catch (error) {
+      console.error('Error updating project:', error);
+      throw error;
+    }
   };
 
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
@@ -258,6 +274,7 @@ export default function DashboardPage() {
                   project={project}
                   onDelete={handleDeleteProject}
                   onNavigate={handleNavigateToProject}
+                  onUpdate={handleUpdateProject}
                 />
               ))}
             </div>

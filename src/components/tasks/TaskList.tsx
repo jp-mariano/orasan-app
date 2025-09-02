@@ -12,6 +12,10 @@ interface TaskListProps {
   tasks: TaskWithDetails[];
   loading?: boolean;
   onDelete?: (task: TaskWithDetails) => void;
+  onUpdate?: (
+    taskId: string,
+    updates: Partial<TaskWithDetails>
+  ) => Promise<void>;
 }
 
 interface PriorityGroup {
@@ -21,7 +25,12 @@ interface PriorityGroup {
   expanded: boolean;
 }
 
-export function TaskList({ tasks, loading = false, onDelete }: TaskListProps) {
+export function TaskList({
+  tasks,
+  loading = false,
+  onDelete,
+  onUpdate,
+}: TaskListProps) {
   const [expandedPriorities, setExpandedPriorities] = useState<Set<string>>(
     new Set(['urgent'])
   );
@@ -184,7 +193,12 @@ export function TaskList({ tasks, loading = false, onDelete }: TaskListProps) {
             {isExpanded && (
               <div className="space-y-0.5 ml-6">
                 {priorityTasks.map(task => (
-                  <TaskCard key={task.id} task={task} onDelete={onDelete} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onDelete={onDelete}
+                    onUpdate={onUpdate}
+                  />
                 ))}
               </div>
             )}
@@ -238,7 +252,12 @@ export function TaskList({ tasks, loading = false, onDelete }: TaskListProps) {
             {isCompletedExpanded && (
               <div className="space-y-0.5 ml-6">
                 {completedTasks.map(task => (
-                  <TaskCard key={task.id} task={task} onDelete={onDelete} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onDelete={onDelete}
+                    onUpdate={onUpdate}
+                  />
                 ))}
               </div>
             )}
