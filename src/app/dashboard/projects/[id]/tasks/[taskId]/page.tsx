@@ -229,7 +229,9 @@ export default function ProjectTaskDetailPage() {
           <CardContent className="space-y-6">
             {/* Task Name */}
             <div className="space-y-2">
-              <Label>Task Name</Label>
+              <Label className="text-sm font-medium text-gray-500">
+                Task Name
+              </Label>
               <InlineEdit
                 value={task.name}
                 onSave={value => handleSaveField('name', value)}
@@ -238,20 +240,26 @@ export default function ProjectTaskDetailPage() {
             </div>
 
             {/* Description */}
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <InlineEdit
-                value={task.description || ''}
-                onSave={value => handleSaveField('description', value)}
-                multiline
-                placeholder="Add a description..."
-                className="text-gray-700"
-              />
-            </div>
+            {task.description ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Description
+                </Label>
+                <InlineEdit
+                  value={task.description}
+                  onSave={value => handleSaveField('description', value)}
+                  multiline
+                  placeholder="Add a description..."
+                  className="text-gray-700"
+                />
+              </div>
+            ) : null}
 
             {/* Status */}
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-sm font-medium text-gray-500">
+                Status
+              </Label>
               <InlineEdit
                 value={task.status}
                 type="status"
@@ -262,7 +270,9 @@ export default function ProjectTaskDetailPage() {
 
             {/* Priority */}
             <div className="space-y-2">
-              <Label>Priority</Label>
+              <Label className="text-sm font-medium text-gray-500">
+                Priority
+              </Label>
               <InlineEdit
                 value={task.priority}
                 type="status"
@@ -271,31 +281,43 @@ export default function ProjectTaskDetailPage() {
               />
             </div>
 
-            {/* Due Date */}
-            <div className="space-y-2">
-              <Label>Due Date</Label>
-              <InlineEdit
-                value={task.due_date || ''}
-                onSave={value => handleSaveField('due_date', value)}
-                placeholder="Set due date (YYYY-MM-DD)..."
-                className="text-gray-700"
-              />
-            </div>
+            {/* Due Date - Only show if it has a value */}
+            {task.due_date ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Due Date
+                </Label>
+                <InlineEdit
+                  value={task.due_date}
+                  onSave={value => handleSaveField('due_date', value)}
+                  placeholder="Set due date (YYYY-MM-DD)..."
+                  className="text-gray-700"
+                />
+              </div>
+            ) : null}
 
-            {/* Assignee */}
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <InlineEdit
-                value={task.assignee || ''}
-                onSave={value => handleSaveField('assignee', value)}
-                placeholder="Unassigned"
-                className="text-gray-700"
-              />
-            </div>
+            {/* Assignee - Only show if it has a value */}
+            {task.assignee ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Assignee
+                </Label>
+                <InlineEdit
+                  value={task.assignee}
+                  onSave={value => handleSaveField('assignee', value)}
+                  placeholder="Unassigned"
+                  className="text-gray-700"
+                />
+              </div>
+            ) : null}
 
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">
               <div className="text-sm text-gray-500 space-y-1">
+                <div>
+                  <span className="font-medium">Project:</span>{' '}
+                  {task.project?.name || 'Unknown Project'}
+                </div>
                 <div>
                   Created: {new Date(task.created_at).toLocaleDateString()}
                 </div>
