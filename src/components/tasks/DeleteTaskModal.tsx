@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { TaskWithDetails } from '@/types';
 
 interface DeleteTaskModalProps {
@@ -40,61 +40,35 @@ export function DeleteTaskModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-red-100 rounded-lg">
               <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
-            <div>
-              <DialogTitle>Delete Task</DialogTitle>
-              <DialogDescription>
-                This action cannot be undone.
-              </DialogDescription>
-            </div>
+            <DialogTitle>Delete Task</DialogTitle>
           </div>
+          <DialogDescription>
+            Are you sure you want to delete &quot;{task.name}&quot;? This action
+            cannot be undone.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-lg bg-gray-50 p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Task Details</h4>
-            <div className="space-y-2 text-sm text-gray-600">
-              <div>
-                <span className="font-medium">Name:</span> {task.name}
-              </div>
-              {task.project?.name && (
-                <div>
-                  <span className="font-medium">Project:</span>{' '}
-                  {task.project.name}
-                </div>
-              )}
-              {task.description && (
-                <div>
-                  <span className="font-medium">Description:</span>{' '}
-                  {task.description}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-lg bg-red-50 p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-red-800">
-                <p className="font-medium mb-1">Warning</p>
-                <p>
-                  Deleting this task will also remove all associated time
-                  entries and cannot be undone. Make sure you want to proceed
-                  with this action.
-                </p>
-              </div>
-            </div>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-700">
+              <strong>Warning:</strong> Deleting this task will also remove:
+            </p>
+            <ul className="text-sm text-red-600 mt-2 ml-4 space-y-1">
+              <li>• All associated time entries</li>
+              <li>• Task history and data</li>
+              <li>• Any ongoing timers</li>
+            </ul>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex gap-2">
           <Button
-            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isDeleting}
@@ -102,13 +76,21 @@ export function DeleteTaskModal({
             Cancel
           </Button>
           <Button
-            type="button"
             variant="destructive"
             onClick={handleConfirmDelete}
             disabled={isDeleting}
           >
-            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Delete Task
+            {isDeleting ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Task
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
