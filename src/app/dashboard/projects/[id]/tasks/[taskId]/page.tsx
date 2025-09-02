@@ -337,32 +337,6 @@ export default function ProjectTaskDetailPage() {
               </div>
             ) : null}
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-500">
-                Status
-              </Label>
-              <InlineEdit
-                value={task.status}
-                type="status"
-                onSave={value => handleSaveField('status', value)}
-                className="text-gray-700"
-              />
-            </div>
-
-            {/* Priority */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-500">
-                Priority
-              </Label>
-              <InlineEdit
-                value={task.priority}
-                type="priority"
-                onSave={value => handleSaveField('priority', value)}
-                className="text-gray-700"
-              />
-            </div>
-
             {/* Due Date - Only show if it has a value */}
             {task.due_date ? (
               <div className="space-y-2">
@@ -392,6 +366,32 @@ export default function ProjectTaskDetailPage() {
                 />
               </div>
             ) : null}
+
+            {/* Priority */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-500">
+                Priority
+              </Label>
+              <InlineEdit
+                value={task.priority}
+                type="priority"
+                onSave={value => handleSaveField('priority', value)}
+                className="text-gray-700"
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-500">
+                Status
+              </Label>
+              <InlineEdit
+                value={task.status}
+                type="status"
+                onSave={value => handleSaveField('status', value)}
+                className="text-gray-700"
+              />
+            </div>
 
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">
