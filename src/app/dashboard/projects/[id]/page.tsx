@@ -436,12 +436,17 @@ export default function ProjectDetailPage() {
               </div>
             ) : null}
 
-            <InlineEdit
-              value={project.status}
-              type="status"
-              onSave={value => handleSaveField('status', value)}
-              className="text-base px-4 py-2"
-            />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-500 block">
+                Status
+              </Label>
+              <InlineEdit
+                value={project.status}
+                type="status"
+                onSave={value => handleSaveField('status', value)}
+                className="text-base"
+              />
+            </div>
 
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">

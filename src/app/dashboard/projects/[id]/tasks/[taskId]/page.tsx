@@ -249,14 +249,6 @@ export default function ProjectTaskDetailPage() {
               />
             </div>
 
-            {/* Project */}
-            <div className="space-y-2">
-              <Label>Project</Label>
-              <div className="text-gray-700">
-                {task.project?.name || 'Unknown Project'}
-              </div>
-            </div>
-
             {/* Status */}
             <div className="space-y-2">
               <Label>Status</Label>
