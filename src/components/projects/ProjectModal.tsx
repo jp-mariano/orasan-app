@@ -25,6 +25,7 @@ import {
   UpdateProjectRequest,
   Project,
   RateType,
+  ProjectStatus,
 } from '@/types/index';
 import { currencies } from '@/lib/currencies';
 import {
@@ -58,7 +59,9 @@ export function ProjectModal({
   const isEditMode = !!project;
 
   // Default values for create mode (these are placeholders, not actual values)
-  const defaultFormData = useMemo<CreateProjectRequest>(
+  const defaultFormData = useMemo<
+    CreateProjectRequest & { status?: ProjectStatus }
+  >(
     () => ({
       name: '',
       description: '',
@@ -66,6 +69,7 @@ export function ProjectModal({
       rate_type: '' as RateType, // Empty string for placeholder
       price: 0,
       currency_code: '', // Empty string for placeholder
+      status: 'new', // Default status for new projects
     }),
     []
   );
@@ -83,8 +87,9 @@ export function ProjectModal({
   // Track which fields have been modified by the user
   const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
 
-  const [formData, setFormData] =
-    useState<CreateProjectRequest>(defaultFormData);
+  const [formData, setFormData] = useState<
+    CreateProjectRequest & { status?: ProjectStatus }
+  >(defaultFormData);
 
   // Check if there are any changes in edit mode
   const hasChanges = useMemo(() => {
@@ -104,6 +109,7 @@ export function ProjectModal({
         rate_type: project.rate_type || null,
         price: project.price || 0,
         currency_code: project.currency_code || '',
+        status: project.status, // Include status from existing project
       });
       // In edit mode, start with no modified fields (user hasn't made changes yet)
       setModifiedFields(new Set());
@@ -146,6 +152,7 @@ export function ProjectModal({
         currency_code: shouldSubmitField('currency_code')
           ? convertCurrencyEmptyToNull(formData.currency_code)
           : undefined,
+        status: shouldSubmitField('status') ? formData.status : undefined,
       };
 
       result = await onUpdateProject(updateData);
@@ -191,7 +198,7 @@ export function ProjectModal({
   };
 
   const handleInputChange = (
-    field: keyof CreateProjectRequest,
+    field: keyof (CreateProjectRequest & { status?: ProjectStatus }),
     value: string | number | undefined
   ) => {
     setFormData(prev => ({
@@ -337,6 +344,29 @@ export function ProjectModal({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Status field - only show in edit mode */}
+          {isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status || undefined}
+                onValueChange={value =>
+                  handleInputChange('status', value as ProjectStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <DialogFooter className="flex gap-2">
             <Button
