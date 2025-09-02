@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPriorityBorderColor } from '@/lib/status';
+import { getPriorityBorderColor } from '@/lib/priority';
 import { TaskWithDetails } from '@/types';
 
 import { TaskCard } from './TaskCard';

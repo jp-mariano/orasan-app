@@ -15,12 +15,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
-import {
-  getPriorityColor,
-  getPriorityLabel,
-  getStatusColor,
-  getStatusLabel,
-} from '@/lib/status';
+import { getPriorityColor, getPriorityLabel } from '@/lib/priority';
+import { getStatusColor, getStatusLabel } from '@/lib/status';
 import { Priority, Project } from '@/types/index';
 
 interface InlineEditProps {

@@ -31,6 +31,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
+import { getPriorityOptions } from '@/lib/priority';
+import { getStatusOptions } from '@/lib/status';
 import { cn } from '@/lib/utils';
 import {
   CreateTaskRequest,
@@ -203,19 +205,9 @@ export function TaskModal({
     }
   };
 
-  const priorityOptions: { value: Priority; label: string; color: string }[] = [
-    { value: 'urgent', label: 'Urgent', color: 'text-red-600' },
-    { value: 'high', label: 'High', color: 'text-orange-600' },
-    { value: 'medium', label: 'Medium', color: 'text-blue-600' },
-    { value: 'low', label: 'Low', color: 'text-gray-600' },
-  ];
+  const priorityOptions = getPriorityOptions();
 
-  const statusOptions: { value: TaskStatus; label: string }[] = [
-    { value: 'new', label: 'New' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'on_hold', label: 'On Hold' },
-    { value: 'completed', label: 'Completed' },
-  ];
+  const statusOptions = getStatusOptions();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -365,7 +357,7 @@ export function TaskModal({
                   <SelectContent>
                     {statusOptions.map(option => (
                       <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                        <span className={option.color}>{option.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
