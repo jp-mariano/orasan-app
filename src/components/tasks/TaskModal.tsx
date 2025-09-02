@@ -282,9 +282,12 @@ export function TaskModal({
                         : undefined
                     }
                     onSelect={date =>
-                      handleInputChange('due_date', date?.toISOString())
+                      handleInputChange(
+                        'due_date',
+                        date ? date.toLocaleDateString('en-CA') : undefined
+                      )
                     }
-                    initialFocus
+                    autoFocus
                   />
                 </PopoverContent>
               </Popover>
