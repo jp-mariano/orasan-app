@@ -17,7 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
 import { getPriorityColor, getPriorityLabel } from '@/lib/priority';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { Priority, Status } from '@/types/index';
+import { getAssigneeDisplayName } from '@/lib/utils';
+import { Priority, Status, User } from '@/types/index';
 
 interface InlineEditProps {
   value: string | null | undefined;
@@ -27,15 +28,21 @@ interface InlineEditProps {
     | 'rate-type'
     | 'price-currency'
     | 'status'
-    | 'priority';
+    | 'priority'
+    | 'assignee';
   placeholder?: string;
   className?: string;
   multiline?: boolean;
   rows?: number;
-  onSave: (value: string | number) => void;
+  onSave: (value: string | number | null) => void;
   projectData?: {
     price?: number | null;
     currency_code?: string | null;
+  };
+  assigneeData?: {
+    users: User[];
+    currentUserId?: string;
+    assigneeUser?: { name?: string; email: string };
   };
 }
 
@@ -48,9 +55,15 @@ export function InlineEdit({
   rows = 3,
   onSave,
   projectData,
+  assigneeData,
 }: InlineEditProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value || '');
+  const [editValue, setEditValue] = useState(() => {
+    if (type === 'assignee') {
+      return value || 'none';
+    }
+    return value || '';
+  });
 
   // Local state for price-currency type
   const [localCurrency, setLocalCurrency] = useState(() => {
@@ -89,6 +102,9 @@ export function InlineEdit({
         } else {
           return;
         }
+      } else if (type === 'assignee') {
+        // For assignee, convert "none" to null for unassigned
+        onSave(editValue === 'none' ? null : editValue);
       } else {
         onSave(editValue);
       }
@@ -97,7 +113,11 @@ export function InlineEdit({
   };
 
   const handleCancel = () => {
-    setEditValue(value || '');
+    if (type === 'assignee') {
+      setEditValue(value || 'none');
+    } else {
+      setEditValue(value || '');
+    }
     // Reset local states for price-currency
     if (projectData) {
       setLocalCurrency(projectData.currency_code || 'USD');
@@ -301,6 +321,48 @@ export function InlineEdit({
       );
     }
 
+    if (type === 'assignee') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Select value={editValue} onValueChange={setEditValue}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No assignee</SelectItem>
+              {assigneeData?.users.map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {getAssigneeDisplayName(
+                    { name: user.name, email: user.email },
+                    assigneeData.currentUserId,
+                    user.id
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center space-x-1 inline-edit-buttons">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+              tabIndex={0}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600"
+              tabIndex={0}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (multiline || type === 'textarea') {
       return (
         <div className="flex items-start space-x-2">
@@ -389,6 +451,26 @@ export function InlineEdit({
         {getPriorityLabel(value as Priority)}
       </div>
     );
+  }
+
+  // For assignee type, render as clickable text
+  if (type === 'assignee' && value && assigneeData?.assigneeUser) {
+    const displayName = getAssigneeDisplayName(
+      assigneeData.assigneeUser,
+      assigneeData.currentUserId,
+      value
+    );
+
+    if (displayName) {
+      return (
+        <div
+          onClick={() => setIsEditing(true)}
+          className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
+        >
+          {displayName}
+        </div>
+      );
+    }
   }
 
   return (

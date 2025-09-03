@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { getPriorityOptions } from '@/lib/priority';
 import { getStatusOptions } from '@/lib/status';
-import { cn } from '@/lib/utils';
+import { cn, getAssigneeDisplayName } from '@/lib/utils';
 import {
   CreateTaskRequest,
   Priority,
@@ -136,7 +136,7 @@ export function TaskModal({
     // Prepare task data, handling the "none" assignee value
     const taskData = {
       ...formData,
-      assignee: formData.assignee === 'none' ? undefined : formData.assignee,
+      assignee: formData.assignee === 'none' ? null : formData.assignee,
     };
 
     // Add status for edit mode
@@ -307,17 +307,26 @@ export function TaskModal({
                   <SelectItem value="none">No assignee</SelectItem>
                   {currentUser && (
                     <SelectItem value={currentUser.id}>
-                      {currentUser.user_metadata?.full_name ||
-                        currentUser.user_metadata?.name ||
-                        currentUser.email}{' '}
-                      (You)
+                      {getAssigneeDisplayName(
+                        {
+                          name:
+                            currentUser.user_metadata?.full_name ||
+                            currentUser.user_metadata?.name,
+                          email: currentUser.email || '',
+                        },
+                        currentUser.id,
+                        currentUser.id
+                      )}
                     </SelectItem>
                   )}
                   {users
                     .filter(user => user.id !== currentUser?.id)
                     .map(user => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.name || user.email}
+                        {getAssigneeDisplayName({
+                          name: user.name,
+                          email: user.email,
+                        })}
                       </SelectItem>
                     ))}
                 </SelectContent>

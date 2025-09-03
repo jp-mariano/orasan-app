@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getAssigneeDisplayName } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
 interface TaskCardProps {
@@ -102,9 +102,7 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
               {task.assignee_user && (
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3" />
-                  <span>
-                    {task.assignee_user.name || task.assignee_user.email}
-                  </span>
+                  <span>{getAssigneeDisplayName(task.assignee_user)}</span>
                 </div>
               )}
             </div>

@@ -122,7 +122,7 @@ export interface CreateTaskRequest {
   project_id: string;
   priority?: Priority;
   due_date?: string;
-  assignee?: string;
+  assignee?: string | null;
 }
 
 export interface UpdateTaskRequest {
@@ -131,7 +131,7 @@ export interface UpdateTaskRequest {
   status?: TaskStatus;
   priority?: Priority;
   due_date?: string;
-  assignee?: string;
+  assignee?: string | null;
 }
 
 export interface CreateTimeEntryRequest {

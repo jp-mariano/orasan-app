@@ -95,7 +95,10 @@ export default function ProjectTaskDetailPage() {
     };
   }, []);
 
-  const handleSaveField = async (field: string, value: string | number) => {
+  const handleSaveField = async (
+    field: string,
+    value: string | number | null
+  ) => {
     if (!task) return;
 
     try {
@@ -352,17 +355,35 @@ export default function ProjectTaskDetailPage() {
               </div>
             ) : null}
 
-            {/* Assignee - Only show if it has a value */}
-            {task.assignee ? (
+            {/* Assignee - Only show if it has a value and assignee_user data */}
+            {task.assignee && task.assignee_user ? (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">
                   Assignee
                 </Label>
                 <InlineEdit
                   value={task.assignee}
+                  type="assignee"
                   onSave={value => handleSaveField('assignee', value)}
                   placeholder="Unassigned"
                   className="text-gray-700"
+                  assigneeData={{
+                    users: user
+                      ? [
+                          {
+                            id: user.id,
+                            email: user.email || '',
+                            name:
+                              user.user_metadata?.full_name ||
+                              user.user_metadata?.name,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                          },
+                        ]
+                      : [],
+                    currentUserId: user?.id,
+                    assigneeUser: task.assignee_user,
+                  }}
                 />
               </div>
             ) : null}

@@ -225,7 +225,7 @@ export default function ProjectDetailPage() {
 
   const handleSaveField = async (
     field: keyof Project,
-    value: string | number
+    value: string | number | null
   ) => {
     if (!project) return;
 
@@ -521,7 +521,7 @@ export default function ProjectDetailPage() {
           open={isCreateTaskModalOpen}
           onOpenChange={setIsCreateTaskModalOpen}
           project={project}
-          users={[]} // TODO: Fetch users for assignee selection
+          users={[]} // Currently only supports current user assignment
           onSubmit={handleCreateTask}
         />
       )}

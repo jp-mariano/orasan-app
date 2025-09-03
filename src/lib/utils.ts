@@ -124,3 +124,26 @@ export function convertCurrencyEmptyToNull(
 ): string | null | undefined {
   return convertEmptyToNull(value);
 }
+
+/**
+ * Gets the display name for an assignee user
+ * @param assigneeUser - The assignee user object with name and email
+ * @param currentUserId - The current user's ID to add "(You)" suffix
+ * @returns The display name or null if no assignee
+ */
+export function getAssigneeDisplayName(
+  assigneeUser?: { name?: string; email: string },
+  currentUserId?: string,
+  assigneeId?: string
+): string | null {
+  if (!assigneeUser) return null;
+
+  const displayName = assigneeUser.name || assigneeUser.email;
+
+  // Add "(You)" suffix if this is the current user
+  if (currentUserId && assigneeId && currentUserId === assigneeId) {
+    return `${displayName} (You)`;
+  }
+
+  return displayName;
+}
