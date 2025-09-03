@@ -68,3 +68,27 @@ export const getPriorityOptions = () => [
     color: 'text-gray-600',
   },
 ];
+
+// Helper function to get priority groups for TaskList component
+export const getPriorityGroups = () => [
+  {
+    priority: 'urgent' as Priority,
+    label: 'Urgent',
+    color: 'text-red-600',
+  },
+  {
+    priority: 'high' as Priority,
+    label: 'High Priority',
+    color: 'text-orange-600',
+  },
+  {
+    priority: 'medium' as Priority,
+    label: 'Medium Priority',
+    color: 'text-blue-600',
+  },
+  {
+    priority: 'low' as Priority,
+    label: 'Low Priority',
+    color: 'text-gray-600',
+  },
+];

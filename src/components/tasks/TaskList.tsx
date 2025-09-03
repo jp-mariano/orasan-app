@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { getPriorityBorderColor } from '@/lib/priority';
+import { getPriorityBorderColor, getPriorityGroups } from '@/lib/priority';
 import { TaskWithDetails } from '@/types';
 
 import { TaskCard } from './TaskCard';
@@ -21,13 +21,6 @@ interface TaskListProps {
   ) => Promise<void>;
 }
 
-interface PriorityGroup {
-  priority: 'urgent' | 'high' | 'medium' | 'low';
-  label: string;
-  color: string;
-  expanded: boolean;
-}
-
 export function TaskList({
   tasks,
   loading = false,
@@ -39,33 +32,11 @@ export function TaskList({
   );
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
 
-  // Define priority groups with their properties
-  const priorityGroups: PriorityGroup[] = [
-    {
-      priority: 'urgent',
-      label: 'Urgent',
-      color: 'text-red-600',
-      expanded: expandedPriorities.has('urgent'),
-    },
-    {
-      priority: 'high',
-      label: 'High Priority',
-      color: 'text-orange-600',
-      expanded: expandedPriorities.has('high'),
-    },
-    {
-      priority: 'medium',
-      label: 'Medium Priority',
-      color: 'text-blue-600',
-      expanded: expandedPriorities.has('medium'),
-    },
-    {
-      priority: 'low',
-      label: 'Low Priority',
-      color: 'text-gray-600',
-      expanded: expandedPriorities.has('low'),
-    },
-  ];
+  // Get priority groups from our source of truth
+  const priorityGroups = getPriorityGroups().map(group => ({
+    ...group,
+    expanded: expandedPriorities.has(group.priority),
+  }));
 
   const togglePriority = (priority: string) => {
     setExpandedPriorities(prev => {
