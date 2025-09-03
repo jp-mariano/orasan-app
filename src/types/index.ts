@@ -1,6 +1,7 @@
 // Custom enum types matching our database schema
-export type ProjectStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
-export type TaskStatus = 'new' | 'on_hold' | 'in_progress' | 'completed';
+export type Status = 'new' | 'on_hold' | 'in_progress' | 'completed';
+export type ProjectStatus = Status;
+export type TaskStatus = Status;
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type RateType = 'hourly' | 'monthly' | 'fixed';
 

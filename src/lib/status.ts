@@ -1,6 +1,6 @@
-import { Project } from '@/types/index';
+import { Status } from '@/types/index';
 
-export const getStatusColor = (status: Project['status']) => {
+export const getStatusColor = (status: Status) => {
   switch (status) {
     case 'new':
       return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -15,7 +15,7 @@ export const getStatusColor = (status: Project['status']) => {
   }
 };
 
-export const getStatusLabel = (status: Project['status']) => {
+export const getStatusLabel = (status: Status) => {
   switch (status) {
     case 'new':
       return 'New';
@@ -33,22 +33,22 @@ export const getStatusLabel = (status: Project['status']) => {
 // Helper function to get status options for select components
 export const getStatusOptions = () => [
   {
-    value: 'new' as Project['status'],
+    value: 'new' as Status,
     label: getStatusLabel('new'),
     color: 'text-blue-600',
   },
   {
-    value: 'in_progress' as Project['status'],
+    value: 'in_progress' as Status,
     label: getStatusLabel('in_progress'),
     color: 'text-green-600',
   },
   {
-    value: 'on_hold' as Project['status'],
+    value: 'on_hold' as Status,
     label: getStatusLabel('on_hold'),
     color: 'text-yellow-600',
   },
   {
-    value: 'completed' as Project['status'],
+    value: 'completed' as Status,
     label: getStatusLabel('completed'),
     color: 'text-gray-600',
   },

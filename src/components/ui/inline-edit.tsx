@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
 import { getPriorityColor, getPriorityLabel } from '@/lib/priority';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { Priority, Project } from '@/types/index';
+import { Priority, Status } from '@/types/index';
 
 interface InlineEditProps {
   value: string | null | undefined;
@@ -372,9 +372,9 @@ export function InlineEdit({
     return (
       <div
         onClick={() => setIsEditing(true)}
-        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Project['status'])} ${className}`}
+        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Status)} ${className}`}
       >
-        {getStatusLabel(value as Project['status'])}
+        {getStatusLabel(value as Status)}
       </div>
     );
   }
