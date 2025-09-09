@@ -143,3 +143,58 @@ export function getAssigneeDisplayName(
 
   return displayName;
 }
+
+/**
+ * Validates that pricing fields are consistent (all present or all null)
+ * @param rateType - The rate type value
+ * @param price - The price value
+ * @param currencyCode - The currency code value
+ * @returns Object with isValid boolean and error message if invalid
+ */
+export function validatePricingConsistency(
+  rateType: RateType | null | undefined,
+  price: number | null | undefined,
+  currencyCode: string | null | undefined
+): { isValid: boolean; error?: string } {
+  const hasRateType = rateType !== null && rateType !== undefined;
+  const hasPrice = price !== null && price !== undefined && price > 0;
+  const hasCurrencyCode =
+    currencyCode !== null &&
+    currencyCode !== undefined &&
+    currencyCode.trim() !== '';
+
+  const allPresent = hasRateType && hasPrice && hasCurrencyCode;
+  const allAbsent = !hasRateType && !hasPrice && !hasCurrencyCode;
+
+  if (allPresent || allAbsent) {
+    return { isValid: true };
+  }
+
+  return {
+    isValid: false,
+    error:
+      'Pricing fields must all be filled or all be empty. Please provide rate type, price, and currency together, or leave all pricing fields empty.',
+  };
+}
+
+/**
+ * Checks if any pricing field has a value
+ * @param rateType - The rate type value
+ * @param price - The price value
+ * @param currencyCode - The currency code value
+ * @returns True if any pricing field has a value
+ */
+export function hasAnyPricingField(
+  rateType: RateType | null | undefined,
+  price: number | null | undefined,
+  currencyCode: string | null | undefined
+): boolean {
+  const hasRateType = rateType !== null && rateType !== undefined;
+  const hasPrice = price !== null && price !== undefined && price > 0;
+  const hasCurrencyCode =
+    currencyCode !== null &&
+    currencyCode !== undefined &&
+    currencyCode.trim() !== '';
+
+  return hasRateType || hasPrice || hasCurrencyCode;
+}

@@ -156,24 +156,39 @@ export function TaskModal({
       return;
     }
 
-    // Prepare task data - only include changed fields using object mapping
-    const fieldMappings = {
-      name: () => formData.name.trim(),
-      description: () => formData.description?.trim() || undefined,
-      priority: () => formData.priority,
-      due_date: () => formData.due_date,
-      assignee: () => (formData.assignee === 'none' ? null : formData.assignee),
-      ...(isEditMode && { status: () => taskStatus }),
-    } as const;
+    // Prepare task data based on mode
+    let taskData: Partial<CreateTaskRequest | UpdateTaskRequest>;
 
-    const taskData: Partial<CreateTaskRequest | UpdateTaskRequest> =
-      Object.fromEntries(
+    if (isEditMode) {
+      // Edit mode - only include changed fields using object mapping
+      const fieldMappings = {
+        name: () => formData.name.trim(),
+        description: () => formData.description?.trim() || undefined,
+        priority: () => formData.priority,
+        due_date: () => formData.due_date,
+        assignee: () =>
+          formData.assignee === 'none' ? null : formData.assignee,
+        status: () => taskStatus,
+      } as const;
+
+      taskData = Object.fromEntries(
         Object.entries(fieldMappings)
           .filter(([field]) =>
             modifiedFields.has(field as keyof typeof fieldMappings)
           )
           .map(([field, getValue]) => [field, getValue()])
       );
+    } else {
+      // Create mode - include all required fields
+      taskData = {
+        name: formData.name.trim(),
+        description: formData.description?.trim() || undefined,
+        project_id: formData.project_id,
+        priority: formData.priority,
+        due_date: formData.due_date,
+        assignee: formData.assignee === 'none' ? null : formData.assignee,
+      };
+    }
 
     setIsSubmitting(true);
 

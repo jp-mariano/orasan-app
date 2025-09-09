@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
+import { validatePricingConsistency } from '@/lib/utils';
 import { CreateProjectData } from '@/types/projects';
 
 export async function GET() {
@@ -64,6 +65,17 @@ export async function POST(request: NextRequest) {
 
     if (projectData.name && projectData.name.trim().length > 100) {
       validationErrors.push('Project name must be less than 100 characters');
+    }
+
+    // Validate pricing fields consistency
+    const pricingValidation = validatePricingConsistency(
+      projectData.rate_type,
+      projectData.price,
+      projectData.currency_code
+    );
+
+    if (!pricingValidation.isValid) {
+      validationErrors.push(pricingValidation.error!);
     }
 
     if (validationErrors.length > 0) {

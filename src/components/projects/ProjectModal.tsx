@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -26,6 +28,7 @@ import { getStatusOptions } from '@/lib/status';
 import {
   convertCurrencyEmptyToNull,
   convertRateTypeEmptyToNull,
+  validatePricingConsistency,
 } from '@/lib/utils';
 import {
   CreateProjectRequest,
@@ -95,10 +98,12 @@ export function ProjectModal({
         setFormData(defaultFormData);
       }
       setModifiedFields(new Set());
+      setErrorMessage(null); // Clear error message when modal closes
     }
   }, [open, isEditMode, project, defaultFormData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Track which fields have been modified by the user
   const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
@@ -139,7 +144,22 @@ export function ProjectModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Clear any existing error message
+    setErrorMessage(null);
+
     if (!formData.name.trim()) {
+      return;
+    }
+
+    // Validate pricing fields consistency
+    const pricingValidation = validatePricingConsistency(
+      formData.rate_type,
+      formData.price,
+      formData.currency_code
+    );
+
+    if (!pricingValidation.isValid) {
+      setErrorMessage(pricingValidation.error!);
       return;
     }
 
@@ -214,6 +234,11 @@ export function ProjectModal({
 
     // Track that this field has been modified (in both create and edit modes)
     setModifiedFields(prev => new Set([...prev, field]));
+
+    // Clear error message when user starts typing
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
   };
 
   // Show warning modal when project limit is reached (only for create mode)
@@ -249,6 +274,26 @@ export function ProjectModal({
               : `Fill in the details below to create your ${currentProjectCount + 1}${getOrdinalSuffix(currentProjectCount + 1)} project.`}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <div className="flex-1">
+                <p className="text-sm text-red-800 font-medium">
+                  Validation Error
+                </p>
+                <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

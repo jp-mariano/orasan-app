@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
+import { validatePricingConsistency } from '@/lib/utils';
 import { UpdateProjectData } from '@/types/projects';
 
 export async function GET(
@@ -83,13 +84,48 @@ export async function PATCH(
     // First check if the project exists and belongs to the user
     const { data: existingProject, error: fetchError } = await supabase
       .from('projects')
-      .select('id, name')
+      .select('id, name, rate_type, price, currency_code')
       .eq('id', projectId)
       .eq('user_id', user.id)
       .single();
 
     if (fetchError || !existingProject) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    // Validate pricing fields consistency if any pricing field is being updated
+    const hasPricingUpdate =
+      updateData.rate_type !== undefined ||
+      updateData.price !== undefined ||
+      updateData.currency_code !== undefined;
+
+    if (hasPricingUpdate) {
+      // Get the final values (existing values for unchanged fields, new values for changed fields)
+      const finalRateType =
+        updateData.rate_type !== undefined
+          ? updateData.rate_type
+          : existingProject.rate_type;
+      const finalPrice =
+        updateData.price !== undefined
+          ? updateData.price
+          : existingProject.price;
+      const finalCurrencyCode =
+        updateData.currency_code !== undefined
+          ? updateData.currency_code
+          : existingProject.currency_code;
+
+      const pricingValidation = validatePricingConsistency(
+        finalRateType,
+        finalPrice,
+        finalCurrencyCode
+      );
+
+      if (!pricingValidation.isValid) {
+        return NextResponse.json(
+          { error: pricingValidation.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Prepare update data (only include defined fields)

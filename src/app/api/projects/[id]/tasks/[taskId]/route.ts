@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
+import { validatePricingConsistency } from '@/lib/utils';
 import { UpdateTaskRequest } from '@/types';
 
 export async function GET(
@@ -116,7 +117,7 @@ export async function PATCH(
     // Then check if the task exists and belongs to the user and project
     const { data: existingTask, error: fetchError } = await supabase
       .from('tasks')
-      .select('id, name, user_id, project_id')
+      .select('id, name, user_id, project_id, rate_type, price, currency_code')
       .eq('id', taskId)
       .eq('user_id', user.id)
       .eq('project_id', projectId)
@@ -129,6 +130,39 @@ export async function PATCH(
         },
         { status: 404 }
       );
+    }
+
+    // Validate pricing fields consistency if any pricing field is being updated
+    const hasPricingUpdate =
+      updateData.rate_type !== undefined ||
+      updateData.price !== undefined ||
+      updateData.currency_code !== undefined;
+
+    if (hasPricingUpdate) {
+      // Get the final values (existing values for unchanged fields, new values for changed fields)
+      const finalRateType =
+        updateData.rate_type !== undefined
+          ? updateData.rate_type
+          : existingTask.rate_type;
+      const finalPrice =
+        updateData.price !== undefined ? updateData.price : existingTask.price;
+      const finalCurrencyCode =
+        updateData.currency_code !== undefined
+          ? updateData.currency_code
+          : existingTask.currency_code;
+
+      const pricingValidation = validatePricingConsistency(
+        finalRateType,
+        finalPrice,
+        finalCurrencyCode
+      );
+
+      if (!pricingValidation.isValid) {
+        return NextResponse.json(
+          { error: pricingValidation.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Prepare update data (only include defined fields)
