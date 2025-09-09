@@ -106,6 +106,30 @@ export function TaskModal({
     }
   }, [isEditMode, task, project.id, currentUser?.id, defaultFormData]);
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      if (isEditMode && task) {
+        // Edit mode: reset to original task data
+        setFormData({
+          name: task.name,
+          description: task.description || '',
+          project_id: task.project_id,
+          priority: task.priority,
+          due_date: task.due_date || undefined,
+          assignee: task.assignee || undefined,
+        });
+        setTaskStatus(task.status);
+      } else {
+        // Create mode: reset to defaults
+        setFormData(defaultFormData);
+        setTaskStatus('new');
+      }
+      setModifiedFields(new Set());
+      setErrors({});
+    }
+  }, [open, isEditMode, task, defaultFormData]);
+
   // Check if form is valid for submit button
   const isFormValid = formData.name.trim().length > 0;
 

@@ -78,11 +78,25 @@ export function ProjectModal({
 
   // Reset form when modal closes
   useEffect(() => {
-    if (!open && !isEditMode) {
-      setFormData(defaultFormData);
+    if (!open) {
+      if (isEditMode && project) {
+        // Edit mode: reset to original project data
+        setFormData({
+          name: project.name,
+          description: project.description || '',
+          client_name: project.client_name || '',
+          rate_type: project.rate_type || null,
+          price: project.price || 0,
+          currency_code: project.currency_code || '',
+          status: project.status,
+        });
+      } else {
+        // Create mode: reset to defaults
+        setFormData(defaultFormData);
+      }
       setModifiedFields(new Set());
     }
-  }, [open, isEditMode, defaultFormData]);
+  }, [open, isEditMode, project, defaultFormData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
