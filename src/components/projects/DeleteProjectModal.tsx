@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -77,17 +77,7 @@ export function DeleteProjectModal({
             onClick={handleConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                Deleting...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Project
-              </>
-            )}
+            {isDeleting ? <>Deleting...</> : <>Delete Project</>}
           </Button>
         </DialogFooter>
       </DialogContent>
