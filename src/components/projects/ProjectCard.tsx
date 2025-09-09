@@ -109,10 +109,10 @@ export function ProjectCard({
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-lg font-semibold truncate">
-                {project.name}
+              <CardTitle className="text-lg font-semibold">
+                {truncateTextSmart(project.name, 40)}
               </CardTitle>
               {project.client_name && (
                 <CardDescription className="text-sm text-gray-600">

@@ -8,7 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { formatDate, getAssigneeDisplayName } from '@/lib/utils';
+import {
+  formatDate,
+  getAssigneeDisplayName,
+  truncateTextSmart,
+} from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
 interface TaskCardProps {
@@ -81,11 +85,11 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
       <CardContent>
         <div className="flex items-center justify-between">
           {/* Task Info */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Task Name */}
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium text-gray-900 truncate text-sm">
-                {task.name}
+              <h3 className="font-medium text-gray-900 text-sm">
+                {truncateTextSmart(task.name, 40)}
               </h3>
             </div>
 

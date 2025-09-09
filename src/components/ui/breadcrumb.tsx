@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { ChevronRight, Home } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn, truncateTextSmart } from '@/lib/utils';
 
 export interface BreadcrumbItem {
   label: string;
@@ -37,14 +37,16 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
           <ChevronRight className="h-4 w-4 mx-1 text-gray-400" />
           {index === items.length - 1 ? (
             // Last item - current page (not clickable)
-            <span className="text-gray-900 font-medium">{item.label}</span>
+            <span className="text-gray-900 font-medium">
+              {truncateTextSmart(item.label, 30)}
+            </span>
           ) : (
             // Clickable breadcrumb items
             <Link
               href={item.href}
               className="hover:text-gray-700 transition-colors"
             >
-              {item.label}
+              {truncateTextSmart(item.label, 30)}
             </Link>
           )}
         </div>
