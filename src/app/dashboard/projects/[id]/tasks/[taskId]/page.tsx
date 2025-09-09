@@ -22,6 +22,7 @@ import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
 export default function ProjectTaskDetailPage() {
@@ -419,15 +420,11 @@ export default function ProjectTaskDetailPage() {
             <div className="pt-4 border-t">
               <div className="text-sm text-gray-500 space-y-1">
                 <div>
-                  <span className="font-medium">Project:</span>{' '}
+                  <span>Project:</span>{' '}
                   {task.project?.name || 'Unknown Project'}
                 </div>
-                <div>
-                  Created: {new Date(task.created_at).toLocaleDateString()}
-                </div>
-                <div>
-                  Last updated: {new Date(task.updated_at).toLocaleDateString()}
-                </div>
+                <div>Created: {formatDate(task.created_at)}</div>
+                <div>Last updated: {formatDate(task.updated_at)}</div>
               </div>
             </div>
           </CardContent>

@@ -8,9 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a date string to a user-friendly format
+ * Formats a date string to YYYY-MM-DD format
  * @param dateString - ISO date string or Date object
- * @returns Formatted date string (e.g., "Dec 15, 2024")
+ * @returns Formatted date string (e.g., "2025-09-15")
  */
 export function formatDate(dateString: string | Date): string {
   if (!dateString) return '';
@@ -20,11 +20,7 @@ export function formatDate(dateString: string | Date): string {
 
   if (isNaN(date.getTime())) return '';
 
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  return date.toLocaleDateString('en-CA'); // Returns YYYY-MM-DD format
 }
 
 /**

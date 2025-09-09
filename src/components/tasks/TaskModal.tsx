@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { getPriorityOptions } from '@/lib/priority';
 import { getStatusOptions } from '@/lib/status';
-import { cn, getAssigneeDisplayName } from '@/lib/utils';
+import { cn, formatDate, getAssigneeDisplayName } from '@/lib/utils';
 import {
   CreateTaskRequest,
   Priority,
@@ -293,7 +292,7 @@ export function TaskModal({
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.due_date
-                      ? format(new Date(formData.due_date), 'PPP')
+                      ? formatDate(formData.due_date)
                       : 'Pick a date'}
                   </Button>
                 </PopoverTrigger>

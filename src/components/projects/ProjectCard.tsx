@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { getCurrencyByCode } from '@/lib/currencies';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { truncateTextSmart } from '@/lib/utils';
+import { formatDate, truncateTextSmart } from '@/lib/utils';
 import { Project } from '@/types/index';
 
 interface ProjectCardProps {
@@ -188,7 +188,7 @@ export function ProjectCard({
       <CardFooter className="pt-0 mt-auto">
         <div className="flex items-center justify-between text-sm w-full">
           <div className="text-gray-500">
-            Created {new Date(project.created_at).toLocaleDateString()}
+            Created: {formatDate(project.created_at)}
           </div>
 
           {formatPrice(

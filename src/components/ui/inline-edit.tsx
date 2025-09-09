@@ -24,7 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { currencies } from '@/lib/currencies';
 import { getPriorityColor, getPriorityLabel } from '@/lib/priority';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { getAssigneeDisplayName } from '@/lib/utils';
+import { formatDate, getAssigneeDisplayName } from '@/lib/utils';
 import { Priority, Status, User } from '@/types/index';
 
 interface InlineEditProps {
@@ -568,7 +568,7 @@ export function InlineEdit({
           onClick={() => setIsEditing(true)}
           className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
         >
-          {format(date, 'PPP')}
+          {formatDate(value)}
         </div>
       );
     }

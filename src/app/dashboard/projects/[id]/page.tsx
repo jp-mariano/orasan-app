@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
+import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 import { Project } from '@/types/index';
 
@@ -461,13 +462,8 @@ export default function ProjectDetailPage() {
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">
               <div className="text-sm text-gray-500 space-y-1">
-                <div>
-                  Created: {new Date(project.created_at).toLocaleDateString()}
-                </div>
-                <div>
-                  Last updated:{' '}
-                  {new Date(project.updated_at).toLocaleDateString()}
-                </div>
+                <div>Created: {formatDate(project.created_at)}</div>
+                <div>Last updated: {formatDate(project.updated_at)}</div>
               </div>
             </div>
           </CardContent>
