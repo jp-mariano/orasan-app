@@ -156,16 +156,24 @@ export function TaskModal({
       return;
     }
 
-    // Prepare task data, handling the "none" assignee value
-    const taskData = {
-      ...formData,
-      assignee: formData.assignee === 'none' ? null : formData.assignee,
-    };
+    // Prepare task data - only include changed fields using object mapping
+    const fieldMappings = {
+      name: () => formData.name.trim(),
+      description: () => formData.description?.trim() || undefined,
+      priority: () => formData.priority,
+      due_date: () => formData.due_date,
+      assignee: () => (formData.assignee === 'none' ? null : formData.assignee),
+      ...(isEditMode && { status: () => taskStatus }),
+    } as const;
 
-    // Add status for edit mode
-    if (isEditMode) {
-      (taskData as UpdateTaskRequest).status = taskStatus;
-    }
+    const taskData: Partial<CreateTaskRequest | UpdateTaskRequest> =
+      Object.fromEntries(
+        Object.entries(fieldMappings)
+          .filter(([field]) =>
+            modifiedFields.has(field as keyof typeof fieldMappings)
+          )
+          .map(([field, getValue]) => [field, getValue()])
+      );
 
     setIsSubmitting(true);
 

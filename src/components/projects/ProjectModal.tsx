@@ -147,46 +147,36 @@ export function ProjectModal({
 
     let result: { success: boolean; error?: string };
 
-    // Helper function to determine if a field should be submitted
-    const shouldSubmitField = (fieldName: string) => {
-      if (isEditMode) return true; // In edit mode, always submit all fields
-      return modifiedFields.has(fieldName); // In create mode, only submit modified fields
-    };
-
     if (isEditMode && onUpdateProject) {
-      // Edit mode
-      const updateData = {
-        name: formData.name.trim(),
-        description: formData.description?.trim() || undefined,
-        client_name: formData.client_name?.trim() || undefined,
-        rate_type: shouldSubmitField('rate_type')
-          ? convertRateTypeEmptyToNull(formData.rate_type)
-          : undefined,
-        price: shouldSubmitField('price')
-          ? formData.price || undefined
-          : undefined,
-        currency_code: shouldSubmitField('currency_code')
-          ? convertCurrencyEmptyToNull(formData.currency_code)
-          : undefined,
-        status: shouldSubmitField('status') ? formData.status : undefined,
-      };
+      // Edit mode - only include changed fields using object mapping
+      const fieldMappings = {
+        name: () => formData.name.trim(),
+        description: () => formData.description?.trim() || undefined,
+        client_name: () => formData.client_name?.trim() || undefined,
+        rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
+        price: () => formData.price || undefined,
+        currency_code: () => convertCurrencyEmptyToNull(formData.currency_code),
+        status: () => formData.status,
+      } as const;
+
+      const updateData: Partial<UpdateProjectRequest> = Object.fromEntries(
+        Object.entries(fieldMappings)
+          .filter(([field]) =>
+            modifiedFields.has(field as keyof typeof fieldMappings)
+          )
+          .map(([field, getValue]) => [field, getValue()])
+      );
 
       result = await onUpdateProject(updateData);
     } else if (!isEditMode && onCreateProject) {
-      // Create mode
+      // Create mode - include all fields
       const createData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || undefined,
         client_name: formData.client_name?.trim() || undefined,
-        rate_type: shouldSubmitField('rate_type')
-          ? convertRateTypeEmptyToNull(formData.rate_type)
-          : undefined,
-        price: shouldSubmitField('price')
-          ? formData.price || undefined
-          : undefined,
-        currency_code: shouldSubmitField('currency_code')
-          ? convertCurrencyEmptyToNull(formData.currency_code)
-          : undefined,
+        rate_type: convertRateTypeEmptyToNull(formData.rate_type),
+        price: formData.price || undefined,
+        currency_code: convertCurrencyEmptyToNull(formData.currency_code),
       };
 
       result = await onCreateProject(createData);
