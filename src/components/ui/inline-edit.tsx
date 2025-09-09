@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { format } from 'date-fns';
 import { CalendarIcon, Check, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -410,7 +409,7 @@ export function InlineEdit({
                 className="flex-1 justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
+                {selectedDate ? formatDate(selectedDate) : 'Pick a date'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
