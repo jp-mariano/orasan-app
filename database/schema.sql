@@ -32,7 +32,12 @@ CREATE TABLE public.projects (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- Allow NULL for unpriced projects, or positive prices
-  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0)
+  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0),
+  -- Ensure pricing fields are all populated together or all NULL
+  CONSTRAINT pricing_fields_consistency CHECK (
+    (price IS NULL AND currency_code IS NULL AND rate_type IS NULL) OR
+    (price IS NOT NULL AND currency_code IS NOT NULL AND rate_type IS NOT NULL)
+  )
 );
 
 -- Create tasks table
@@ -54,6 +59,11 @@ CREATE TABLE public.tasks (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- Allow NULL for unpriced tasks, or positive prices
   CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0),
+  -- Ensure pricing fields are all populated together or all NULL
+  CONSTRAINT pricing_fields_consistency CHECK (
+    (price IS NULL AND currency_code IS NULL AND rate_type IS NULL) OR
+    (price IS NOT NULL AND currency_code IS NOT NULL AND rate_type IS NOT NULL)
+  ),
   -- Ensure valid priority values
   CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );
