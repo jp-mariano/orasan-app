@@ -116,7 +116,7 @@ export function InlineEdit({
     if (type === 'due-date') {
       // For due-date, use the selected date
       if (selectedDate) {
-        const dateString = selectedDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        const dateString = formatDate(selectedDate);
         onSave(dateString);
       } else {
         onSave(null);

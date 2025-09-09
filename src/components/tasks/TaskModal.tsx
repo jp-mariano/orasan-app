@@ -307,7 +307,7 @@ export function TaskModal({
                     onSelect={date =>
                       handleInputChange(
                         'due_date',
-                        date ? date.toLocaleDateString('en-CA') : undefined
+                        date ? formatDate(date) : undefined
                       )
                     }
                     captionLayout="dropdown"
