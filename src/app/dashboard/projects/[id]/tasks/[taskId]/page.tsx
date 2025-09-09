@@ -348,8 +348,9 @@ export default function ProjectTaskDetailPage() {
                 </Label>
                 <InlineEdit
                   value={task.due_date}
+                  type="due-date"
                   onSave={value => handleSaveField('due_date', value)}
-                  placeholder="Set due date (YYYY-MM-DD)..."
+                  placeholder="Set due date..."
                   className="text-gray-700"
                 />
               </div>

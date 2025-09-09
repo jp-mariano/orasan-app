@@ -311,6 +311,9 @@ export function TaskModal({
                         date ? date.toLocaleDateString('en-CA') : undefined
                       )
                     }
+                    captionLayout="dropdown"
+                    startMonth={new Date(new Date().getFullYear() - 10, 0, 1)}
+                    endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
                     autoFocus
                   />
                 </PopoverContent>

@@ -2,10 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { Check, X } from 'lucide-react';
+import { format } from 'date-fns';
+import { CalendarIcon, Check, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -29,7 +36,8 @@ interface InlineEditProps {
     | 'price-currency'
     | 'status'
     | 'priority'
-    | 'assignee';
+    | 'assignee'
+    | 'due-date';
   placeholder?: string;
   className?: string;
   multiline?: boolean;
@@ -83,6 +91,15 @@ export function InlineEdit({
     return projectData?.price || 0;
   });
 
+  // Local state for due-date type
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    if (type === 'due-date' && value) {
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return undefined;
+  });
+
   // Update local states when value prop changes
   useEffect(() => {
     if (type === 'price-currency' && value) {
@@ -90,10 +107,22 @@ export function InlineEdit({
       setLocalCurrency(parts[0] || 'USD');
       setLocalPrice(parseFloat(parts[1]) || 0);
     }
+    if (type === 'due-date' && value) {
+      const date = new Date(value);
+      setSelectedDate(isNaN(date.getTime()) ? undefined : date);
+    }
   }, [value, type]);
 
   const handleSave = () => {
-    if (editValue !== value) {
+    if (type === 'due-date') {
+      // For due-date, use the selected date
+      if (selectedDate) {
+        const dateString = selectedDate.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+        onSave(dateString);
+      } else {
+        onSave(null);
+      }
+    } else if (editValue !== value) {
       if (type === 'price-currency') {
         // For price-currency, use the local states directly
         if (localPrice > 0) {
@@ -115,6 +144,14 @@ export function InlineEdit({
   const handleCancel = () => {
     if (type === 'assignee') {
       setEditValue(value || 'none');
+    } else if (type === 'due-date') {
+      // Reset to original date
+      if (value) {
+        const date = new Date(value);
+        setSelectedDate(isNaN(date.getTime()) ? undefined : date);
+      } else {
+        setSelectedDate(undefined);
+      }
     } else {
       setEditValue(value || '');
     }
@@ -363,6 +400,53 @@ export function InlineEdit({
       );
     }
 
+    if (type === 'due-date') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex-1 justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                captionLayout="dropdown"
+                startMonth={new Date(new Date().getFullYear() - 10, 0, 1)}
+                endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
+                autoFocus
+              />
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center space-x-1 inline-edit-buttons">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+              tabIndex={0}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCancel}
+              className="h-8 w-8 p-0 bg-red-500 hover:bg-red-600"
+              tabIndex={0}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (multiline || type === 'textarea') {
       return (
         <div className="flex items-start space-x-2">
@@ -468,6 +552,23 @@ export function InlineEdit({
           className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
         >
           {displayName}
+        </div>
+      );
+    }
+  }
+
+  // For due-date type, render as clickable text with formatted date
+  if (type === 'due-date' && value) {
+    const date = new Date(value);
+    const isValidDate = !isNaN(date.getTime());
+
+    if (isValidDate) {
+      return (
+        <div
+          onClick={() => setIsEditing(true)}
+          className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
+        >
+          {format(date, 'PPP')}
         </div>
       );
     }
