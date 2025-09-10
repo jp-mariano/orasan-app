@@ -157,7 +157,7 @@ export function validatePricingConsistency(
   currencyCode: string | null | undefined
 ): { isValid: boolean; error?: string } {
   const hasRateType = rateType !== null && rateType !== undefined;
-  const hasPrice = price !== null && price !== undefined && price > 0;
+  const hasPrice = price !== null && price !== undefined && price >= 0;
   const hasCurrencyCode =
     currencyCode !== null &&
     currencyCode !== undefined &&
@@ -190,7 +190,7 @@ export function hasAnyPricingField(
   currencyCode: string | null | undefined
 ): boolean {
   const hasRateType = rateType !== null && rateType !== undefined;
-  const hasPrice = price !== null && price !== undefined && price > 0;
+  const hasPrice = price !== null && price !== undefined && price >= 0;
   const hasCurrencyCode =
     currencyCode !== null &&
     currencyCode !== undefined &&

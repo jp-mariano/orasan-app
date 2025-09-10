@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       description: projectData.description?.trim() || null,
       client_name: projectData.client_name?.trim() || null,
       rate_type: projectData.rate_type || null,
-      price: projectData.price || null,
+      price: projectData.price !== undefined ? projectData.price : null,
       currency_code: projectData.currency_code || null,
       user_id: user.id,
       status: 'new' as const,

@@ -72,7 +72,7 @@ export function ProjectModal({
       description: '',
       client_name: '',
       rate_type: '' as RateType, // Empty string for placeholder
-      price: 0,
+      price: undefined,
       currency_code: '', // Empty string for placeholder
       status: 'new', // Default status for new projects
     }),
@@ -89,7 +89,7 @@ export function ProjectModal({
           description: project.description || '',
           client_name: project.client_name || '',
           rate_type: project.rate_type || null,
-          price: project.price || 0,
+          price: project.price,
           currency_code: project.currency_code || '',
           status: project.status,
         });
@@ -128,7 +128,7 @@ export function ProjectModal({
         description: project.description || '',
         client_name: project.client_name || '',
         rate_type: project.rate_type || null,
-        price: project.price || 0,
+        price: project.price,
         currency_code: project.currency_code || '',
         status: project.status, // Include status from existing project
       });
@@ -154,7 +154,7 @@ export function ProjectModal({
     // Validate pricing fields consistency
     const pricingValidation = validatePricingConsistency(
       convertRateTypeEmptyToNull(formData.rate_type),
-      formData.price || undefined,
+      formData.price !== undefined ? formData.price : undefined,
       convertCurrencyEmptyToNull(formData.currency_code)
     );
 
@@ -174,7 +174,8 @@ export function ProjectModal({
         description: () => formData.description?.trim() || undefined,
         client_name: () => formData.client_name?.trim() || undefined,
         rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
-        price: () => formData.price || undefined,
+        price: () =>
+          formData.price !== undefined ? formData.price : undefined,
         currency_code: () => convertCurrencyEmptyToNull(formData.currency_code),
         status: () => formData.status,
       } as const;
@@ -195,7 +196,7 @@ export function ProjectModal({
         description: formData.description?.trim() || undefined,
         client_name: formData.client_name?.trim() || undefined,
         rate_type: convertRateTypeEmptyToNull(formData.rate_type),
-        price: formData.price || undefined,
+        price: formData.price !== undefined ? formData.price : undefined,
         currency_code: convertCurrencyEmptyToNull(formData.currency_code),
       };
 
@@ -361,11 +362,17 @@ export function ProjectModal({
                 type="number"
                 min="0"
                 step="0.01"
-                value={formData.price || ''}
+                value={
+                  formData.price !== undefined && formData.price !== null
+                    ? formData.price
+                    : ''
+                }
                 onChange={e =>
                   handleInputChange(
                     'price',
-                    e.target.value ? parseFloat(e.target.value) : 0
+                    e.target.value !== ''
+                      ? parseFloat(e.target.value)
+                      : undefined
                   )
                 }
                 placeholder="Enter amount (optional)"

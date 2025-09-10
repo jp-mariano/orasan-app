@@ -124,7 +124,7 @@ export function InlineEdit({
     } else if (editValue !== value) {
       if (type === 'price-currency') {
         // For price-currency, use the local states directly
-        if (localPrice > 0) {
+        if (localPrice >= 0) {
           // We'll call onSave with a special format that the parent can handle
           onSave(`${localCurrency}|${localPrice}`);
         } else {
