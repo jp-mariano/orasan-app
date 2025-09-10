@@ -347,10 +347,6 @@ export function ProjectModal({
                     <SelectItem key={currency.code} value={currency.code}>
                       <div className="flex items-center space-x-2">
                         <span className="font-medium">{currency.code}</span>
-                        <span className="text-gray-500">
-                          ({currency.symbol})
-                        </span>
-                        <span className="text-gray-400">- {currency.name}</span>
                       </div>
                     </SelectItem>
                   ))}
