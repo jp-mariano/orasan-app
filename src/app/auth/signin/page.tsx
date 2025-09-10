@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-import { Github, Mail, Twitter } from 'lucide-react';
+import { SiGithub, SiGoogle, SiX } from 'react-icons/si';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,9 +39,6 @@ function LoginPageContent() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Mail className="h-6 w-6 text-white" />
-          </div>
           <CardTitle className="text-2xl">Welcome to Orasan</CardTitle>
           <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
@@ -65,7 +62,7 @@ function LoginPageContent() {
               {isLoading === 'github' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
               ) : (
-                <Github className="h-4 w-4 mr-2" />
+                <SiGithub className="h-4 w-4 mr-2" />
               )}
               Continue with GitHub
             </Button>
@@ -79,7 +76,7 @@ function LoginPageContent() {
               {isLoading === 'google' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
               ) : (
-                <div className="h-4 w-4 mr-2 bg-[#4285F4] rounded-sm" />
+                <SiGoogle className="h-4 w-4 mr-2" />
               )}
               Continue with Google
             </Button>
@@ -93,7 +90,7 @@ function LoginPageContent() {
               {isLoading === 'twitter' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
               ) : (
-                <Twitter className="h-4 w-4 mr-2" />
+                <SiX className="h-4 w-4 mr-2" />
               )}
               Continue with X (Twitter)
             </Button>
