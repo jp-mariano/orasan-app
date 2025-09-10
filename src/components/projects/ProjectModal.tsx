@@ -153,9 +153,9 @@ export function ProjectModal({
 
     // Validate pricing fields consistency
     const pricingValidation = validatePricingConsistency(
-      formData.rate_type,
-      formData.price,
-      formData.currency_code
+      convertRateTypeEmptyToNull(formData.rate_type),
+      formData.price || undefined,
+      convertCurrencyEmptyToNull(formData.currency_code)
     );
 
     if (!pricingValidation.isValid) {
