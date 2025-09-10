@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { Clock, Shield, Users, Zap } from 'lucide-react';
+import { Shield, Users, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,9 +18,6 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 bg-green-600 rounded-lg flex items-center justify-center">
-            <Clock className="h-6 w-6 text-white" />
-          </div>
           <CardTitle className="text-2xl">Join Orasan</CardTitle>
           <CardDescription>
             Start tracking your time and boosting productivity
@@ -92,10 +89,12 @@ export default function RegisterPage() {
           </div>
 
           {/* Action buttons */}
-          <div className="space-y-3 pt-4">
-            <Link href="/auth/signin">
-              <Button className="w-full">Continue to Sign In</Button>
-            </Link>
+          <div className="space-y-3">
+            <div>
+              <Link href="/auth/signin">
+                <Button className="w-full">Continue to Sign In</Button>
+              </Link>
+            </div>
 
             <div className="text-center text-sm text-gray-600">
               Already have an account?{' '}
@@ -106,12 +105,12 @@ export default function RegisterPage() {
                 Sign in here
               </Link>
             </div>
-          </div>
 
-          <div className="text-center text-sm text-gray-600">
-            <Link href="/" className="text-blue-600 hover:underline">
-              ← Back to home
-            </Link>
+            <div className="text-center text-sm text-gray-600">
+              <Link href="/" className="text-blue-600 hover:underline">
+                ← Back to home
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
