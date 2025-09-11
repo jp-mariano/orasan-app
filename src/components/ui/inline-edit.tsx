@@ -253,7 +253,7 @@ export function InlineEdit({
             <Input
               type="number"
               step="0.01"
-              min="0.01"
+              min="0"
               value={localPrice.toString()}
               onChange={e => {
                 const price = parseFloat(e.target.value) || 0;
@@ -261,7 +261,7 @@ export function InlineEdit({
                 setEditValue(`${localCurrency} ${price}`);
               }}
               className="flex-1"
-              placeholder="0.00"
+              placeholder="Enter amount"
             />
           </div>
           <div className="flex items-center space-x-1 inline-edit-buttons">
