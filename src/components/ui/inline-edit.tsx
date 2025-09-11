@@ -98,6 +98,7 @@ export function InlineEdit({
     }
     return undefined;
   });
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Update local states when value prop changes
   useEffect(() => {
@@ -402,7 +403,7 @@ export function InlineEdit({
     if (type === 'due-date') {
       return (
         <div className="flex items-center space-x-2">
-          <Popover>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -416,7 +417,10 @@ export function InlineEdit({
               <Calendar
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                onSelect={date => {
+                  setSelectedDate(date);
+                  setCalendarOpen(false);
+                }}
                 captionLayout="dropdown"
                 startMonth={new Date(new Date().getFullYear() - 10, 0, 1)}
                 endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}

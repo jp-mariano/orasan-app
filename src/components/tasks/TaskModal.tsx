@@ -95,6 +95,7 @@ export function TaskModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Track modified fields for edit mode
   const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
@@ -358,7 +359,7 @@ export function TaskModal({
             {/* Due Date */}
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -381,12 +382,13 @@ export function TaskModal({
                         ? new Date(formData.due_date)
                         : undefined
                     }
-                    onSelect={date =>
+                    onSelect={date => {
                       handleInputChange(
                         'due_date',
                         date ? formatDate(date) : undefined
-                      )
-                    }
+                      );
+                      setCalendarOpen(false);
+                    }}
                     captionLayout="dropdown"
                     startMonth={new Date(new Date().getFullYear() - 10, 0, 1)}
                     endMonth={new Date(new Date().getFullYear() + 10, 11, 31)}
