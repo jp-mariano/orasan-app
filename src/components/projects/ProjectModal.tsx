@@ -70,9 +70,9 @@ export function ProjectModal({
       name: '',
       description: '',
       client_name: '',
-      rate_type: '' as RateType, // Empty string for placeholder
+      rate_type: undefined,
       price: undefined,
-      currency_code: '', // Empty string for placeholder
+      currency_code: undefined,
       status: 'new', // Default status for new projects
     }),
     []
@@ -87,9 +87,9 @@ export function ProjectModal({
           name: project.name,
           description: project.description || '',
           client_name: project.client_name || '',
-          rate_type: project.rate_type || null,
+          rate_type: project.rate_type || undefined,
           price: project.price,
-          currency_code: project.currency_code || '',
+          currency_code: project.currency_code || undefined,
           status: project.status,
         });
       } else {
@@ -128,9 +128,9 @@ export function ProjectModal({
         name: project.name,
         description: project.description || '',
         client_name: project.client_name || '',
-        rate_type: project.rate_type || null,
+        rate_type: project.rate_type || undefined,
         price: project.price,
-        currency_code: project.currency_code || '',
+        currency_code: project.currency_code || undefined,
         status: project.status, // Include status from existing project
       });
       // In edit mode, start with no modified fields (user hasn't made changes yet)
