@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { X } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ModalError } from '@/components/ui/modal-error';
 import {
   Select,
   SelectContent,
@@ -99,11 +98,13 @@ export function ProjectModal({
       }
       setModifiedFields(new Set());
       setErrorMessage(null); // Clear error message when modal closes
+      setNameError(null); // Clear name error when modal closes
     }
   }, [open, isEditMode, project, defaultFormData]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   // Track which fields have been modified by the user
   const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set());
@@ -144,10 +145,12 @@ export function ProjectModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Clear any existing error message
+    // Clear any existing error messages
     setErrorMessage(null);
+    setNameError(null);
 
     if (!formData.name.trim()) {
+      setNameError('Project name is required');
       return;
     }
 
@@ -236,7 +239,10 @@ export function ProjectModal({
     // Track that this field has been modified (in both create and edit modes)
     setModifiedFields(prev => new Set([...prev, field]));
 
-    // Clear error message when user starts typing
+    // Clear error messages when user starts typing
+    if (field === 'name' && nameError) {
+      setNameError(null);
+    }
     if (errorMessage) {
       setErrorMessage(null);
     }
@@ -277,24 +283,10 @@ export function ProjectModal({
         </DialogHeader>
 
         {/* Error Message Display */}
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start space-x-3">
-              <div className="flex-1">
-                <p className="text-sm text-red-800 font-medium">
-                  Validation Error
-                </p>
-                <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
-              </div>
-              <button
-                onClick={() => setErrorMessage(null)}
-                className="flex-shrink-0 text-red-400 hover:text-red-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <ModalError
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -306,7 +298,12 @@ export function ProjectModal({
               value={formData.name}
               onChange={e => handleInputChange('name', e.target.value)}
               placeholder="Enter project name"
-              required
+              className={nameError ? 'border-red-500' : ''}
+            />
+            <ModalError
+              errorMessage={nameError}
+              onClose={() => setNameError(null)}
+              variant="inline"
             />
           </div>
 
@@ -316,7 +313,7 @@ export function ProjectModal({
               id="description"
               value={formData.description}
               onChange={e => handleInputChange('description', e.target.value)}
-              placeholder="Describe your project (optional)"
+              placeholder="Describe your project"
               rows={3}
             />
           </div>
@@ -327,10 +324,37 @@ export function ProjectModal({
               id="client_name"
               value={formData.client_name}
               onChange={e => handleInputChange('client_name', e.target.value)}
-              placeholder="Client or company name (optional)"
+              placeholder="Client or company name"
             />
           </div>
 
+          {/* Status field - only show in edit mode */}
+          {isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status || undefined}
+                onValueChange={value =>
+                  handleInputChange('status', value as ProjectStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getStatusOptions().map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className={option.color}>{option.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="border-t"></div>
+
+          {/* Currency and Price Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency_code">Currency</Label>
@@ -341,7 +365,7 @@ export function ProjectModal({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency (optional)" />
+                  <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map(currency => (
@@ -375,11 +399,12 @@ export function ProjectModal({
                       : undefined
                   )
                 }
-                placeholder="Enter amount (optional)"
+                placeholder="Enter amount"
               />
             </div>
           </div>
 
+          {/* Rate Type */}
           <div className="space-y-2">
             <Label htmlFor="rate_type">Rate Type</Label>
             <Select
@@ -389,7 +414,7 @@ export function ProjectModal({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select rate type (optional)" />
+                <SelectValue placeholder="Select rate type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="hourly">Hourly</SelectItem>
@@ -398,30 +423,6 @@ export function ProjectModal({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Status field - only show in edit mode */}
-          {isEditMode && (
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status || undefined}
-                onValueChange={value =>
-                  handleInputChange('status', value as ProjectStatus)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getStatusOptions().map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <span className={option.color}>{option.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <DialogFooter className="flex gap-2">
             <Button

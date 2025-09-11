@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ModalError } from '@/components/ui/modal-error';
 import {
   Popover,
   PopoverContent,
@@ -30,13 +31,22 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
+import { currencies } from '@/lib/currencies';
 import { getPriorityOptions } from '@/lib/priority';
 import { getStatusOptions } from '@/lib/status';
-import { cn, formatDate, getAssigneeDisplayName } from '@/lib/utils';
+import {
+  cn,
+  convertCurrencyEmptyToNull,
+  convertRateTypeEmptyToNull,
+  formatDate,
+  getAssigneeDisplayName,
+  validatePricingConsistency,
+} from '@/lib/utils';
 import {
   CreateTaskRequest,
   Priority,
   Project,
+  RateType,
   TaskStatus,
   TaskWithDetails,
   UpdateTaskRequest,
@@ -72,6 +82,9 @@ export function TaskModal({
       priority: 'low',
       due_date: undefined,
       assignee: currentUser?.id || undefined,
+      rate_type: '' as RateType, // Empty string for placeholder
+      price: undefined,
+      currency_code: '', // Empty string for placeholder
     }),
     [project.id, currentUser?.id]
   );
@@ -79,7 +92,8 @@ export function TaskModal({
   // Form data state - use union type but handle status separately
   const [formData, setFormData] = useState<CreateTaskRequest>(defaultFormData);
   const [taskStatus, setTaskStatus] = useState<TaskStatus>('new');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Track modified fields for edit mode
@@ -95,6 +109,9 @@ export function TaskModal({
         priority: task.priority,
         due_date: task.due_date || undefined,
         assignee: task.assignee || undefined,
+        rate_type: task.rate_type || null,
+        price: task.price,
+        currency_code: task.currency_code || '',
       });
       setTaskStatus(task.status);
       setModifiedFields(new Set());
@@ -102,6 +119,8 @@ export function TaskModal({
       setFormData(defaultFormData);
       setTaskStatus('new');
       setModifiedFields(new Set());
+      setErrorMessage(null); // Clear error message when modal closes
+      setNameError(null); // Clear name error when modal closes
     }
   }, [isEditMode, task, project.id, currentUser?.id, defaultFormData]);
 
@@ -125,7 +144,8 @@ export function TaskModal({
         setTaskStatus('new');
       }
       setModifiedFields(new Set());
-      setErrors({});
+      setErrorMessage(null); // Clear error message when modal closes
+      setNameError(null); // Clear name error when modal closes
     }
   }, [open, isEditMode, task, defaultFormData]);
 
@@ -141,18 +161,24 @@ export function TaskModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Clear previous errors
-    setErrors({});
-
-    // Validate form
-    const newErrors: Record<string, string> = {};
+    // Clear any existing error messages
+    setErrorMessage(null);
+    setNameError(null);
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Task name is required';
+      setNameError('Task name is required');
+      return;
     }
 
-    if (newErrors.name) {
-      setErrors(newErrors);
+    // Validate pricing fields consistency
+    const pricingValidation = validatePricingConsistency(
+      convertRateTypeEmptyToNull(formData.rate_type),
+      formData.price !== undefined ? formData.price : undefined,
+      convertCurrencyEmptyToNull(formData.currency_code)
+    );
+
+    if (!pricingValidation.isValid) {
+      setErrorMessage(pricingValidation.error!);
       return;
     }
 
@@ -168,6 +194,10 @@ export function TaskModal({
         due_date: () => formData.due_date,
         assignee: () =>
           formData.assignee === 'none' ? null : formData.assignee,
+        rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
+        price: () =>
+          formData.price !== undefined ? formData.price : undefined,
+        currency_code: () => convertCurrencyEmptyToNull(formData.currency_code),
         status: () => taskStatus,
       } as const;
 
@@ -187,6 +217,9 @@ export function TaskModal({
         priority: formData.priority,
         due_date: formData.due_date,
         assignee: formData.assignee === 'none' ? null : formData.assignee,
+        rate_type: convertRateTypeEmptyToNull(formData.rate_type),
+        price: formData.price !== undefined ? formData.price : undefined,
+        currency_code: convertCurrencyEmptyToNull(formData.currency_code),
       };
     }
 
@@ -210,7 +243,7 @@ export function TaskModal({
 
   const handleInputChange = (
     field: keyof CreateTaskRequest,
-    value: string | Priority | Date | undefined
+    value: string | number | Priority | Date | undefined
   ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -228,9 +261,12 @@ export function TaskModal({
       }
     }
 
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    // Clear error messages when user starts typing
+    if (field === 'name' && nameError) {
+      setNameError(null);
+    }
+    if (errorMessage) {
+      setErrorMessage(null);
     }
   };
 
@@ -257,15 +293,15 @@ export function TaskModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEditMode ? 'Edit Task' : 'Create New Task'}
           </DialogTitle>
           <DialogDescription>
             {isEditMode
-              ? `Edit task "${task?.name}"`
-              : `Add a new task to "${project.name}" project`}
+              ? 'Update your task details and settings.'
+              : 'Fill in the details below to create new task.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -280,11 +316,13 @@ export function TaskModal({
               value={formData.name}
               onChange={e => handleInputChange('name', e.target.value)}
               placeholder="Enter task name"
-              className={errors.name ? 'border-red-500' : ''}
+              className={nameError ? 'border-red-500' : ''}
             />
-            {errors.name && (
-              <p className="text-sm text-red-500">{errors.name}</p>
-            )}
+            <ModalError
+              errorMessage={nameError}
+              onClose={() => setNameError(null)}
+              variant="inline"
+            />
           </div>
 
           {/* Description */}
@@ -294,7 +332,7 @@ export function TaskModal({
               id="description"
               value={formData.description || ''}
               onChange={e => handleInputChange('description', e.target.value)}
-              placeholder="Enter task description (optional)"
+              placeholder="Describe your task"
               rows={3}
             />
           </div>
@@ -426,6 +464,84 @@ export function TaskModal({
               </div>
             )}
           </div>
+
+          <div className="border-t"></div>
+
+          {/* Currency and Price Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="currency_code">Currency</Label>
+              <Select
+                value={formData.currency_code || undefined}
+                onValueChange={value =>
+                  handleInputChange('currency_code', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map(currency => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{currency.code}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Rate/Price</Label>
+              <Input
+                id="price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={
+                  formData.price !== undefined && formData.price !== null
+                    ? formData.price
+                    : ''
+                }
+                onChange={e =>
+                  handleInputChange(
+                    'price',
+                    e.target.value !== ''
+                      ? parseFloat(e.target.value)
+                      : undefined
+                  )
+                }
+                placeholder="Enter amount"
+              />
+            </div>
+          </div>
+
+          {/* Rate Type */}
+          <div className="space-y-2">
+            <Label htmlFor="rate_type">Rate Type</Label>
+            <Select
+              value={formData.rate_type || undefined}
+              onValueChange={value =>
+                handleInputChange('rate_type', value as RateType)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select rate type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hourly">Hourly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="fixed">Fixed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Pricing Error Display */}
+          <ModalError
+            errorMessage={errorMessage}
+            onClose={() => setErrorMessage(null)}
+          />
 
           <DialogFooter>
             <Button

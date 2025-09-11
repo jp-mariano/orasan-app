@@ -123,6 +123,9 @@ export interface CreateTaskRequest {
   priority?: Priority;
   due_date?: string;
   assignee?: string | null;
+  rate_type?: RateType | null;
+  price?: number | null;
+  currency_code?: string | null;
 }
 
 export interface UpdateTaskRequest {
