@@ -305,6 +305,12 @@ export function TaskModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Error Message Display */}
+        <ModalError
+          errorMessage={errorMessage}
+          onClose={() => setErrorMessage(null)}
+        />
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Task Name */}
           <div className="space-y-2">
@@ -537,12 +543,6 @@ export function TaskModal({
             </Select>
           </div>
 
-          {/* Pricing Error Display */}
-          <ModalError
-            errorMessage={errorMessage}
-            onClose={() => setErrorMessage(null)}
-          />
-
           <DialogFooter>
             <Button
               type="button"
@@ -555,7 +555,11 @@ export function TaskModal({
             <Button
               type="submit"
               disabled={
-                isSubmitting || !isFormValid || (isEditMode && !hasChanges)
+                isSubmitting ||
+                !isFormValid ||
+                (isEditMode && !hasChanges) ||
+                !!nameError ||
+                !!errorMessage
               }
             >
               {isSubmitting

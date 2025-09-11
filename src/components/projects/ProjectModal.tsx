@@ -435,7 +435,13 @@ export function ProjectModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.name.trim() || !hasChanges}
+              disabled={
+                isSubmitting ||
+                !formData.name.trim() ||
+                !hasChanges ||
+                !!nameError ||
+                !!errorMessage
+              }
             >
               {isSubmitting
                 ? isEditMode
