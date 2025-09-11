@@ -82,9 +82,9 @@ export function TaskModal({
       priority: 'low',
       due_date: undefined,
       assignee: currentUser?.id || undefined,
-      rate_type: '' as RateType, // Empty string for placeholder
+      rate_type: undefined,
       price: undefined,
-      currency_code: '', // Empty string for placeholder
+      currency_code: undefined,
     }),
     [project.id, currentUser?.id]
   );
@@ -109,9 +109,9 @@ export function TaskModal({
         priority: task.priority,
         due_date: task.due_date || undefined,
         assignee: task.assignee || undefined,
-        rate_type: task.rate_type || null,
+        rate_type: task.rate_type || undefined,
         price: task.price,
-        currency_code: task.currency_code || '',
+        currency_code: task.currency_code || undefined,
       });
       setTaskStatus(task.status);
       setModifiedFields(new Set());
@@ -136,6 +136,9 @@ export function TaskModal({
           priority: task.priority,
           due_date: task.due_date || undefined,
           assignee: task.assignee || undefined,
+          rate_type: task.rate_type || undefined,
+          price: task.price,
+          currency_code: task.currency_code || undefined,
         });
         setTaskStatus(task.status);
       } else {
@@ -170,16 +173,23 @@ export function TaskModal({
       return;
     }
 
-    // Validate pricing fields consistency
-    const pricingValidation = validatePricingConsistency(
-      convertRateTypeEmptyToNull(formData.rate_type),
-      formData.price !== undefined ? formData.price : undefined,
-      convertCurrencyEmptyToNull(formData.currency_code)
-    );
+    // Validate pricing fields consistency only if user has provided any pricing data
+    const hasProvidedPricingData =
+      formData.rate_type !== undefined ||
+      (formData.price !== undefined && formData.price !== null) ||
+      formData.currency_code !== undefined;
 
-    if (!pricingValidation.isValid) {
-      setErrorMessage(pricingValidation.error!);
-      return;
+    if (hasProvidedPricingData) {
+      const pricingValidation = validatePricingConsistency(
+        convertRateTypeEmptyToNull(formData.rate_type),
+        formData.price !== undefined ? formData.price : undefined,
+        convertCurrencyEmptyToNull(formData.currency_code)
+      );
+
+      if (!pricingValidation.isValid) {
+        setErrorMessage(pricingValidation.error!);
+        return;
+      }
     }
 
     // Prepare task data based on mode

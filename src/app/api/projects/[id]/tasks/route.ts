@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
+import { validatePricingConsistency } from '@/lib/utils';
 import { CreateTaskRequest } from '@/types';
 
 export async function GET(
@@ -97,7 +98,16 @@ export async function POST(
 
     // Parse request body
     const body: CreateTaskRequest = await request.json();
-    const { name, description, priority = 'low', due_date, assignee } = body;
+    const {
+      name,
+      description,
+      priority = 'low',
+      due_date,
+      assignee,
+      rate_type,
+      price,
+      currency_code,
+    } = body;
 
     // Validate required fields
     if (!name) {
@@ -131,6 +141,34 @@ export async function POST(
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    // Determine pricing data: use task's explicit pricing if provided, otherwise inherit from project
+    const taskRateType =
+      rate_type !== undefined ? rate_type : project.rate_type;
+    const taskPrice = price !== undefined ? price : project.price;
+    const taskCurrencyCode =
+      currency_code !== undefined ? currency_code : project.currency_code;
+
+    // Validate pricing fields consistency if any pricing field is provided
+    const hasAnyPricingField =
+      (taskRateType !== null && taskRateType !== undefined) ||
+      (taskPrice !== null && taskPrice !== undefined) ||
+      (taskCurrencyCode !== null && taskCurrencyCode !== undefined);
+
+    if (hasAnyPricingField) {
+      const pricingValidation = validatePricingConsistency(
+        taskRateType,
+        taskPrice,
+        taskCurrencyCode
+      );
+
+      if (!pricingValidation.isValid) {
+        return NextResponse.json(
+          { error: pricingValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create the task
     const { data: newTask, error: createError } = await supabase
       .from('tasks')
@@ -143,9 +181,9 @@ export async function POST(
         due_date: due_date || undefined,
         assignee: assignee || undefined,
         status: 'new',
-        rate_type: project.rate_type,
-        price: project.price,
-        currency_code: project.currency_code,
+        rate_type: taskRateType,
+        price: taskPrice,
+        currency_code: taskCurrencyCode,
       })
       .select(
         `

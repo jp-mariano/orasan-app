@@ -179,9 +179,6 @@ export async function PATCH(
         ])
     );
 
-    // Add updated_at timestamp
-    updatePayload.updated_at = new Date().toISOString();
-
     // Update the task
     const { data: updatedTask, error: updateError } = await supabase
       .from('tasks')
