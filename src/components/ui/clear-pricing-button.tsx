@@ -21,7 +21,7 @@ export function ClearPricingButton({
       onClick={onClear}
       className={`text-gray-600 hover:text-gray-700 ${className}`}
     >
-      Clear Pricing
+      Clear Pricing Fields
     </Button>
   );
 }

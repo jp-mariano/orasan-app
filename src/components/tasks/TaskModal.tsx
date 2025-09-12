@@ -6,6 +6,7 @@ import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { ClearPricingButton } from '@/components/ui/clear-pricing-button';
 import {
   Dialog,
   DialogContent,
@@ -281,6 +282,27 @@ export function TaskModal({
     }
   };
 
+  const handleClearPricing = () => {
+    setFormData(prev => ({
+      ...prev,
+      rate_type: null,
+      price: null,
+      currency_code: null,
+    }));
+
+    // Mark pricing fields as modified so submit button enables
+    setModifiedFields(
+      prev => new Set([...prev, 'rate_type', 'price', 'currency_code'])
+    );
+
+    // Clear pricing validation errors
+    setErrorMessage(null);
+  };
+
+  // Check if any pricing field has data
+  const hasAnyPricingData =
+    formData.rate_type || formData.price != null || formData.currency_code;
+
   const handleStatusChange = (value: TaskStatus) => {
     setTaskStatus(value);
 
@@ -535,24 +557,33 @@ export function TaskModal({
             </div>
           </div>
 
-          {/* Rate Type */}
-          <div className="space-y-2">
-            <Label htmlFor="rate_type">Rate Type</Label>
-            <Select
-              value={formData.rate_type ?? ''}
-              onValueChange={value =>
-                handleInputChange('rate_type', value as RateType)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select rate type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hourly">Hourly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="fixed">Fixed</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Rate Type and Clear Pricing Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="rate_type">Rate Type</Label>
+              <Select
+                value={formData.rate_type ?? ''}
+                onValueChange={value =>
+                  handleInputChange('rate_type', value as RateType)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rate type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="fixed">Fixed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-center h-10">
+              <ClearPricingButton
+                onClear={handleClearPricing}
+                hasPricingData={!!hasAnyPricingData}
+              />
+            </div>
           </div>
 
           <DialogFooter>
