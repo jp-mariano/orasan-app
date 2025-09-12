@@ -490,7 +490,7 @@ export function TaskModal({
             <div className="space-y-2">
               <Label htmlFor="currency_code">Currency</Label>
               <Select
-                value={formData.currency_code || undefined}
+                value={formData.currency_code ?? ''}
                 onValueChange={value =>
                   handleInputChange('currency_code', value)
                 }
@@ -539,7 +539,7 @@ export function TaskModal({
           <div className="space-y-2">
             <Label htmlFor="rate_type">Rate Type</Label>
             <Select
-              value={formData.rate_type || undefined}
+              value={formData.rate_type ?? ''}
               onValueChange={value =>
                 handleInputChange('rate_type', value as RateType)
               }
