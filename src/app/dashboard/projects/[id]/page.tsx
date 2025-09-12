@@ -206,13 +206,9 @@ export default function ProjectDetailPage() {
     try {
       const updatedProject = await updateProject(project.id, data);
 
-      if (updatedProject) {
-        // Update local project state
-        setProject(updatedProject);
-        return { success: true };
-      } else {
-        return { success: false, error: 'Failed to update project' };
-      }
+      // Update local project state
+      setProject(updatedProject);
+      return { success: true };
     } catch (error) {
       console.error('Error updating project:', error);
       return {
@@ -234,19 +230,10 @@ export default function ProjectDetailPage() {
         [field]: value,
       });
 
-      if (updatedProject) {
-        // Update local project state
-        setProject(updatedProject);
-        // Clear field error on success
-        setFieldErrors(prev => ({ ...prev, [field]: '' }));
-      } else {
-        // Set field-specific error
-        setFieldErrors(prev => ({
-          ...prev,
-          [field]: 'Failed to update project',
-        }));
-        throw new Error('Failed to update project');
-      }
+      // Update local project state
+      setProject(updatedProject);
+      // Clear field error on success
+      setFieldErrors(prev => ({ ...prev, [field]: '' }));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to update project';

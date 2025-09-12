@@ -110,16 +110,10 @@ export default function ProjectTaskDetailPage() {
     try {
       const updatedTask = await updateTask(taskId, { [field]: value });
 
-      if (updatedTask) {
-        // Update local task state
-        setTask(updatedTask);
-        // Clear field error on success
-        setFieldErrors(prev => ({ ...prev, [field]: '' }));
-      } else {
-        // Set field-specific error
-        setFieldErrors(prev => ({ ...prev, [field]: 'Failed to update task' }));
-        throw new Error('Failed to update task');
-      }
+      // Update local task state
+      setTask(updatedTask);
+      // Clear field error on success
+      setFieldErrors(prev => ({ ...prev, [field]: '' }));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to update task';
@@ -144,12 +138,8 @@ export default function ProjectTaskDetailPage() {
     try {
       const updatedTask = await updateTask(taskId, taskData);
 
-      if (updatedTask) {
-        setTask(updatedTask);
-        setIsEditModalOpen(false);
-      } else {
-        throw new Error('Failed to update task');
-      }
+      setTask(updatedTask);
+      setIsEditModalOpen(false);
     } catch (err) {
       console.error('Error updating task:', err);
       throw err;

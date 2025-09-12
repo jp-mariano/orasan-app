@@ -114,11 +114,8 @@ export function useProjects(): UseProjectsReturn {
 
         return updatedProject;
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to update project';
-        setError(errorMessage);
-        console.error('Error updating project:', err);
-        return null;
+        // Re-throw the error so the page can handle it with specific error messages
+        throw err;
       }
     },
     []

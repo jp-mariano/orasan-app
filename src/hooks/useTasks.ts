@@ -149,11 +149,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
         return updatedTask;
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to update task';
-        setError(errorMessage);
-        console.error('Error updating task:', err);
-        return null;
+        // Re-throw the error so the page can handle it with specific error messages
+        throw err;
       }
     },
     [options.projectId]
