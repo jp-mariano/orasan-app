@@ -80,7 +80,8 @@ export function ProjectCard({
     rateType: string | null | undefined,
     currencyCode: string | null | undefined
   ) => {
-    if (!price || !rateType || !currencyCode) return null;
+    if (price === null || price === undefined || !rateType || !currencyCode)
+      return null;
 
     const currency = getCurrencyByCode(currencyCode);
     if (!currency) return `${price}`;
@@ -107,7 +108,7 @@ export function ProjectCard({
       className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"
       onClick={handleCardClick}
     >
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div className="min-w-0 flex-1">
@@ -177,7 +178,7 @@ export function ProjectCard({
         </div>
       </CardHeader>
 
-      <CardContent className="pt-0 flex-1">
+      <CardContent className="flex-1">
         {project.description && (
           <p className="text-sm text-gray-600">
             {truncateTextSmart(project.description, 80)}
@@ -185,7 +186,7 @@ export function ProjectCard({
         )}
       </CardContent>
 
-      <CardFooter className="pt-0 mt-auto">
+      <CardFooter>
         <div className="flex items-center justify-between text-sm w-full">
           <div className="text-gray-500">
             Created: {formatDate(project.created_at)}
