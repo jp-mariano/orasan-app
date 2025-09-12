@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-
-import { AlertTriangle, ArrowLeft, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,8 +10,6 @@ interface ErrorDisplayProps {
   message: string;
   onBack?: () => void;
   backLabel?: string;
-  showIssueBadge?: boolean;
-  issueCount?: number;
   className?: string;
 }
 
@@ -22,13 +18,8 @@ export function ErrorDisplay({
   message,
   onBack,
   backLabel = 'Back to Dashboard',
-  showIssueBadge = false,
-  issueCount = 0,
   className = '',
 }: ErrorDisplayProps) {
-  const [isIssueBadgeVisible, setIsIssueBadgeVisible] =
-    useState(showIssueBadge);
-
   return (
     <div className={`min-h-screen bg-gray-50 relative ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -61,21 +52,6 @@ export function ErrorDisplay({
           </CardContent>
         </Card>
       </div>
-
-      {/* Issue Badge - Bottom Left */}
-      {isIssueBadgeVisible && (
-        <div className="fixed bottom-4 left-4">
-          <div className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2">
-            <span>⚠️ {issueCount} Issue</span>
-            <button
-              onClick={() => setIsIssueBadgeVisible(false)}
-              className="ml-2 hover:bg-red-700 rounded px-1"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
