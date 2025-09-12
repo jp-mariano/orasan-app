@@ -1,6 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { Shield, Users, Zap } from 'lucide-react';
 
@@ -12,8 +15,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
-export default function RegisterPage() {
+function RegisterPageContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(error, { context: 'auth', fallbackToInline: true });
+
+  // Show ErrorDisplay for critical auth errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">
@@ -25,6 +41,13 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Non-Critical Error Message */}
+          {inlineErrorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {inlineErrorMessage}
+            </div>
+          )}
+
           {/* How it works section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-center text-gray-800">
@@ -115,5 +138,24 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <RegisterPageContent />
+    </Suspense>
   );
 }

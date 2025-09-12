@@ -22,6 +22,7 @@ import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
@@ -35,6 +36,10 @@ export default function ProjectTaskDetailPage() {
   const [loadingTask, setLoadingTask] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(error, { context: 'data', fallbackToInline: true });
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -182,19 +187,9 @@ export default function ProjectTaskDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <ErrorDisplay
-            title="Error Loading Task"
-            message={error}
-            onBack={() => router.push(`/dashboard/projects/${projectId}`)}
-          />
-        </div>
-      </div>
-    );
+  // Show ErrorDisplay for critical errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
   }
 
   if (!task) {
@@ -231,6 +226,13 @@ export default function ProjectTaskDetailPage() {
           ]}
           className="mb-6"
         />
+
+        {/* Non-Critical Error Message */}
+        {inlineErrorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {inlineErrorMessage}
+          </div>
+        )}
 
         {/* Task Details Card */}
         <Card>

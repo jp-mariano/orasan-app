@@ -25,6 +25,7 @@ import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
@@ -39,6 +40,10 @@ export default function ProjectDetailPage() {
   const [loadingProject, setLoadingProject] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(error, { context: 'data', fallbackToInline: true });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -260,17 +265,9 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <ErrorDisplay
-        title="Error Loading Project"
-        message={error}
-        onBack={handleBackToDashboard}
-        backLabel="Back to Dashboard"
-        showIssueBadge={true}
-        issueCount={1}
-      />
-    );
+  // Show ErrorDisplay for critical errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
   }
 
   if (!project) {
@@ -296,6 +293,13 @@ export default function ProjectDetailPage() {
           ]}
           className="mb-6"
         />
+
+        {/* Non-Critical Error Message */}
+        {inlineErrorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {inlineErrorMessage}
+          </div>
+        )}
 
         {/* Project Stats & Description Section */}
         <Card className="mb-6">

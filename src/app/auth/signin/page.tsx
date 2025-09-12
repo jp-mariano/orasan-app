@@ -16,12 +16,22 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useAuth } from '@/contexts/auth-context';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
 function LoginPageContent() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const { signIn } = useAuth();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
+
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(error, { context: 'auth', fallbackToInline: true });
+
+  // Show ErrorDisplay for critical auth errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
+  }
 
   const handleOAuthSignIn = async (
     provider: 'github' | 'google' | 'twitter'
@@ -44,11 +54,10 @@ function LoginPageContent() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {error && (
+          {/* Non-Critical Error Message */}
+          {inlineErrorMessage && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-              {error === 'auth_callback_failed'
-                ? 'Authentication failed. Please try again.'
-                : 'An error occurred. Please try again.'}
+              {inlineErrorMessage}
             </div>
           )}
 

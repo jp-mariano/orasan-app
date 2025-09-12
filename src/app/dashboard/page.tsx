@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types/index';
 
@@ -114,6 +115,10 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(projectsError, { context: 'data', fallbackToInline: true });
+
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
   useEffect(() => {
     if (!loading && !user && !isSigningOut) {
@@ -159,6 +164,11 @@ export default function DashboardPage() {
 
   if (!user) {
     return null; // Will redirect to signin
+  }
+
+  // Show ErrorDisplay for critical errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
   }
 
   return (
@@ -241,11 +251,11 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          {/* Error Message */}
-          {projectsError && (
+          {/* Non-Critical Error Message */}
+          {inlineErrorMessage && (
             <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4">
-                <p className="text-red-600 text-sm">{projectsError}</p>
+                <p className="text-red-600 text-sm">{inlineErrorMessage}</p>
               </CardContent>
             </Card>
           )}

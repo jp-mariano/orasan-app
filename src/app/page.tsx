@@ -1,6 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
+
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react';
 
@@ -13,9 +16,22 @@ import {
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
+import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
-export default function HomePage() {
+function HomePageContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+
+  // Handle errors with the new error display hook
+  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
+    useErrorDisplay(error, { context: 'general', fallbackToInline: true });
+
+  // Show ErrorDisplay for critical errors
+  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
+    return <ErrorDisplayComponent />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -23,6 +39,13 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-16">
+        {/* Non-Critical Error Message */}
+        {inlineErrorMessage && (
+          <div className="max-w-2xl mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {inlineErrorMessage}
+          </div>
+        )}
+
         <div className="text-center max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
             Track Time,{' '}
@@ -144,5 +167,22 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <HomePageContent />
+    </Suspense>
   );
 }
