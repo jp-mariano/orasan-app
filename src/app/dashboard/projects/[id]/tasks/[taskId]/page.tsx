@@ -341,7 +341,7 @@ export default function ProjectTaskDetailPage() {
               </div>
             ) : null}
 
-            {/* Due Date - Only show if it has a value */}
+            {/* Due Date */}
             {task.due_date ? (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">
@@ -357,7 +357,7 @@ export default function ProjectTaskDetailPage() {
               </div>
             ) : null}
 
-            {/* Assignee - Only show if it has a value and assignee_user data */}
+            {/* Assignee */}
             {task.assignee && task.assignee_user ? (
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-500">
@@ -387,6 +387,51 @@ export default function ProjectTaskDetailPage() {
                     assigneeUser: task.assignee_user,
                   }}
                 />
+              </div>
+            ) : null}
+
+            {/* Task Rate Type and Price/Currency */}
+            {task.rate_type && task.price !== null ? (
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500 block">
+                    Rate Type
+                  </Label>
+                  <InlineEdit
+                    value={task.rate_type}
+                    type="rate-type"
+                    onSave={value => handleSaveField('rate_type', value)}
+                    placeholder="Not set"
+                    className="text-center capitalize"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500 block">
+                    Price
+                  </Label>
+                  <InlineEdit
+                    value={`${task.currency_code || 'USD'} ${task.price}`}
+                    type="price-currency"
+                    onSave={value => {
+                      // Parse the combined value format "USD|50.00"
+                      if (typeof value === 'string' && value.includes('|')) {
+                        const [currency, priceStr] = value.split('|');
+                        const price = parseFloat(priceStr);
+                        if (!isNaN(price) && price >= 0) {
+                          // Update both fields
+                          handleSaveField('currency_code', currency);
+                          handleSaveField('price', price);
+                        }
+                      }
+                    }}
+                    placeholder="USD 0.00"
+                    className="text-center"
+                    projectData={{
+                      price: task.price,
+                      currency_code: task.currency_code,
+                    }}
+                  />
+                </div>
               </div>
             ) : null}
 

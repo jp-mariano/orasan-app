@@ -356,53 +356,46 @@ export default function ProjectDetailPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Project Name */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">
-                  Name
-                </Label>
-                <InlineEdit
-                  value={project.name}
-                  onSave={value => handleSaveField('name', value)}
-                  className="text-xl font-semibold"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-500">Name</Label>
+              <InlineEdit
+                value={project.name}
+                onSave={value => handleSaveField('name', value)}
+                className="text-xl font-semibold"
+              />
             </div>
 
             {/* Description */}
-            <div className="space-y-4">
-              {/* Description - Only show if it has a value */}
-              {project.description ? (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Description
-                  </Label>
-                  <InlineEdit
-                    value={project.description}
-                    type="textarea"
-                    multiline={true}
-                    onSave={value => handleSaveField('description', value)}
-                    placeholder="No description provided"
-                  />
-                </div>
-              ) : null}
+            {project.description ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Description
+                </Label>
+                <InlineEdit
+                  value={project.description}
+                  type="textarea"
+                  multiline={true}
+                  onSave={value => handleSaveField('description', value)}
+                  placeholder="No description provided"
+                />
+              </div>
+            ) : null}
 
-              {/* Client Name - Only show if it has a value */}
-              {project.client_name ? (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Client
-                  </Label>
-                  <InlineEdit
-                    value={project.client_name}
-                    onSave={value => handleSaveField('client_name', value)}
-                    placeholder="No client specified"
-                  />
-                </div>
-              ) : null}
-            </div>
+            {/* Client Name */}
+            {project.client_name ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Client
+                </Label>
+                <InlineEdit
+                  value={project.client_name}
+                  onSave={value => handleSaveField('client_name', value)}
+                  placeholder="No client specified"
+                />
+              </div>
+            ) : null}
 
-            {/* Project Rate Type and Price/Currency - Only show if they have values */}
+            {/* Project Rate Type and Price/Currency */}
             {project.rate_type && project.price !== null ? (
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
@@ -447,6 +440,7 @@ export default function ProjectDetailPage() {
               </div>
             ) : null}
 
+            {/* Status */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-500 block">
                 Status
