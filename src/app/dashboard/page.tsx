@@ -104,9 +104,9 @@ export default function DashboardPage() {
     updates: Partial<Project>
   ) => {
     try {
-      const result = await updateProject(projectId, updates);
-      if (!result.success) {
-        console.error('Failed to update project:', result.error);
+      const updatedProject = await updateProject(projectId, updates);
+      if (!updatedProject) {
+        console.error('Failed to update project');
       }
     } catch (error) {
       console.error('Error updating project:', error);

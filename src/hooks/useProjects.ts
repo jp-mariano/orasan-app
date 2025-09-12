@@ -18,7 +18,7 @@ interface UseProjectsReturn {
   updateProject: (
     id: string,
     data: UpdateProjectRequest
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<Project | null>;
   deleteProject: (id: string) => Promise<{ success: boolean; error?: string }>;
   refreshProjects: () => Promise<void>;
 }
@@ -87,8 +87,10 @@ export function useProjects(): UseProjectsReturn {
   );
 
   const updateProject = useCallback(
-    async (id: string, data: UpdateProjectRequest) => {
+    async (id: string, data: UpdateProjectRequest): Promise<Project | null> => {
       try {
+        setError(null);
+
         const response = await fetch(`/api/projects/${id}`, {
           method: 'PATCH',
           headers: {
@@ -100,27 +102,23 @@ export function useProjects(): UseProjectsReturn {
         const result = await response.json();
 
         if (!response.ok) {
-          return {
-            success: false,
-            error: result.error || 'Failed to update project',
-          };
+          throw new Error(result.error || 'Failed to update project');
         }
+
+        const updatedProject = result.project;
 
         // Update local state
         setProjects(prev =>
-          prev.map(project =>
-            project.id === id ? { ...project, ...result.project } : project
-          )
+          prev.map(project => (project.id === id ? updatedProject : project))
         );
 
-        return { success: true };
+        return updatedProject;
       } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to update project';
+        setError(errorMessage);
         console.error('Error updating project:', err);
-        return {
-          success: false,
-          error:
-            err instanceof Error ? err.message : 'Failed to update project',
-        };
+        return null;
       }
     },
     []

@@ -38,6 +38,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loadingProject, setLoadingProject] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,7 +64,7 @@ export default function ProjectDetailPage() {
   } = useTasks({ projectId });
 
   // Project management
-  const { updateProject } = useProjects();
+  const { updateProject, deleteProject } = useProjects();
 
   // Fetch project data
   useEffect(() => {
@@ -128,17 +129,14 @@ export default function ProjectDetailPage() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
-        method: 'DELETE',
-      });
+      const result = await deleteProject(project.id);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete project');
+      if (result.success) {
+        // Redirect to dashboard after successful deletion
+        router.push('/dashboard');
+      } else {
+        setError(result.error || 'Failed to delete project');
       }
-
-      // Redirect to dashboard after successful deletion
-      router.push('/dashboard');
     } catch (err) {
       console.error('Error deleting project:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete project');
@@ -206,14 +204,15 @@ export default function ProjectDetailPage() {
     if (!project) return { success: false, error: 'No project to update' };
 
     try {
-      const result = await updateProject(project.id, data);
+      const updatedProject = await updateProject(project.id, data);
 
-      if (result.success) {
+      if (updatedProject) {
         // Update local project state
-        setProject(prev => (prev ? { ...prev, ...data } : null));
+        setProject(updatedProject);
+        return { success: true };
+      } else {
+        return { success: false, error: 'Failed to update project' };
       }
-
-      return result;
     } catch (error) {
       console.error('Error updating project:', error);
       return {
@@ -231,26 +230,32 @@ export default function ProjectDetailPage() {
     if (!project) return;
 
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ [field]: value }),
+      const updatedProject = await updateProject(project.id, {
+        [field]: value,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update project');
+      if (updatedProject) {
+        // Update local project state
+        setProject(updatedProject);
+        // Clear field error on success
+        setFieldErrors(prev => ({ ...prev, [field]: '' }));
+      } else {
+        // Set field-specific error
+        setFieldErrors(prev => ({
+          ...prev,
+          [field]: 'Failed to update project',
+        }));
+        throw new Error('Failed to update project');
       }
-
-      const result = await response.json();
-
-      // Update local project state
-      setProject(prev => (prev ? { ...prev, ...result.project } : null));
     } catch (err) {
-      console.error('Error updating project:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update project');
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update project';
+
+      // Set field-specific error
+      setFieldErrors(prev => ({ ...prev, [field]: errorMessage }));
+
+      // Re-throw the error so InlineEdit can catch it
+      throw err;
     }
   };
 
@@ -360,7 +365,11 @@ export default function ProjectDetailPage() {
               <Label className="text-sm font-medium text-gray-500">Name</Label>
               <InlineEdit
                 value={project.name}
-                onSave={value => handleSaveField('name', value)}
+                onSave={async value => await handleSaveField('name', value)}
+                onError={error =>
+                  setFieldErrors(prev => ({ ...prev, name: error }))
+                }
+                error={fieldErrors.name}
                 className="text-xl font-semibold"
               />
             </div>
@@ -375,7 +384,13 @@ export default function ProjectDetailPage() {
                   value={project.description}
                   type="textarea"
                   multiline={true}
-                  onSave={value => handleSaveField('description', value)}
+                  onSave={async value =>
+                    await handleSaveField('description', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, description: error }))
+                  }
+                  error={fieldErrors.description}
                   placeholder="No description provided"
                 />
               </div>
@@ -389,7 +404,13 @@ export default function ProjectDetailPage() {
                 </Label>
                 <InlineEdit
                   value={project.client_name}
-                  onSave={value => handleSaveField('client_name', value)}
+                  onSave={async value =>
+                    await handleSaveField('client_name', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, client_name: error }))
+                  }
+                  error={fieldErrors.client_name}
                   placeholder="No client specified"
                 />
               </div>
@@ -405,7 +426,13 @@ export default function ProjectDetailPage() {
                   <InlineEdit
                     value={project.rate_type}
                     type="rate-type"
-                    onSave={value => handleSaveField('rate_type', value)}
+                    onSave={async value =>
+                      await handleSaveField('rate_type', value)
+                    }
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, rate_type: error }))
+                    }
+                    error={fieldErrors.rate_type}
                     placeholder="Not set"
                     className="text-center capitalize"
                   />
@@ -417,18 +444,22 @@ export default function ProjectDetailPage() {
                   <InlineEdit
                     value={`${project.currency_code || 'USD'} ${project.price}`}
                     type="price-currency"
-                    onSave={value => {
+                    onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
                         const [currency, priceStr] = value.split('|');
                         const price = parseFloat(priceStr);
                         if (!isNaN(price) && price >= 0) {
                           // Update both fields
-                          handleSaveField('currency_code', currency);
-                          handleSaveField('price', price);
+                          await handleSaveField('currency_code', currency);
+                          await handleSaveField('price', price);
                         }
                       }
                     }}
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, price: error }))
+                    }
+                    error={fieldErrors.price}
                     placeholder="USD 0.00"
                     className="text-center"
                     projectData={{
@@ -448,7 +479,11 @@ export default function ProjectDetailPage() {
               <InlineEdit
                 value={project.status}
                 type="status"
-                onSave={value => handleSaveField('status', value)}
+                onSave={async value => await handleSaveField('status', value)}
+                onError={error =>
+                  setFieldErrors(prev => ({ ...prev, status: error }))
+                }
+                error={fieldErrors.status}
                 className="text-base"
               />
             </div>

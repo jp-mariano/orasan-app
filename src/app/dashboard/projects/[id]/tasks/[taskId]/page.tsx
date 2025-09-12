@@ -22,6 +22,7 @@ import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
@@ -33,6 +34,7 @@ export default function ProjectTaskDetailPage() {
   const [task, setTask] = useState<TaskWithDetails | null>(null);
   const [loadingTask, setLoadingTask] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -41,6 +43,9 @@ export default function ProjectTaskDetailPage() {
 
   const projectId = params.id as string;
   const taskId = params.taskId as string;
+
+  // Task management
+  const { updateTask, deleteTask } = useTasks({ projectId });
 
   // Fetch task data - same pattern as Project page
   useEffect(() => {
@@ -103,37 +108,27 @@ export default function ProjectTaskDetailPage() {
     if (!task) return;
 
     try {
-      const response = await fetch(
-        `/api/projects/${projectId}/tasks/${taskId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ [field]: value }),
-        }
-      );
+      const updatedTask = await updateTask(taskId, { [field]: value });
 
-      if (!response.ok) {
+      if (updatedTask) {
+        // Update local task state
+        setTask(updatedTask);
+        // Clear field error on success
+        setFieldErrors(prev => ({ ...prev, [field]: '' }));
+      } else {
+        // Set field-specific error
+        setFieldErrors(prev => ({ ...prev, [field]: 'Failed to update task' }));
         throw new Error('Failed to update task');
       }
-
-      const data = await response.json();
-      setTask(data.task);
     } catch (err) {
-      console.error('Error updating task:', err);
-      // Revert the change on error by refetching the task
-      try {
-        const response = await fetch(
-          `/api/projects/${projectId}/tasks/${taskId}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setTask(data.task);
-        }
-      } catch (refetchError) {
-        console.error('Error refetching task:', refetchError);
-      }
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update task';
+
+      // Set field-specific error
+      setFieldErrors(prev => ({ ...prev, [field]: errorMessage }));
+
+      // Re-throw the error so InlineEdit can catch it
+      throw err;
     }
   };
 
@@ -147,24 +142,14 @@ export default function ProjectTaskDetailPage() {
     if (!task) return;
 
     try {
-      const response = await fetch(
-        `/api/projects/${projectId}/tasks/${taskId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(taskData),
-        }
-      );
+      const updatedTask = await updateTask(taskId, taskData);
 
-      if (!response.ok) {
+      if (updatedTask) {
+        setTask(updatedTask);
+        setIsEditModalOpen(false);
+      } else {
         throw new Error('Failed to update task');
       }
-
-      const data = await response.json();
-      setTask(data.task);
-      setIsEditModalOpen(false);
     } catch (err) {
       console.error('Error updating task:', err);
       throw err;
@@ -176,19 +161,14 @@ export default function ProjectTaskDetailPage() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch(
-        `/api/projects/${projectId}/tasks/${taskId}`,
-        {
-          method: 'DELETE',
-        }
-      );
+      const success = await deleteTask(taskId);
 
-      if (!response.ok) {
-        throw new Error('Failed to delete task');
+      if (success) {
+        // Redirect back to project page
+        router.push(`/dashboard/projects/${projectId}`);
+      } else {
+        setError('Failed to delete task');
       }
-
-      // Redirect back to project page
-      router.push(`/dashboard/projects/${projectId}`);
     } catch (err) {
       console.error('Error deleting task:', err);
       setError('Failed to delete task');
@@ -320,7 +300,11 @@ export default function ProjectTaskDetailPage() {
               </Label>
               <InlineEdit
                 value={task.name}
-                onSave={value => handleSaveField('name', value)}
+                onSave={async value => await handleSaveField('name', value)}
+                onError={error =>
+                  setFieldErrors(prev => ({ ...prev, name: error }))
+                }
+                error={fieldErrors.name}
                 className="text-xl font-semibold"
               />
             </div>
@@ -333,7 +317,13 @@ export default function ProjectTaskDetailPage() {
                 </Label>
                 <InlineEdit
                   value={task.description}
-                  onSave={value => handleSaveField('description', value)}
+                  onSave={async value =>
+                    await handleSaveField('description', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, description: error }))
+                  }
+                  error={fieldErrors.description}
                   multiline
                   placeholder="Add a description..."
                   className="text-gray-700"
@@ -350,7 +340,13 @@ export default function ProjectTaskDetailPage() {
                 <InlineEdit
                   value={task.due_date}
                   type="due-date"
-                  onSave={value => handleSaveField('due_date', value)}
+                  onSave={async value =>
+                    await handleSaveField('due_date', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, due_date: error }))
+                  }
+                  error={fieldErrors.due_date}
                   placeholder="Set due date..."
                   className="text-gray-700"
                 />
@@ -366,7 +362,13 @@ export default function ProjectTaskDetailPage() {
                 <InlineEdit
                   value={task.assignee}
                   type="assignee"
-                  onSave={value => handleSaveField('assignee', value)}
+                  onSave={async value =>
+                    await handleSaveField('assignee', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, assignee: error }))
+                  }
+                  error={fieldErrors.assignee}
                   placeholder="Unassigned"
                   className="text-gray-700"
                   assigneeData={{
@@ -400,7 +402,13 @@ export default function ProjectTaskDetailPage() {
                   <InlineEdit
                     value={task.rate_type}
                     type="rate-type"
-                    onSave={value => handleSaveField('rate_type', value)}
+                    onSave={async value =>
+                      await handleSaveField('rate_type', value)
+                    }
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, rate_type: error }))
+                    }
+                    error={fieldErrors.rate_type}
                     placeholder="Not set"
                     className="text-center capitalize"
                   />
@@ -412,18 +420,22 @@ export default function ProjectTaskDetailPage() {
                   <InlineEdit
                     value={`${task.currency_code || 'USD'} ${task.price}`}
                     type="price-currency"
-                    onSave={value => {
+                    onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
                         const [currency, priceStr] = value.split('|');
                         const price = parseFloat(priceStr);
                         if (!isNaN(price) && price >= 0) {
                           // Update both fields
-                          handleSaveField('currency_code', currency);
-                          handleSaveField('price', price);
+                          await handleSaveField('currency_code', currency);
+                          await handleSaveField('price', price);
                         }
                       }
                     }}
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, price: error }))
+                    }
+                    error={fieldErrors.price}
                     placeholder="USD 0.00"
                     className="text-center"
                     projectData={{
@@ -443,7 +455,11 @@ export default function ProjectTaskDetailPage() {
               <InlineEdit
                 value={task.priority}
                 type="priority"
-                onSave={value => handleSaveField('priority', value)}
+                onSave={async value => await handleSaveField('priority', value)}
+                onError={error =>
+                  setFieldErrors(prev => ({ ...prev, priority: error }))
+                }
+                error={fieldErrors.priority}
                 className="text-gray-700"
               />
             </div>
@@ -456,7 +472,11 @@ export default function ProjectTaskDetailPage() {
               <InlineEdit
                 value={task.status}
                 type="status"
-                onSave={value => handleSaveField('status', value)}
+                onSave={async value => await handleSaveField('status', value)}
+                onError={error =>
+                  setFieldErrors(prev => ({ ...prev, status: error }))
+                }
+                error={fieldErrors.status}
                 className="text-gray-700"
               />
             </div>
