@@ -41,7 +41,9 @@ interface InlineEditProps {
   className?: string;
   multiline?: boolean;
   rows?: number;
-  onSave: (value: string | number | null) => void;
+  onSave: (value: string | number | null) => Promise<void>;
+  onError?: (error: string) => void;
+  error?: string | null;
   projectData?: {
     price?: number | null;
     currency_code?: string | null;
@@ -61,6 +63,8 @@ export function InlineEdit({
   multiline = false,
   rows = 3,
   onSave,
+  onError,
+  error,
   projectData,
   assigneeData,
 }: InlineEditProps) {
@@ -113,32 +117,46 @@ export function InlineEdit({
     }
   }, [value, type]);
 
-  const handleSave = () => {
-    if (type === 'due-date') {
-      // For due-date, use the selected date
-      if (selectedDate) {
-        const dateString = formatDate(selectedDate);
-        onSave(dateString);
-      } else {
-        onSave(null);
-      }
-    } else if (editValue !== value) {
-      if (type === 'price-currency') {
-        // For price-currency, use the local states directly
-        if (localPrice >= 0) {
-          // We'll call onSave with a special format that the parent can handle
-          onSave(`${localCurrency}|${localPrice}`);
+  const handleSave = async () => {
+    try {
+      if (type === 'due-date') {
+        // For due-date, use the selected date
+        if (selectedDate) {
+          const dateString = formatDate(selectedDate);
+          await onSave(dateString);
         } else {
-          return;
+          await onSave(null);
         }
-      } else if (type === 'assignee') {
-        // For assignee, convert "none" to null for unassigned
-        onSave(editValue === 'none' ? null : editValue);
-      } else {
-        onSave(editValue);
+      } else if (editValue !== value) {
+        if (type === 'price-currency') {
+          // For price-currency, use the local states directly
+          if (localPrice >= 0) {
+            // We'll call onSave with a special format that the parent can handle
+            await onSave(`${localCurrency}|${localPrice}`);
+          } else {
+            return;
+          }
+        } else if (type === 'assignee') {
+          // For assignee, convert "none" to null for unassigned
+          await onSave(editValue === 'none' ? null : editValue);
+        } else {
+          await onSave(editValue);
+        }
+      }
+      // Only exit edit mode after successful save
+      setIsEditing(false);
+      // Clear any existing error on successful save
+      if (onError && error) {
+        onError('');
+      }
+    } catch (error) {
+      // Handle error - don't close editing mode so user can retry
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save';
+      if (onError) {
+        onError(errorMessage);
       }
     }
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -159,6 +177,10 @@ export function InlineEdit({
     if (projectData) {
       setLocalCurrency(projectData.currency_code || 'USD');
       setLocalPrice(projectData.price || 0);
+    }
+    // Clear any existing error when canceling
+    if (onError && error) {
+      onError('');
     }
     setIsEditing(false);
   };
@@ -190,9 +212,28 @@ export function InlineEdit({
     }
   };
 
+  const wrapWithError = (content: React.ReactNode) => (
+    <div className="space-y-1">
+      {content}
+      {error && (
+        <div className="text-sm text-red-600 flex items-center space-x-1">
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const handleStartEdit = () => {
+    // Clear any existing error when starting a new edit
+    if (onError && error) {
+      onError('');
+    }
+    setIsEditing(true);
+  };
+
   if (isEditing) {
     if (type === 'rate-type') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <Select value={editValue} onValueChange={setEditValue}>
             <SelectTrigger className="flex-1">
@@ -227,7 +268,7 @@ export function InlineEdit({
     }
 
     if (type === 'price-currency') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2 flex-1">
             <Select
@@ -287,7 +328,7 @@ export function InlineEdit({
     }
 
     if (type === 'status') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <Select value={editValue} onValueChange={setEditValue}>
             <SelectTrigger className="w-32">
@@ -323,7 +364,7 @@ export function InlineEdit({
     }
 
     if (type === 'priority') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <Select value={editValue} onValueChange={setEditValue}>
             <SelectTrigger className="w-32">
@@ -359,7 +400,7 @@ export function InlineEdit({
     }
 
     if (type === 'assignee') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <Select value={editValue} onValueChange={setEditValue}>
             <SelectTrigger className="w-48">
@@ -401,7 +442,7 @@ export function InlineEdit({
     }
 
     if (type === 'due-date') {
-      return (
+      return wrapWithError(
         <div className="flex items-center space-x-2">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
@@ -451,7 +492,7 @@ export function InlineEdit({
     }
 
     if (multiline || type === 'textarea') {
-      return (
+      return wrapWithError(
         <div className="flex items-start space-x-2">
           <Textarea
             value={editValue}
@@ -484,7 +525,7 @@ export function InlineEdit({
       );
     }
 
-    return (
+    return wrapWithError(
       <div className="flex items-center space-x-2">
         <Input
           value={editValue}
@@ -518,9 +559,9 @@ export function InlineEdit({
 
   // For status type, render as a styled badge
   if (type === 'status' && value) {
-    return (
+    return wrapWithError(
       <div
-        onClick={() => setIsEditing(true)}
+        onClick={handleStartEdit}
         className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Status)} ${className}`}
       >
         {getStatusLabel(value as Status)}
@@ -530,9 +571,9 @@ export function InlineEdit({
 
   // For priority type, render as a styled badge
   if (type === 'priority' && value) {
-    return (
+    return wrapWithError(
       <div
-        onClick={() => setIsEditing(true)}
+        onClick={handleStartEdit}
         className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getPriorityColor(value as Priority)} ${className}`}
       >
         {getPriorityLabel(value as Priority)}
@@ -549,10 +590,12 @@ export function InlineEdit({
     );
 
     if (displayName) {
-      return (
+      return wrapWithError(
         <div
-          onClick={() => setIsEditing(true)}
-          className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
+          onClick={handleStartEdit}
+          className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] flex items-center ${
+            error ? 'border-red-500' : 'border-gray-200'
+          } ${className}`}
         >
           {displayName}
         </div>
@@ -566,10 +609,12 @@ export function InlineEdit({
     const isValidDate = !isNaN(date.getTime());
 
     if (isValidDate) {
-      return (
+      return wrapWithError(
         <div
-          onClick={() => setIsEditing(true)}
-          className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] flex items-center ${className}`}
+          onClick={handleStartEdit}
+          className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] flex items-center ${
+            error ? 'border-red-500' : 'border-gray-200'
+          } ${className}`}
         >
           {formatDate(value)}
         </div>
@@ -577,10 +622,12 @@ export function InlineEdit({
     }
   }
 
-  return (
+  return wrapWithError(
     <div
-      onClick={() => setIsEditing(true)}
-      className={`cursor-pointer border border-gray-200 rounded px-3 py-2 min-h-[40px] ${multiline || type === 'textarea' ? 'whitespace-pre-wrap' : 'flex items-center'} ${className}`}
+      onClick={handleStartEdit}
+      className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] ${
+        error ? 'border-red-500' : 'border-gray-200'
+      } ${multiline || type === 'textarea' ? 'whitespace-pre-wrap' : 'flex items-center'} ${className}`}
     >
       {value || placeholder}
     </div>
