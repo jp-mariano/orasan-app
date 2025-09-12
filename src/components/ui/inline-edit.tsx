@@ -26,6 +26,62 @@ import { getStatusColor, getStatusLabel } from '@/lib/status';
 import { formatDate, getAssigneeDisplayName } from '@/lib/utils';
 import { Priority, Status, User } from '@/types/index';
 
+// Consolidated state interface
+interface InlineEditState {
+  isEditing: boolean;
+  editValue: string;
+  localCurrency: string;
+  localPrice: number;
+  selectedDate: Date | undefined;
+  calendarOpen: boolean;
+}
+
+// Helper functions for state initialization
+const getInitialEditValue = (
+  type: string,
+  value: string | null | undefined
+): string => {
+  if (type === 'assignee') {
+    return value || 'none';
+  }
+  return value || '';
+};
+
+const getInitialCurrency = (
+  type: string,
+  value: string | null | undefined,
+  projectData?: { currency_code?: string | null }
+): string => {
+  if (type === 'price-currency' && value) {
+    const parts = value.toString().split(' ');
+    return parts[0] || 'USD';
+  }
+  return projectData?.currency_code || 'USD';
+};
+
+const getInitialPrice = (
+  type: string,
+  value: string | null | undefined,
+  projectData?: { price?: number | null }
+): number => {
+  if (type === 'price-currency' && value) {
+    const parts = value.toString().split(' ');
+    return parseFloat(parts[1]) || 0;
+  }
+  return projectData?.price || 0;
+};
+
+const getInitialDate = (
+  type: string,
+  value: string | null | undefined
+): Date | undefined => {
+  if (type === 'due-date' && value) {
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? undefined : date;
+  }
+  return undefined;
+};
+
 interface InlineEditProps {
   value: string | null | undefined;
   type?:
@@ -68,52 +124,45 @@ export function InlineEdit({
   projectData,
   assigneeData,
 }: InlineEditProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(() => {
-    if (type === 'assignee') {
-      return value || 'none';
-    }
-    return value || '';
-  });
+  // Consolidated state management
+  const [state, setState] = useState<InlineEditState>(() => ({
+    isEditing: false,
+    editValue: getInitialEditValue(type, value),
+    localCurrency: getInitialCurrency(type, value, projectData),
+    localPrice: getInitialPrice(type, value, projectData),
+    selectedDate: getInitialDate(type, value),
+    calendarOpen: false,
+  }));
 
-  // Local state for price-currency type
-  const [localCurrency, setLocalCurrency] = useState(() => {
-    if (type === 'price-currency' && value) {
-      // Parse the value "USD 50.00" to get currency
-      const parts = value.toString().split(' ');
-      return parts[0] || 'USD';
-    }
-    return projectData?.currency_code || 'USD';
-  });
-  const [localPrice, setLocalPrice] = useState(() => {
-    if (type === 'price-currency' && value) {
-      // Parse the value "USD 50.00" to get price
-      const parts = value.toString().split(' ');
-      return parseFloat(parts[1]) || 0;
-    }
-    return projectData?.price || 0;
-  });
+  // Destructure state for easier access
+  const {
+    isEditing,
+    editValue,
+    localCurrency,
+    localPrice,
+    selectedDate,
+    calendarOpen,
+  } = state;
 
-  // Local state for due-date type
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
-    if (type === 'due-date' && value) {
-      const date = new Date(value);
-      return isNaN(date.getTime()) ? undefined : date;
-    }
-    return undefined;
-  });
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  // State updater function
+  const updateState = (updates: Partial<InlineEditState>) => {
+    setState(prev => ({ ...prev, ...updates }));
+  };
 
   // Update local states when value prop changes
   useEffect(() => {
     if (type === 'price-currency' && value) {
       const parts = value.toString().split(' ');
-      setLocalCurrency(parts[0] || 'USD');
-      setLocalPrice(parseFloat(parts[1]) || 0);
+      updateState({
+        localCurrency: parts[0] || 'USD',
+        localPrice: parseFloat(parts[1]) || 0,
+      });
     }
     if (type === 'due-date' && value) {
       const date = new Date(value);
-      setSelectedDate(isNaN(date.getTime()) ? undefined : date);
+      updateState({
+        selectedDate: isNaN(date.getTime()) ? undefined : date,
+      });
     }
   }, [value, type]);
 
@@ -144,7 +193,7 @@ export function InlineEdit({
         }
       }
       // Only exit edit mode after successful save
-      setIsEditing(false);
+      updateState({ isEditing: false });
       // Clear any existing error on successful save
       if (onError && error) {
         onError('');
@@ -161,28 +210,32 @@ export function InlineEdit({
 
   const handleCancel = () => {
     if (type === 'assignee') {
-      setEditValue(value || 'none');
+      updateState({ editValue: value || 'none' });
     } else if (type === 'due-date') {
       // Reset to original date
       if (value) {
         const date = new Date(value);
-        setSelectedDate(isNaN(date.getTime()) ? undefined : date);
+        updateState({
+          selectedDate: isNaN(date.getTime()) ? undefined : date,
+        });
       } else {
-        setSelectedDate(undefined);
+        updateState({ selectedDate: undefined });
       }
     } else {
-      setEditValue(value || '');
+      updateState({ editValue: value || '' });
     }
     // Reset local states for price-currency
     if (projectData) {
-      setLocalCurrency(projectData.currency_code || 'USD');
-      setLocalPrice(projectData.price || 0);
+      updateState({
+        localCurrency: projectData.currency_code || 'USD',
+        localPrice: projectData.price || 0,
+      });
     }
     // Clear any existing error when canceling
     if (onError && error) {
       onError('');
     }
-    setIsEditing(false);
+    updateState({ isEditing: false });
   };
 
   const handleBlur = (e: React.FocusEvent) => {
@@ -199,7 +252,7 @@ export function InlineEdit({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setEditValue(e.target.value);
+    updateState({ editValue: e.target.value });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -228,14 +281,17 @@ export function InlineEdit({
     if (onError && error) {
       onError('');
     }
-    setIsEditing(true);
+    updateState({ isEditing: true });
   };
 
   if (isEditing) {
     if (type === 'rate-type') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
-          <Select value={editValue} onValueChange={setEditValue}>
+          <Select
+            value={editValue}
+            onValueChange={value => updateState({ editValue: value })}
+          >
             <SelectTrigger className="flex-1">
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
@@ -274,8 +330,10 @@ export function InlineEdit({
             <Select
               value={localCurrency}
               onValueChange={currency => {
-                setLocalCurrency(currency);
-                setEditValue(`${currency} ${localPrice}`);
+                updateState({
+                  localCurrency: currency,
+                  editValue: `${currency} ${localPrice}`,
+                });
               }}
             >
               <SelectTrigger className="w-24">
@@ -298,8 +356,10 @@ export function InlineEdit({
               value={localPrice.toString()}
               onChange={e => {
                 const price = parseFloat(e.target.value) || 0;
-                setLocalPrice(price);
-                setEditValue(`${localCurrency} ${price}`);
+                updateState({
+                  localPrice: price,
+                  editValue: `${localCurrency} ${price}`,
+                });
               }}
               className="flex-1"
               placeholder="Enter amount"
@@ -330,7 +390,10 @@ export function InlineEdit({
     if (type === 'status') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
-          <Select value={editValue} onValueChange={setEditValue}>
+          <Select
+            value={editValue}
+            onValueChange={value => updateState({ editValue: value })}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -366,7 +429,10 @@ export function InlineEdit({
     if (type === 'priority') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
-          <Select value={editValue} onValueChange={setEditValue}>
+          <Select
+            value={editValue}
+            onValueChange={value => updateState({ editValue: value })}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -402,7 +468,10 @@ export function InlineEdit({
     if (type === 'assignee') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
-          <Select value={editValue} onValueChange={setEditValue}>
+          <Select
+            value={editValue}
+            onValueChange={value => updateState({ editValue: value })}
+          >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select assignee" />
             </SelectTrigger>
@@ -444,7 +513,10 @@ export function InlineEdit({
     if (type === 'due-date') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <Popover
+            open={calendarOpen}
+            onOpenChange={open => updateState({ calendarOpen: open })}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -459,8 +531,10 @@ export function InlineEdit({
                 mode="single"
                 selected={selectedDate}
                 onSelect={date => {
-                  setSelectedDate(date);
-                  setCalendarOpen(false);
+                  updateState({
+                    selectedDate: date,
+                    calendarOpen: false,
+                  });
                 }}
                 captionLayout="dropdown"
                 startMonth={new Date(new Date().getFullYear() - 10, 0, 1)}
