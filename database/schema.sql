@@ -79,12 +79,7 @@ CREATE TABLE public.time_entries (
   description TEXT,
   is_running BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Ensure either start_time/end_time OR duration_minutes is provided
-  CONSTRAINT time_entry_constraint CHECK (
-    (start_time IS NOT NULL AND end_time IS NOT NULL) OR 
-    (duration_minutes IS NOT NULL AND duration_minutes > 0)
-  )
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create indexes for better performance
@@ -176,18 +171,3 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON public.tasks
 
 CREATE TRIGGER update_time_entries_updated_at BEFORE UPDATE ON public.time_entries
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Create function to calculate duration when both start_time and end_time are provided
-CREATE OR REPLACE FUNCTION calculate_duration_from_times()
-RETURNS TRIGGER AS $$
-BEGIN
-  IF NEW.start_time IS NOT NULL AND NEW.end_time IS NOT NULL THEN
-    NEW.duration_minutes = EXTRACT(EPOCH FROM (NEW.end_time - NEW.start_time)) / 60;
-  END IF;
-  RETURN NEW;
-END;
-$$ language 'plpgsql' SECURITY DEFINER SET search_path = public;
-
--- Create trigger for duration calculation
-CREATE TRIGGER calculate_time_entry_duration_from_times BEFORE INSERT OR UPDATE ON public.time_entries
-  FOR EACH ROW EXECUTE FUNCTION calculate_duration_from_times();
