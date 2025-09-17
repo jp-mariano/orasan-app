@@ -109,11 +109,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      !timeEntryData.duration_minutes ||
-      timeEntryData.duration_minutes <= 0
+      timeEntryData.duration_minutes === undefined ||
+      timeEntryData.duration_minutes < 0 ||
+      (timeEntryData.duration_minutes === 0 && !timeEntryData.is_running)
     ) {
       return NextResponse.json(
-        { error: 'Duration must be greater than 0' },
+        { error: 'Duration must be greater than 0 for completed timers' },
         { status: 400 }
       );
     }

@@ -90,10 +90,11 @@ export async function PATCH(
     // Validate duration if it's being updated
     if (
       updateData.duration_minutes !== undefined &&
-      updateData.duration_minutes <= 0
+      (updateData.duration_minutes < 0 ||
+        (updateData.duration_minutes === 0 && updateData.is_running !== true))
     ) {
       return NextResponse.json(
-        { error: 'Duration must be greater than 0' },
+        { error: 'Duration must be greater than 0 for completed timers' },
         { status: 400 }
       );
     }
