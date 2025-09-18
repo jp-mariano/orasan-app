@@ -88,7 +88,8 @@ CREATE TABLE public.time_entries (
   CONSTRAINT check_status_end_time CHECK (
     (timer_status = 'stopped' AND end_time IS NOT NULL) OR 
     (timer_status IN ('running', 'paused') AND end_time IS NULL)
-  )
+  ),
+  CONSTRAINT unique_task_time_entry UNIQUE (task_id)
 );
 
 -- Create indexes for better performance
