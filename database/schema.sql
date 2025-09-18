@@ -72,14 +72,23 @@ CREATE TABLE public.tasks (
 CREATE TABLE public.time_entries (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   task_id UUID REFERENCES public.tasks(id) ON DELETE CASCADE NOT NULL,
+  project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   start_time TIMESTAMP WITH TIME ZONE,
   end_time TIMESTAMP WITH TIME ZONE,
-  duration_minutes INTEGER NOT NULL,
-  description TEXT,
-  is_running BOOLEAN DEFAULT false,
+  duration_minutes INTEGER DEFAULT 0 NOT NULL,
+  timer_status VARCHAR(20) DEFAULT 'paused' CHECK (timer_status IN ('running', 'paused', 'stopped')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- Constraints for data integrity
+  CONSTRAINT check_duration_positive CHECK (duration_minutes >= 0),
+  CONSTRAINT check_end_after_start CHECK (end_time IS NULL OR end_time >= start_time),
+  CONSTRAINT check_timer_status CHECK (timer_status IN ('running', 'paused', 'stopped')),
+  CONSTRAINT check_status_end_time CHECK (
+    (timer_status = 'stopped' AND end_time IS NOT NULL) OR 
+    (timer_status IN ('running', 'paused') AND end_time IS NULL)
+  )
 );
 
 -- Create indexes for better performance
@@ -89,7 +98,11 @@ CREATE INDEX idx_tasks_project_id ON public.tasks(project_id);
 CREATE INDEX idx_tasks_user_id ON public.tasks(user_id);
 CREATE INDEX idx_tasks_status ON public.tasks(status);
 CREATE INDEX idx_time_entries_task_id ON public.time_entries(task_id);
+CREATE INDEX idx_time_entries_project_id ON public.time_entries(project_id);
 CREATE INDEX idx_time_entries_user_id ON public.time_entries(user_id);
+CREATE INDEX idx_time_entries_user_status ON public.time_entries(user_id, timer_status);
+CREATE INDEX idx_time_entries_task_status ON public.time_entries(task_id, timer_status);
+CREATE INDEX idx_time_entries_created_at ON public.time_entries(created_at);
 CREATE INDEX idx_time_entries_start_time ON public.time_entries(start_time);
 
 -- Enable Row Level Security (RLS)
