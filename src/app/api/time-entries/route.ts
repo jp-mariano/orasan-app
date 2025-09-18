@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (running === 'true') {
-      query = query.eq('is_running', true);
+      query = query.eq('timer_status', 'running');
     }
 
     const { data: timeEntries, error } = await query;
@@ -110,11 +110,10 @@ export async function POST(request: NextRequest) {
 
     if (
       timeEntryData.duration_minutes === undefined ||
-      timeEntryData.duration_minutes < 0 ||
-      (timeEntryData.duration_minutes === 0 && !timeEntryData.is_running)
+      timeEntryData.duration_minutes < 0
     ) {
       return NextResponse.json(
-        { error: 'Duration must be greater than 0 for completed timers' },
+        { error: 'Duration must be greater than or equal to 0' },
         { status: 400 }
       );
     }
@@ -132,13 +131,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for running timers on the same task
-    if (timeEntryData.is_running) {
+    if (timeEntryData.timer_status === 'running') {
       const { data: runningTimer } = await supabase
         .from('time_entries')
         .select('id')
         .eq('task_id', timeEntryData.task_id)
         .eq('user_id', user.id)
-        .eq('is_running', true)
+        .eq('timer_status', 'running')
         .single();
 
       if (runningTimer) {
@@ -154,12 +153,12 @@ export async function POST(request: NextRequest) {
       .from('time_entries')
       .insert({
         task_id: timeEntryData.task_id,
+        project_id: task.project_id,
         user_id: user.id,
         start_time: timeEntryData.start_time || null,
         end_time: timeEntryData.end_time || null,
-        duration_minutes: timeEntryData.duration_minutes,
-        description: timeEntryData.description?.trim() || null,
-        is_running: timeEntryData.is_running || false,
+        duration_minutes: timeEntryData.duration_minutes || 0,
+        timer_status: timeEntryData.timer_status || 'paused',
       })
       .select(
         `

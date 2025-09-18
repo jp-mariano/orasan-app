@@ -101,7 +101,7 @@ export async function PATCH(
     // First check if the time entry exists and belongs to the user
     const { data: existingTimeEntry, error: fetchError } = await supabase
       .from('time_entries')
-      .select('id, task_id, is_running')
+      .select('id, task_id, timer_status')
       .eq('id', timeEntryId)
       .eq('user_id', user.id)
       .single();
@@ -114,13 +114,13 @@ export async function PATCH(
     }
 
     // If starting a timer, check for running timers on the same task
-    if (updateData.is_running === true) {
+    if (updateData.timer_status === 'running') {
       const { data: runningTimer } = await supabase
         .from('time_entries')
         .select('id')
         .eq('task_id', existingTimeEntry.task_id)
         .eq('user_id', user.id)
-        .eq('is_running', true)
+        .eq('timer_status', 'running')
         .neq('id', timeEntryId)
         .single();
 
@@ -134,14 +134,7 @@ export async function PATCH(
 
     // Prepare update data (only include defined fields)
     const updatePayload = Object.fromEntries(
-      Object.entries(updateData)
-        .filter(([, value]) => value !== undefined)
-        .map(([key, value]) => [
-          key,
-          ['description'].includes(key) && typeof value === 'string'
-            ? value.trim() || null
-            : value,
-        ])
+      Object.entries(updateData).filter(([, value]) => value !== undefined)
     );
 
     // Update the time entry
@@ -206,7 +199,7 @@ export async function DELETE(
     // First check if the time entry exists and belongs to the user
     const { data: existingTimeEntry, error: fetchError } = await supabase
       .from('time_entries')
-      .select('id, task_id, is_running')
+      .select('id, task_id, timer_status')
       .eq('id', timeEntryId)
       .eq('user_id', user.id)
       .single();
