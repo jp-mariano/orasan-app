@@ -25,6 +25,7 @@ import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { TimeTrackingProvider } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -282,274 +283,286 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header showWelcome={false} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <Breadcrumb
-          items={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: project.name, href: `/dashboard/projects/${project.id}` },
-          ]}
-          className="mb-6"
+    <TimeTrackingProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Header showWelcome={false} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Breadcrumb */}
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', href: '/dashboard' },
+              {
+                label: project.name,
+                href: `/dashboard/projects/${project.id}`,
+              },
+            ]}
+            className="mb-6"
+          />
+
+          {/* Non-Critical Error Message */}
+          {inlineErrorMessage && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {inlineErrorMessage}
+            </div>
+          )}
+
+          {/* Project Stats & Description Section */}
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Project Information</CardTitle>
+                  <CardDescription>
+                    Manage your project details and settings
+                  </CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="relative" ref={actionsRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowActions(!showActions)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+
+                    {showActions && (
+                      <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            setIsEditModalOpen(true);
+                            setShowActions(false);
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsDeleteModalOpen(true);
+                            setShowActions(false);
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Project Name */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Name
+                </Label>
+                <InlineEdit
+                  value={project.name}
+                  onSave={async value => await handleSaveField('name', value)}
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, name: error }))
+                  }
+                  error={fieldErrors.name}
+                  className="text-xl font-semibold"
+                />
+              </div>
+
+              {/* Description */}
+              {project.description ? (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">
+                    Description
+                  </Label>
+                  <InlineEdit
+                    value={project.description}
+                    type="textarea"
+                    multiline={true}
+                    onSave={async value =>
+                      await handleSaveField('description', value)
+                    }
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, description: error }))
+                    }
+                    error={fieldErrors.description}
+                    placeholder="No description provided"
+                  />
+                </div>
+              ) : null}
+
+              {/* Client Name */}
+              {project.client_name ? (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-500">
+                    Client
+                  </Label>
+                  <InlineEdit
+                    value={project.client_name}
+                    onSave={async value =>
+                      await handleSaveField('client_name', value)
+                    }
+                    onError={error =>
+                      setFieldErrors(prev => ({ ...prev, client_name: error }))
+                    }
+                    error={fieldErrors.client_name}
+                    placeholder="No client specified"
+                  />
+                </div>
+              ) : null}
+
+              {/* Project Rate Type and Price/Currency */}
+              {project.rate_type && project.price !== null ? (
+                <div className="grid grid-cols-2 gap-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500 block">
+                      Rate Type
+                    </Label>
+                    <InlineEdit
+                      value={project.rate_type}
+                      type="rate-type"
+                      onSave={async value =>
+                        await handleSaveField('rate_type', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({ ...prev, rate_type: error }))
+                      }
+                      error={fieldErrors.rate_type}
+                      placeholder="Not set"
+                      className="text-center capitalize"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500 block">
+                      Price
+                    </Label>
+                    <InlineEdit
+                      value={`${project.currency_code || 'USD'} ${project.price}`}
+                      type="price-currency"
+                      onSave={async value => {
+                        // Parse the combined value format "USD|50.00"
+                        if (typeof value === 'string' && value.includes('|')) {
+                          const [currency, priceStr] = value.split('|');
+                          const price = parseFloat(priceStr);
+                          if (!isNaN(price) && price >= 0) {
+                            // Update both fields
+                            await handleSaveField('currency_code', currency);
+                            await handleSaveField('price', price);
+                          }
+                        }
+                      }}
+                      onError={error =>
+                        setFieldErrors(prev => ({ ...prev, price: error }))
+                      }
+                      error={fieldErrors.price}
+                      placeholder="USD 0.00"
+                      className="text-center"
+                      projectData={{
+                        price: project.price,
+                        currency_code: project.currency_code,
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Status */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500 block">
+                  Status
+                </Label>
+                <InlineEdit
+                  value={project.status}
+                  type="status"
+                  onSave={async value => await handleSaveField('status', value)}
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, status: error }))
+                  }
+                  error={fieldErrors.status}
+                  className="text-base"
+                />
+              </div>
+
+              {/* Created/Updated Info */}
+              <div className="pt-4 border-t">
+                <div className="text-sm text-gray-500 space-y-1">
+                  <div>Created: {formatDate(project.created_at)}</div>
+                  <div>Last updated: {formatDate(project.updated_at)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tasks Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Tasks</CardTitle>
+                  <CardDescription>
+                    Manage tasks for this project
+                  </CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateTaskModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <TaskList
+                tasks={tasks}
+                loading={tasksLoading}
+                onDelete={handleDeleteTask}
+                onUpdate={handleUpdateTask}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Delete Project Modal */}
+        <DeleteProjectModal
+          open={isDeleteModalOpen}
+          onOpenChange={setIsDeleteModalOpen}
+          project={project}
+          onConfirmDelete={handleConfirmDelete}
+          isDeleting={isDeleting}
         />
 
-        {/* Non-Critical Error Message */}
-        {inlineErrorMessage && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-            {inlineErrorMessage}
-          </div>
+        {/* Edit Project Modal */}
+        <ProjectModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          project={project}
+          onUpdateProject={handleUpdateProject}
+        />
+
+        {/* Create Task Modal */}
+        {project && (
+          <TaskModal
+            open={isCreateTaskModalOpen}
+            onOpenChange={setIsCreateTaskModalOpen}
+            project={project}
+            users={[]} // Currently only supports current user assignment
+            onSubmit={handleCreateTask}
+          />
         )}
 
-        {/* Project Stats & Description Section */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Project Information</CardTitle>
-                <CardDescription>
-                  Manage your project details and settings
-                </CardDescription>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="relative" ref={actionsRef}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowActions(!showActions)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-
-                  {showActions && (
-                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
-                      <button
-                        onClick={() => {
-                          setIsEditModalOpen(true);
-                          setShowActions(false);
-                        }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsDeleteModalOpen(true);
-                          setShowActions(false);
-                        }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Project Name */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-500">Name</Label>
-              <InlineEdit
-                value={project.name}
-                onSave={async value => await handleSaveField('name', value)}
-                onError={error =>
-                  setFieldErrors(prev => ({ ...prev, name: error }))
-                }
-                error={fieldErrors.name}
-                className="text-xl font-semibold"
-              />
-            </div>
-
-            {/* Description */}
-            {project.description ? (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">
-                  Description
-                </Label>
-                <InlineEdit
-                  value={project.description}
-                  type="textarea"
-                  multiline={true}
-                  onSave={async value =>
-                    await handleSaveField('description', value)
-                  }
-                  onError={error =>
-                    setFieldErrors(prev => ({ ...prev, description: error }))
-                  }
-                  error={fieldErrors.description}
-                  placeholder="No description provided"
-                />
-              </div>
-            ) : null}
-
-            {/* Client Name */}
-            {project.client_name ? (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-500">
-                  Client
-                </Label>
-                <InlineEdit
-                  value={project.client_name}
-                  onSave={async value =>
-                    await handleSaveField('client_name', value)
-                  }
-                  onError={error =>
-                    setFieldErrors(prev => ({ ...prev, client_name: error }))
-                  }
-                  error={fieldErrors.client_name}
-                  placeholder="No client specified"
-                />
-              </div>
-            ) : null}
-
-            {/* Project Rate Type and Price/Currency */}
-            {project.rate_type && project.price !== null ? (
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500 block">
-                    Rate Type
-                  </Label>
-                  <InlineEdit
-                    value={project.rate_type}
-                    type="rate-type"
-                    onSave={async value =>
-                      await handleSaveField('rate_type', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({ ...prev, rate_type: error }))
-                    }
-                    error={fieldErrors.rate_type}
-                    placeholder="Not set"
-                    className="text-center capitalize"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500 block">
-                    Price
-                  </Label>
-                  <InlineEdit
-                    value={`${project.currency_code || 'USD'} ${project.price}`}
-                    type="price-currency"
-                    onSave={async value => {
-                      // Parse the combined value format "USD|50.00"
-                      if (typeof value === 'string' && value.includes('|')) {
-                        const [currency, priceStr] = value.split('|');
-                        const price = parseFloat(priceStr);
-                        if (!isNaN(price) && price >= 0) {
-                          // Update both fields
-                          await handleSaveField('currency_code', currency);
-                          await handleSaveField('price', price);
-                        }
-                      }
-                    }}
-                    onError={error =>
-                      setFieldErrors(prev => ({ ...prev, price: error }))
-                    }
-                    error={fieldErrors.price}
-                    placeholder="USD 0.00"
-                    className="text-center"
-                    projectData={{
-                      price: project.price,
-                      currency_code: project.currency_code,
-                    }}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-500 block">
-                Status
-              </Label>
-              <InlineEdit
-                value={project.status}
-                type="status"
-                onSave={async value => await handleSaveField('status', value)}
-                onError={error =>
-                  setFieldErrors(prev => ({ ...prev, status: error }))
-                }
-                error={fieldErrors.status}
-                className="text-base"
-              />
-            </div>
-
-            {/* Created/Updated Info */}
-            <div className="pt-4 border-t">
-              <div className="text-sm text-gray-500 space-y-1">
-                <div>Created: {formatDate(project.created_at)}</div>
-                <div>Last updated: {formatDate(project.updated_at)}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tasks Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Tasks</CardTitle>
-                <CardDescription>Manage tasks for this project</CardDescription>
-              </div>
-              <Button size="sm" onClick={() => setIsCreateTaskModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Task
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <TaskList
-              tasks={tasks}
-              loading={tasksLoading}
-              onDelete={handleDeleteTask}
-              onUpdate={handleUpdateTask}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Delete Project Modal */}
-      <DeleteProjectModal
-        open={isDeleteModalOpen}
-        onOpenChange={setIsDeleteModalOpen}
-        project={project}
-        onConfirmDelete={handleConfirmDelete}
-        isDeleting={isDeleting}
-      />
-
-      {/* Edit Project Modal */}
-      <ProjectModal
-        open={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-        project={project}
-        onUpdateProject={handleUpdateProject}
-      />
-
-      {/* Create Task Modal */}
-      {project && (
-        <TaskModal
-          open={isCreateTaskModalOpen}
-          onOpenChange={setIsCreateTaskModalOpen}
-          project={project}
-          users={[]} // Currently only supports current user assignment
-          onSubmit={handleCreateTask}
+        {/* Delete Task Modal */}
+        <DeleteTaskModal
+          open={!!taskToDelete}
+          onOpenChange={open => !open && setTaskToDelete(null)}
+          task={taskToDelete}
+          onConfirmDelete={handleConfirmDeleteTask}
+          isDeleting={isDeletingTask}
         />
-      )}
-
-      {/* Delete Task Modal */}
-      <DeleteTaskModal
-        open={!!taskToDelete}
-        onOpenChange={open => !open && setTaskToDelete(null)}
-        task={taskToDelete}
-        onConfirmDelete={handleConfirmDeleteTask}
-        isDeleting={isDeletingTask}
-      />
-    </div>
+      </div>
+    </TimeTrackingProvider>
   );
 }

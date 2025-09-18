@@ -65,8 +65,7 @@ export interface TimeEntry {
   start_time?: string;
   end_time?: string;
   duration_minutes: number;
-  description?: string;
-  is_running: boolean;
+  timer_status: 'running' | 'paused' | 'stopped';
   created_at: string;
   updated_at: string;
 }
@@ -152,6 +151,5 @@ export interface UpdateTimeEntryRequest {
   start_time?: string;
   end_time?: string;
   duration_minutes?: number;
-  description?: string;
-  is_running?: boolean;
+  timer_status?: 'running' | 'paused' | 'stopped';
 }

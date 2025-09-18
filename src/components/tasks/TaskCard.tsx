@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { MoreVertical, Pause, Play, Square, Trash2, User } from 'lucide-react';
+import { MoreVertical, Trash2, User } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { TimerDisplay } from '@/components/ui/timer-display';
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import {
   formatDate,
@@ -25,10 +27,26 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Time tracking
+  const {
+    getTimerForTask,
+    canStartTimer,
+    canResumeTimer,
+    canPauseTimer,
+    canStopTimer,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    stopTimer,
+    getTotalDuration,
+  } = useTimeTrackingContext();
+
+  const timer = getTimerForTask(task.id);
+  const duration = getTotalDuration(task.id);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -47,14 +65,20 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
     };
   }, []);
 
-  const handlePlayPause = () => {
-    setIsTimerRunning(!isTimerRunning);
-    // TODO: Implement actual time tracking
+  const handleStartTimer = async () => {
+    await startTimer(task.id, task.project_id);
   };
 
-  const handleStop = () => {
-    setIsTimerRunning(false);
-    // TODO: Implement actual time tracking
+  const handlePauseTimer = async () => {
+    await pauseTimer(task.id);
+  };
+
+  const handleResumeTimer = async () => {
+    await resumeTimer(task.id);
+  };
+
+  const handleStopTimer = async () => {
+    await stopTimer(task.id);
   };
 
   const handleDelete = () => {
@@ -110,6 +134,25 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                 </div>
               )}
             </div>
+
+            {/* Timer Display - Only show for non-completed tasks */}
+            {task.status !== 'completed' && (
+              <div className="mt-2">
+                <TimerDisplay
+                  duration={duration}
+                  isRunning={timer?.isRunning || false}
+                  isPaused={timer?.isPaused || false}
+                  canStart={canStartTimer(task.id)}
+                  canResume={canResumeTimer(task.id)}
+                  canPause={canPauseTimer(task.id)}
+                  canStop={canStopTimer(task.id)}
+                  onStart={handleStartTimer}
+                  onPause={handlePauseTimer}
+                  onResume={handleResumeTimer}
+                  onStop={handleStopTimer}
+                />
+              </div>
+            )}
           </div>
 
           {/* Status Badge and Actions */}
@@ -146,47 +189,6 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                         {isUpdating ? 'Marking...' : 'Mark as Completed'}
                       </span>
                     </button>
-                  )}
-
-                  {/* Time Tracking Actions - Only show for non-completed tasks */}
-                  {task.status !== 'completed' && (
-                    <>
-                      <div className="border-t my-1"></div>
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          handlePlayPause();
-                          setShowActions(false);
-                        }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                      >
-                        {!isTimerRunning ? (
-                          <>
-                            <Play className="h-4 w-4" />
-                            <span>Start Timer</span>
-                          </>
-                        ) : (
-                          <>
-                            <Pause className="h-4 w-4" />
-                            <span>Pause Timer</span>
-                          </>
-                        )}
-                      </button>
-
-                      {isTimerRunning && (
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleStop();
-                            setShowActions(false);
-                          }}
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                        >
-                          <Square className="h-4 w-4" />
-                          <span>Stop Timer</span>
-                        </button>
-                      )}
-                    </>
                   )}
 
                   {/* Delete Action */}
