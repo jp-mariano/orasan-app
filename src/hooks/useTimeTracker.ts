@@ -227,6 +227,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
             : timer.isPaused
               ? 'paused'
               : 'stopped',
+          end_time: timer.isRunning ? null : undefined, // Clear end_time when running
         }),
       });
 
