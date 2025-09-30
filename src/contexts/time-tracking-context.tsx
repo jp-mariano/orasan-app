@@ -22,7 +22,7 @@ interface TimeTrackingContextType {
   canResumeTimer: (taskId: string) => boolean;
   canPauseTimer: (taskId: string) => boolean;
   canStopTimer: (taskId: string) => boolean;
-  formatDuration: (minutes: number) => string;
+  formatDuration: (seconds: number) => string;
   getTotalDuration: (taskId: string) => number;
 
   // State

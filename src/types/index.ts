@@ -64,7 +64,7 @@ export interface TimeEntry {
   user_id: string;
   start_time?: string;
   end_time?: string;
-  duration_minutes: number;
+  duration_seconds: number;
   timer_status: 'running' | 'paused' | 'stopped';
   created_at: string;
   updated_at: string;
@@ -76,7 +76,7 @@ export interface TimeEntryWithDetails extends TimeEntry {
 }
 
 export interface ProjectWithStats extends Project {
-  total_time_minutes: number;
+  total_time_seconds: number;
   task_count: number;
   active_task_count: number;
 }
@@ -143,13 +143,13 @@ export interface CreateTimeEntryRequest {
   task_id: string;
   start_time?: string;
   end_time?: string;
-  duration_minutes: number;
+  duration_seconds: number;
   description?: string;
 }
 
 export interface UpdateTimeEntryRequest {
   start_time?: string;
   end_time?: string;
-  duration_minutes?: number;
+  duration_seconds?: number;
   timer_status?: 'running' | 'paused' | 'stopped';
 }

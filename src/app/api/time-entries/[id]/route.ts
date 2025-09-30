@@ -89,8 +89,8 @@ export async function PATCH(
 
     // Validate duration if it's being updated
     if (
-      updateData.duration_minutes !== undefined &&
-      updateData.duration_minutes < 0
+      updateData.duration_seconds !== undefined &&
+      updateData.duration_seconds < 0
     ) {
       return NextResponse.json(
         { error: 'Duration cannot be negative' },

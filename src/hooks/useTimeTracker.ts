@@ -8,7 +8,7 @@ export interface TimeEntry {
   user_id: string;
   start_time: string | null;
   end_time: string | null;
-  duration_minutes: number;
+  duration_seconds: number;
   timer_status: 'running' | 'paused' | 'stopped';
   created_at: string;
   updated_at: string;
@@ -49,7 +49,7 @@ export interface UseTimeTrackerReturn {
   loadTimersFromDatabase: () => Promise<void>;
 
   // Utility functions
-  formatDuration: (minutes: number) => string;
+  formatDuration: (seconds: number) => string;
   getTotalDuration: (taskId: string) => number;
 
   // State
@@ -178,7 +178,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         id: entry.id,
         taskId: entry.task_id,
         projectId: entry.project_id,
-        duration: entry.duration_minutes * 60, // Convert minutes to seconds
+        duration: entry.duration_seconds, // Duration is already in seconds
         isRunning: entry.timer_status === 'running',
         isPaused: entry.timer_status === 'paused',
         localStartTime: entry.timer_status === 'running' ? Date.now() : null,
@@ -221,7 +221,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          duration_minutes: Math.floor(timer.duration / 60), // Convert seconds to minutes
+          duration_seconds: timer.duration, // Duration is already in seconds
           timer_status: timer.isRunning
             ? 'running'
             : timer.isPaused
@@ -267,7 +267,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
             task_id: taskId,
             project_id: projectId,
             start_time: new Date().toISOString(),
-            duration_minutes: 0,
+            duration_seconds: 0,
             timer_status: 'running',
           }),
         });
@@ -446,7 +446,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            duration_minutes: Math.floor(finalDuration / 60), // Convert seconds to minutes
+            duration_seconds: finalDuration, // Duration is already in seconds
             timer_status: 'stopped',
             end_time: new Date().toISOString(),
           }),

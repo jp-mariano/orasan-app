@@ -76,13 +76,13 @@ CREATE TABLE public.time_entries (
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   start_time TIMESTAMP WITH TIME ZONE,
   end_time TIMESTAMP WITH TIME ZONE,
-  duration_minutes INTEGER DEFAULT 0 NOT NULL,
+  duration_seconds INTEGER DEFAULT 0 NOT NULL,
   timer_status VARCHAR(20) DEFAULT 'paused' CHECK (timer_status IN ('running', 'paused', 'stopped')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Constraints for data integrity
-  CONSTRAINT check_duration_positive CHECK (duration_minutes >= 0),
+  CONSTRAINT check_duration_seconds_positive CHECK (duration_seconds >= 0),
   CONSTRAINT check_end_after_start CHECK (end_time IS NULL OR end_time >= start_time),
   CONSTRAINT check_timer_status CHECK (timer_status IN ('running', 'paused', 'stopped')),
   CONSTRAINT check_status_end_time CHECK (

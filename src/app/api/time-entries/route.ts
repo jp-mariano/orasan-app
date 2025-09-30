@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      timeEntryData.duration_minutes === undefined ||
-      timeEntryData.duration_minutes < 0
+      timeEntryData.duration_seconds === undefined ||
+      timeEntryData.duration_seconds < 0
     ) {
       return NextResponse.json(
         { error: 'Duration must be greater than or equal to 0' },
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         start_time: timeEntryData.start_time || null,
         end_time: timeEntryData.end_time || null,
-        duration_minutes: timeEntryData.duration_minutes || 0,
+        duration_seconds: timeEntryData.duration_seconds || 0,
         timer_status: timeEntryData.timer_status || 'paused',
       })
       .select(
