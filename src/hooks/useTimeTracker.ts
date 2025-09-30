@@ -58,7 +58,7 @@ export interface UseTimeTrackerReturn {
 }
 
 const STORAGE_KEY = 'orasan_timers';
-const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const SYNC_INTERVAL = 60 * 1000; // 1 minute
 const UPDATE_INTERVAL = 1000; // 1 second for UI updates
 const STORAGE_SYNC_INTERVAL = 5 * 1000; // 5 seconds for localStorage sync
 
@@ -137,6 +137,22 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     };
   }, [timers.length]);
 
+  // Page Visibility API - sync when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab - sync immediately
+        syncWithDatabase();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // Load timers from localStorage
   const loadTimersFromStorage = useCallback(() => {
     try {
@@ -197,25 +213,8 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     }
   }, []);
 
-  // Sync with database
-  const syncWithDatabase = useCallback(async () => {
-    if (timersRef.current.length === 0) return;
-
-    try {
-      for (const timer of timersRef.current) {
-        if (timer.isRunning || timer.isPaused) {
-          await updateTimerInDatabase(timer);
-        }
-      }
-      console.log('Database sync completed successfully');
-    } catch (error) {
-      console.error('Error syncing with database:', error);
-      setError('Failed to sync with database. Changes are saved locally.');
-    }
-  }, []);
-
   // Update timer in database
-  const updateTimerInDatabase = async (timer: LocalTimer) => {
+  const updateTimerInDatabase = useCallback(async (timer: LocalTimer) => {
     try {
       const response = await fetch(`/api/time-entries/${timer.id}`, {
         method: 'PATCH',
@@ -227,7 +226,11 @@ export function useTimeTracker(): UseTimeTrackerReturn {
             : timer.isPaused
               ? 'paused'
               : 'stopped',
-          end_time: timer.isRunning ? null : undefined, // Clear end_time when running
+          end_time: timer.isRunning
+            ? null
+            : timer.isPaused
+              ? undefined
+              : new Date().toISOString(), // Set end_time when stopped
         }),
       });
 
@@ -241,7 +244,36 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       console.error(`Failed to update timer ${timer.id}:`, error);
       throw error;
     }
-  };
+  }, []);
+
+  // Sync with database
+  const syncWithDatabase = useCallback(async () => {
+    if (timersRef.current.length === 0) return;
+
+    try {
+      for (const timer of timersRef.current) {
+        if (timer.isRunning) {
+          // Calculate current total duration for running timers
+          const currentDuration =
+            timer.isRunning && timer.localStartTime
+              ? timer.duration +
+                Math.floor((Date.now() - timer.localStartTime) / 1000)
+              : timer.duration;
+
+          // Create a timer object with current duration for sync
+          const timerWithCurrentDuration = {
+            ...timer,
+            duration: currentDuration,
+          };
+
+          await updateTimerInDatabase(timerWithCurrentDuration);
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing with database:', error);
+      setError('Failed to sync with database. Changes are saved locally.');
+    }
+  }, [updateTimerInDatabase]);
 
   // Start timer
   const startTimer = useCallback(
@@ -442,16 +474,8 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         setTimers(updatedTimers);
         saveTimersToStorage(updatedTimers); // Save immediately for state changes
 
-        // Update in database immediately
-        await fetch(`/api/time-entries/${timer.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            duration_seconds: finalDuration, // Duration is already in seconds
-            timer_status: 'stopped',
-            end_time: new Date().toISOString(),
-          }),
-        });
+        // Update in database immediately using updateTimerInDatabase
+        await updateTimerInDatabase(updatedTimer);
 
         setError(null);
         return true;
