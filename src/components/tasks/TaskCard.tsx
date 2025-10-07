@@ -156,6 +156,7 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                   onPause={handlePauseTimer}
                   onResume={handleResumeTimer}
                   onStop={handleStopTimer}
+                  hasTimer={!!timer}
                 />
               </div>
             )}

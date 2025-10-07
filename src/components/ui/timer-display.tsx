@@ -15,6 +15,7 @@ interface TimerDisplayProps {
   onResume: () => void;
   onStop: () => void;
   className?: string;
+  hasTimer?: boolean; // Whether a timer entry exists
 }
 
 export function TimerDisplay({
@@ -30,6 +31,7 @@ export function TimerDisplay({
   onResume,
   onStop,
   className = '',
+  hasTimer = false,
 }: TimerDisplayProps) {
   const formatDuration = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -58,14 +60,20 @@ export function TimerDisplay({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {/* Timer Display */}
-      <div className="flex items-center gap-2">
-        <span className={`font-mono text-lg font-semibold ${getStatusColor()}`}>
-          {formatDuration(duration)}
-        </span>
-        <span className={`text-xs ${getStatusColor()}`}>{getStatusText()}</span>
-      </div>
+    <div className={`flex flex-col gap-2 ${className}`}>
+      {/* Timer Display - Only show if timer exists */}
+      {hasTimer && (
+        <div className="flex items-center gap-2">
+          <span
+            className={`font-mono text-lg font-semibold ${getStatusColor()}`}
+          >
+            {formatDuration(duration)}
+          </span>
+          <span className={`text-xs ${getStatusColor()}`}>
+            {getStatusText()}
+          </span>
+        </div>
+      )}
 
       {/* Timer Controls */}
       <div className="flex items-center gap-1">
