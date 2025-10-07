@@ -36,6 +36,7 @@ export interface UseTimeTrackerReturn {
   pauseTimer: (taskId: string) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
+  clearTimer: (taskId: string) => Promise<boolean>;
 
   // Timer queries
   getTimerForTask: (taskId: string) => LocalTimer | null;
@@ -537,6 +538,43 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers]
   );
 
+  // Clear timer (delete time entry)
+  const clearTimer = useCallback(
+    async (taskId: string): Promise<boolean> => {
+      try {
+        const timer = getTimerForTask(taskId);
+        if (!timer) return false;
+
+        // Delete from database
+        const response = await fetch(`/api/time-entries/${timer.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to clear timer');
+        }
+
+        // Remove from local state
+        const updatedTimers = timersRef.current.filter(
+          t => t.taskId !== taskId
+        );
+        setTimers(updatedTimers);
+        saveTimersToStorage(updatedTimers);
+
+        setError(null);
+        return true;
+      } catch (error) {
+        console.error('Error clearing timer:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to clear timer'
+        );
+        return false;
+      }
+    },
+    [getTimerForTask]
+  );
+
   // Check if timer can be started
   const canStartTimer = useCallback(
     (taskId: string): boolean => {
@@ -621,6 +659,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     pauseTimer,
     resumeTimer,
     stopTimer,
+    clearTimer,
 
     // Timer queries
     getTimerForTask,

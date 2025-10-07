@@ -42,6 +42,7 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
     pauseTimer,
     resumeTimer,
     stopTimer,
+    clearTimer,
     getTotalDuration,
   } = useTimeTrackingContext();
 
@@ -79,6 +80,11 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
 
   const handleStopTimer = async () => {
     await stopTimer(task.id);
+  };
+
+  const handleClearTimer = async () => {
+    await clearTimer(task.id);
+    setShowActions(false);
   };
 
   const handleDelete = () => {
@@ -189,6 +195,22 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                         {isUpdating ? 'Marking...' : 'Mark as Completed'}
                       </span>
                     </button>
+                  )}
+
+                  {/* Clear Timer - Only show if timer exists */}
+                  {timer && (
+                    <>
+                      <div className="border-t my-1"></div>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleClearTimer();
+                        }}
+                        className="flex items-center justify-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                      >
+                        <span>Clear Timer</span>
+                      </button>
+                    </>
                   )}
 
                   {/* Delete Action */}
