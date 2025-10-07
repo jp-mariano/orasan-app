@@ -190,19 +190,58 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       const timeEntries: TimeEntry[] = data.time_entries || [];
 
       // Convert database entries to local timers
-      const dbTimers: LocalTimer[] = timeEntries.map(entry => ({
-        id: entry.id,
-        taskId: entry.task_id,
-        projectId: entry.project_id,
-        duration: entry.duration_seconds, // Duration is already in seconds
-        isRunning: entry.timer_status === 'running',
-        isPaused: entry.timer_status === 'paused',
-        localStartTime: entry.timer_status === 'running' ? Date.now() : null,
-        lastSyncTime: Date.now(),
-      }));
+      const dbTimers: LocalTimer[] = timeEntries.map(entry => {
+        let localStartTime = null;
+        if (entry.timer_status === 'running') {
+          // For running timers, set localStartTime to now
+          // The duration_seconds contains accumulated time from previous sessions
+          // getTotalDuration will calculate: duration_seconds + (now - localStartTime)
+          localStartTime = Date.now();
+        }
 
-      setTimers(dbTimers);
-      saveTimersToStorage(dbTimers);
+        return {
+          id: entry.id,
+          taskId: entry.task_id,
+          projectId: entry.project_id,
+          duration: entry.duration_seconds, // Duration is already in seconds
+          isRunning: entry.timer_status === 'running',
+          isPaused: entry.timer_status === 'paused',
+          localStartTime,
+          lastSyncTime: Date.now(),
+        };
+      });
+
+      // Merge database data with localStorage data to preserve localStartTime
+      const stored = localStorage.getItem(STORAGE_KEY);
+      let mergedTimers = dbTimers;
+
+      if (stored) {
+        try {
+          const storedTimers = JSON.parse(stored);
+          mergedTimers = dbTimers.map(dbTimer => {
+            const storedTimer = storedTimers.find(
+              (t: LocalTimer) => t.id === dbTimer.id
+            );
+            if (
+              storedTimer &&
+              storedTimer.isRunning &&
+              storedTimer.localStartTime
+            ) {
+              // Preserve the localStartTime from localStorage for running timers
+              return {
+                ...dbTimer,
+                localStartTime: storedTimer.localStartTime,
+              };
+            }
+            return dbTimer;
+          });
+        } catch (error) {
+          console.error('Error parsing stored timers for merge:', error);
+        }
+      }
+
+      setTimers(mergedTimers);
+      saveTimersToStorage(mergedTimers);
     } catch (error) {
       console.error('Error loading timers from database:', error);
       setError(
