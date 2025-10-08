@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { TimerDisplay } from '@/components/ui/timer-display';
-import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { useTimerActions } from '@/hooks/useTimerActions';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import {
   formatDate,
@@ -33,21 +33,18 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
 
   // Time tracking
   const {
-    getTimerForTask,
-    canStartTimer,
-    canResumeTimer,
-    canPauseTimer,
-    canStopTimer,
+    timer,
+    duration,
+    canStart,
+    canResume,
+    canPause,
+    canStop,
     startTimer,
     pauseTimer,
     resumeTimer,
     stopTimer,
     clearTimer,
-    getTotalDuration,
-  } = useTimeTrackingContext();
-
-  const timer = getTimerForTask(task.id);
-  const duration = getTotalDuration(task.id);
+  } = useTimerActions(task.id, task.project_id);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -66,24 +63,8 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
     };
   }, []);
 
-  const handleStartTimer = async () => {
-    await startTimer(task.id, task.project_id);
-  };
-
-  const handlePauseTimer = async () => {
-    await pauseTimer(task.id);
-  };
-
-  const handleResumeTimer = async () => {
-    await resumeTimer(task.id);
-  };
-
-  const handleStopTimer = async () => {
-    await stopTimer(task.id);
-  };
-
   const handleClearTimer = async () => {
-    await clearTimer(task.id);
+    await clearTimer();
     setShowActions(false);
   };
 
@@ -148,14 +129,14 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                   duration={duration}
                   isRunning={timer?.isRunning || false}
                   isPaused={timer?.isPaused || false}
-                  canStart={canStartTimer(task.id)}
-                  canResume={canResumeTimer(task.id)}
-                  canPause={canPauseTimer(task.id)}
-                  canStop={canStopTimer(task.id)}
-                  onStart={handleStartTimer}
-                  onPause={handlePauseTimer}
-                  onResume={handleResumeTimer}
-                  onStop={handleStopTimer}
+                  canStart={canStart}
+                  canResume={canResume}
+                  canPause={canPause}
+                  canStop={canStop}
+                  onStart={startTimer}
+                  onPause={pauseTimer}
+                  onResume={resumeTimer}
+                  onStop={stopTimer}
                   hasTimer={!!timer}
                 />
               </div>
