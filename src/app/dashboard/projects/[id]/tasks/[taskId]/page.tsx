@@ -27,7 +27,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
-export default function ProjectTaskDetailPage() {
+export default function TaskDetailPage() {
   const { user, loading } = useAuth();
   const params = useParams();
   const router = useRouter();
