@@ -104,27 +104,10 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
               </h3>
             </div>
 
-            {/* Additional Details Row */}
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              {/* Due Date */}
-              {task.due_date && (
-                <div className="flex items-center gap-1">
-                  <span>Due: {formatDate(task.due_date)}</span>
-                </div>
-              )}
-
-              {/* Assignee */}
-              {task.assignee_user && (
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span>{getAssigneeDisplayName(task.assignee_user)}</span>
-                </div>
-              )}
-            </div>
-
             {/* Timer Display - Only show for non-completed tasks */}
             {task.status !== 'completed' && (
               <div className="mt-2">
+                <label className="text-xs text-gray-500">Time Tracking</label>
                 <TimerDisplay
                   duration={duration}
                   isRunning={timer?.isRunning || false}
@@ -141,6 +124,24 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                 />
               </div>
             )}
+
+            {/* Additional Details Row */}
+            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+              {/* Due Date */}
+              {task.due_date && (
+                <div className="flex items-center gap-1">
+                  <span>Due: {formatDate(task.due_date)}</span>
+                </div>
+              )}
+
+              {/* Assignee */}
+              {task.assignee_user && (
+                <div className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  <span>{getAssigneeDisplayName(task.assignee_user)}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Status Badge and Actions */}
