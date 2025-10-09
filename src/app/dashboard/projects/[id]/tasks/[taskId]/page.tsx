@@ -6,8 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { Edit, MoreVertical, Trash2 } from 'lucide-react';
 
-import { ClearTimerButton } from '@/components/tasks/ClearTimerButton';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { ResetTimerButton } from '@/components/tasks/ResetTimerButton';
 import { TaskDetailTimer } from '@/components/tasks/TaskDetailTimer';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -272,8 +272,8 @@ export default function TaskDetailPage() {
                           <span>Edit</span>
                         </button>
 
-                        {/* Clear Timer Button */}
-                        <ClearTimerButton
+                        {/* Reset Timer Button */}
+                        <ResetTimerButton
                           taskId={task?.id || ''}
                           projectId={projectId}
                           onClear={() => setShowActions(false)}

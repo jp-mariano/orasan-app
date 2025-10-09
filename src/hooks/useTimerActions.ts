@@ -15,7 +15,7 @@ export interface TimerActions {
   pauseTimer: () => Promise<void>;
   resumeTimer: () => Promise<void>;
   stopTimer: () => Promise<void>;
-  clearTimer: () => Promise<boolean>;
+  resetTimer: () => Promise<boolean>;
 }
 
 export function useTimerActions(
@@ -32,7 +32,7 @@ export function useTimerActions(
     pauseTimer,
     resumeTimer,
     stopTimer,
-    clearTimer,
+    resetTimer,
     getTotalDuration,
   } = useTimeTrackingContext();
 
@@ -55,9 +55,9 @@ export function useTimerActions(
     await stopTimer(taskId);
   }, [stopTimer, taskId]);
 
-  const handleClearTimer = useCallback(async () => {
-    return await clearTimer(taskId);
-  }, [clearTimer, taskId]);
+  const handleResetTimer = useCallback(async () => {
+    return await resetTimer(taskId);
+  }, [resetTimer, taskId]);
 
   return {
     timer,
@@ -70,6 +70,6 @@ export function useTimerActions(
     pauseTimer: handlePauseTimer,
     resumeTimer: handleResumeTimer,
     stopTimer: handleStopTimer,
-    clearTimer: handleClearTimer,
+    resetTimer: handleResetTimer,
   };
 }

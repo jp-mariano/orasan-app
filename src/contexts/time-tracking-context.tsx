@@ -15,7 +15,7 @@ interface TimeTrackingContextType {
   pauseTimer: (taskId: string) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
-  clearTimer: (taskId: string) => Promise<boolean>;
+  resetTimer: (taskId: string) => Promise<boolean>;
 
   // Timer utilities
   getTimerForTask: (taskId: string) => LocalTimer | null;

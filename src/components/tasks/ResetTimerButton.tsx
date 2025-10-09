@@ -2,21 +2,21 @@
 
 import { useTimerActions } from '@/hooks/useTimerActions';
 
-interface ClearTimerButtonProps {
+interface ResetTimerButtonProps {
   taskId: string;
   projectId: string;
   onClear: () => void;
 }
 
-export function ClearTimerButton({
+export function ResetTimerButton({
   taskId,
   projectId,
   onClear,
-}: ClearTimerButtonProps) {
+}: ResetTimerButtonProps) {
   const timerActions = useTimerActions(taskId, projectId);
 
-  const handleClearTimer = async () => {
-    await timerActions.clearTimer();
+  const handleResetTimer = async () => {
+    await timerActions.resetTimer();
     onClear();
   };
 
@@ -31,11 +31,11 @@ export function ClearTimerButton({
       <button
         onClick={e => {
           e.stopPropagation();
-          handleClearTimer();
+          handleResetTimer();
         }}
         className="flex items-center justify-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
       >
-        <span>Clear Timer</span>
+        <span>Reset Timer</span>
       </button>
     </>
   );

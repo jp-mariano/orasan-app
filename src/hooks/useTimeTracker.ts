@@ -36,7 +36,7 @@ export interface UseTimeTrackerReturn {
   pauseTimer: (taskId: string) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
-  clearTimer: (taskId: string) => Promise<boolean>;
+  resetTimer: (taskId: string) => Promise<boolean>;
 
   // Timer queries
   getTimerForTask: (taskId: string) => LocalTimer | null;
@@ -538,8 +538,8 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers]
   );
 
-  // Clear timer (delete time entry)
-  const clearTimer = useCallback(
+  // Reset timer (delete time entry)
+  const resetTimer = useCallback(
     async (taskId: string): Promise<boolean> => {
       try {
         const timer = getTimerForTask(taskId);
@@ -659,7 +659,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     pauseTimer,
     resumeTimer,
     stopTimer,
-    clearTimer,
+    resetTimer,
 
     // Timer queries
     getTimerForTask,
