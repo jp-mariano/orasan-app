@@ -201,7 +201,7 @@ export function TaskModal({
       // Edit mode - only include changed fields using object mapping
       const fieldMappings = {
         name: () => formData.name.trim(),
-        description: () => formData.description?.trim() || undefined,
+        description: () => formData.description?.trim() || '',
         priority: () => formData.priority,
         due_date: () => formData.due_date,
         assignee: () =>
@@ -213,11 +213,27 @@ export function TaskModal({
         status: () => taskStatus,
       } as const;
 
+      // Compare raw form values with original task values to detect changes
+      const hasActualChanges = (field: string) => {
+        if (!modifiedFields.has(field)) return false;
+
+        const originalValue = task?.[field as keyof typeof task];
+        const formValue = formData[field as keyof typeof formData];
+
+        // For string fields, compare raw values (before conversion)
+        if (['description', 'name'].includes(field)) {
+          const originalStr = originalValue || '';
+          const formStr = formValue || '';
+          return originalStr !== formStr;
+        }
+
+        // For other fields, use the existing modifiedFields logic
+        return true;
+      };
+
       taskData = Object.fromEntries(
         Object.entries(fieldMappings)
-          .filter(([field]) =>
-            modifiedFields.has(field as keyof typeof fieldMappings)
-          )
+          .filter(([field]) => hasActualChanges(field))
           .map(([field, getValue]) => [field, getValue()])
       );
     } else {

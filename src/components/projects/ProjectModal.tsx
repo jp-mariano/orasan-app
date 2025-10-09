@@ -175,8 +175,8 @@ export function ProjectModal({
       // Edit mode - only include changed fields using object mapping
       const fieldMappings = {
         name: () => formData.name.trim(),
-        description: () => formData.description?.trim() || undefined,
-        client_name: () => formData.client_name?.trim() || undefined,
+        description: () => formData.description?.trim() || '',
+        client_name: () => formData.client_name?.trim() || '',
         rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
         price: () =>
           formData.price !== undefined ? formData.price : undefined,
@@ -184,14 +184,30 @@ export function ProjectModal({
         status: () => formData.status,
       } as const;
 
+      // Compare raw form values with original project values to detect changes
+      const hasActualChanges = (field: string) => {
+        if (!modifiedFields.has(field)) return false;
+
+        const originalValue = project[field as keyof Project];
+        const formValue = formData[field as keyof typeof formData];
+
+        // For string fields, compare raw values (before conversion)
+        if (['description', 'client_name', 'name'].includes(field)) {
+          const originalStr = originalValue || '';
+          const formStr = formValue || '';
+          return originalStr !== formStr;
+        }
+
+        // For other fields, use the existing modifiedFields logic
+        return true;
+      };
+
       const updateData: Partial<UpdateProjectRequest> = Object.fromEntries(
         Object.entries(fieldMappings)
-          .filter(([field]) =>
-            modifiedFields.has(field as keyof typeof fieldMappings)
-          )
+          .filter(([field]) => hasActualChanges(field))
           .map(([field, getValue]) => [field, getValue()])
       );
-
+      console.log('updateData', updateData);
       result = await onUpdateProject(updateData);
     } else if (!isEditMode && onCreateProject) {
       // Create mode - include all fields
