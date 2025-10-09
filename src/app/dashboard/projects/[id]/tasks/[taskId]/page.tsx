@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { ClipboardClock, Edit, MoreVertical, Trash2 } from 'lucide-react';
 
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
-import { ResetTimerButton } from '@/components/tasks/ResetTimerButton';
+import { ManualTimeEntryModal } from '@/components/tasks/ManualTimeEntryModal';
 import { TaskDetailTimer } from '@/components/tasks/TaskDetailTimer';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -27,8 +27,41 @@ import { useAuth } from '@/contexts/auth-context';
 import { TimeTrackingProvider } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useTasks } from '@/hooks/useTasks';
+import { useTimerActions } from '@/hooks/useTimerActions';
 import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
+
+// Wrapper component to access timer context
+function ManualTimeEntryModalWrapper({
+  open,
+  onOpenChange,
+  taskId,
+  projectId,
+  taskName,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  taskId: string;
+  projectId: string;
+  taskName: string;
+}) {
+  const timerActions = useTimerActions(taskId, projectId);
+
+  return (
+    <ManualTimeEntryModal
+      open={open}
+      onOpenChange={onOpenChange}
+      taskId={taskId}
+      projectId={projectId}
+      taskName={taskName}
+      currentDuration={timerActions.duration}
+      onTimeEntryUpdated={() => {
+        // Refresh the timer display
+        // This will be handled by the timer context automatically
+      }}
+    />
+  );
+}
 
 export default function TaskDetailPage() {
   const { user, loading } = useAuth();
@@ -47,6 +80,7 @@ export default function TaskDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isManualTimeModalOpen, setIsManualTimeModalOpen] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
 
   const projectId = params.id as string;
@@ -272,12 +306,17 @@ export default function TaskDetailPage() {
                           <span>Edit</span>
                         </button>
 
-                        {/* Reset Timer Button */}
-                        <ResetTimerButton
-                          taskId={task?.id || ''}
-                          projectId={projectId}
-                          onClear={() => setShowActions(false)}
-                        />
+                        <div className="border-t my-1"></div>
+                        <button
+                          onClick={() => {
+                            setIsManualTimeModalOpen(true);
+                            setShowActions(false);
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        >
+                          <ClipboardClock className="h-4 w-4" />
+                          <span>Timer</span>
+                        </button>
 
                         <div className="border-t my-1"></div>
                         <button
@@ -534,6 +573,17 @@ export default function TaskDetailPage() {
           onConfirmDelete={handleConfirmDelete}
           isDeleting={isDeleting}
         />
+
+        {/* Manual Time Entry Modal */}
+        {task && (
+          <ManualTimeEntryModalWrapper
+            open={isManualTimeModalOpen}
+            onOpenChange={setIsManualTimeModalOpen}
+            taskId={task.id}
+            projectId={projectId}
+            taskName={task.name}
+          />
+        )}
       </div>
     </TimeTrackingProvider>
   );

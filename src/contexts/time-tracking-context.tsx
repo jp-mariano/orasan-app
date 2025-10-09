@@ -26,6 +26,9 @@ interface TimeTrackingContextType {
   formatDuration: (seconds: number) => string;
   getTotalDuration: (taskId: string) => number;
 
+  // Sync functions
+  refreshTimerForTask: (taskId: string) => Promise<void>;
+
   // State
   isLoading: boolean;
   error: string | null;

@@ -107,7 +107,7 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
             {/* Timer Display - Only show for non-completed tasks */}
             {task.status !== 'completed' && (
               <div className="mt-2">
-                <label className="text-xs text-gray-500">Time Tracking</label>
+                <label className="text-xs text-gray-500">Timer</label>
                 <TimerDisplay
                   duration={duration}
                   isRunning={timer?.isRunning || false}

@@ -48,6 +48,7 @@ export interface UseTimeTrackerReturn {
   // Sync functions
   syncWithDatabase: () => Promise<void>;
   loadTimersFromDatabase: () => Promise<void>;
+  refreshTimerForTask: (taskId: string) => Promise<void>;
 
   // Utility functions
   formatDuration: (seconds: number) => string;
@@ -314,6 +315,53 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       setError('Failed to sync with database. Changes are saved locally.');
     }
   }, [updateTimerInDatabase]);
+
+  // Refresh timer for specific task
+  const refreshTimerForTask = useCallback(async (taskId: string) => {
+    try {
+      // Fetch the latest time entry for this task
+      const response = await fetch(`/api/time-entries?task_id=${taskId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch time entry');
+      }
+
+      const data = await response.json();
+      const timeEntries = data.time_entries || [];
+
+      if (timeEntries.length > 0) {
+        const timeEntry = timeEntries[0];
+
+        // Update the timer in local state
+        setTimers(prevTimers => {
+          const updatedTimers = prevTimers.filter(
+            timer => timer.taskId !== taskId
+          );
+
+          const updatedTimer: LocalTimer = {
+            id: timeEntry.id,
+            taskId: timeEntry.task_id,
+            projectId: timeEntry.project_id,
+            duration: timeEntry.duration_seconds || 0,
+            isRunning: timeEntry.timer_status === 'running',
+            isPaused: timeEntry.timer_status === 'paused',
+            localStartTime:
+              timeEntry.timer_status === 'running' ? Date.now() : null,
+            lastSyncTime: Date.now(),
+          };
+
+          return [...updatedTimers, updatedTimer];
+        });
+      } else {
+        // No time entry exists, remove from local state
+        setTimers(prevTimers =>
+          prevTimers.filter(timer => timer.taskId !== taskId)
+        );
+      }
+    } catch (error) {
+      console.error('Error refreshing timer for task:', error);
+      setError('Failed to refresh timer data');
+    }
+  }, []);
 
   // Start timer
   const startTimer = useCallback(
@@ -671,6 +719,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     // Sync functions
     syncWithDatabase,
     loadTimersFromDatabase,
+    refreshTimerForTask,
 
     // Utility functions
     formatDuration,

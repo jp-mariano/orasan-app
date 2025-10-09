@@ -13,7 +13,7 @@ export function TaskDetailTimer({ taskId, projectId }: TaskDetailTimerProps) {
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-500">Time Tracking</label>
+      <label className="text-sm font-medium text-gray-500">Timer</label>
       <TimerDisplay
         duration={timerActions.duration}
         isRunning={timerActions.timer?.isRunning || false}
