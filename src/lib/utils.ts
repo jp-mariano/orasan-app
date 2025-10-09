@@ -122,6 +122,25 @@ export function convertCurrencyEmptyToNull(
 }
 
 /**
+ * Formats duration in seconds to a human-readable string
+ * @param seconds - Duration in seconds
+ * @returns Formatted string like "2h 15m 30s", "45m 20s", or "30s"
+ */
+export function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${mins}m ${secs}s`;
+  }
+  if (mins > 0) {
+    return `${mins}m ${secs}s`;
+  }
+  return `${secs}s`;
+}
+
+/**
  * Gets the display name for an assignee user
  * @param assigneeUser - The assignee user object with name and email
  * @param currentUserId - The current user's ID to add "(You)" suffix

@@ -1,5 +1,7 @@
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 
+import { formatDuration } from '@/lib/utils';
+
 import { Button } from './button';
 
 interface TimerDisplayProps {
@@ -33,20 +35,6 @@ export function TimerDisplay({
   className = '',
   hasTimer = false,
 }: TimerDisplayProps) {
-  const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${mins}m ${secs}s`;
-    }
-    if (mins > 0) {
-      return `${mins}m ${secs}s`;
-    }
-    return `${secs}s`;
-  };
-
   const getStatusColor = (): string => {
     if (isRunning) return 'text-green-600';
     if (isPaused) return 'text-yellow-600';
