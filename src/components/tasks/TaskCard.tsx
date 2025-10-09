@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { MoreVertical, Trash2, User } from 'lucide-react';
+import { ClipboardClock, MoreVertical, Trash2, User } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,9 +24,15 @@ interface TaskCardProps {
     taskId: string,
     updates: Partial<TaskWithDetails>
   ) => Promise<void>;
+  onOpenManualTime?: (task: TaskWithDetails, currentDuration: number) => void;
 }
 
-export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
+export function TaskCard({
+  task,
+  onDelete,
+  onUpdate,
+  onOpenManualTime,
+}: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -43,7 +49,6 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
     pauseTimer,
     resumeTimer,
     stopTimer,
-    resetTimer,
   } = useTimerActions(task.id, task.project_id);
 
   // Close dropdown when clicking outside
@@ -63,9 +68,8 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
     };
   }, []);
 
-  const handleResetTimer = async () => {
-    await resetTimer();
-    setShowActions(false);
+  const handleManualTimeEntry = () => {
+    onOpenManualTime?.(task, duration);
   };
 
   const handleDelete = () => {
@@ -180,18 +184,20 @@ export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
                     </button>
                   )}
 
-                  {/* Reset Timer - Only show if timer exists */}
-                  {timer && (
+                  {/* Manual Time Entry - Only show for non-completed tasks */}
+                  {task.status !== 'completed' && (
                     <>
                       <div className="border-t my-1"></div>
                       <button
                         onClick={e => {
                           e.stopPropagation();
-                          handleResetTimer();
+                          handleManualTimeEntry();
+                          setShowActions(false);
                         }}
-                        className="flex items-center justify-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <span>Reset Timer</span>
+                        <ClipboardClock className="h-4 w-4" />
+                        <span>Timer</span>
                       </button>
                     </>
                   )}

@@ -9,6 +9,7 @@ import { Edit, MoreVertical, Plus, Trash2 } from 'lucide-react';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectModal } from '@/components/projects/ProjectModal';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
+import { ManualTimeEntryModal } from '@/components/tasks/ManualTimeEntryModal';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -57,6 +58,10 @@ export default function ProjectDetailPage() {
     null
   );
   const [isDeletingTask, setIsDeletingTask] = useState(false);
+  const [taskForManualTime, setTaskForManualTime] = useState<{
+    task: TaskWithDetails;
+    currentDuration: number;
+  } | null>(null);
 
   const projectId = params.id as string;
 
@@ -175,6 +180,13 @@ export default function ProjectDetailPage() {
 
   const handleDeleteTask = (task: TaskWithDetails) => {
     setTaskToDelete(task);
+  };
+
+  const handleOpenManualTime = (
+    task: TaskWithDetails,
+    currentDuration: number
+  ) => {
+    setTaskForManualTime({ task, currentDuration });
   };
 
   const handleUpdateTask = async (
@@ -521,6 +533,7 @@ export default function ProjectDetailPage() {
                 loading={tasksLoading}
                 onDelete={handleDeleteTask}
                 onUpdate={handleUpdateTask}
+                onOpenManualTime={handleOpenManualTime}
               />
             </CardContent>
           </Card>
@@ -562,6 +575,22 @@ export default function ProjectDetailPage() {
           onConfirmDelete={handleConfirmDeleteTask}
           isDeleting={isDeletingTask}
         />
+
+        {/* Manual Time Entry Modal */}
+        {taskForManualTime && (
+          <ManualTimeEntryModal
+            open={!!taskForManualTime}
+            onOpenChange={open => !open && setTaskForManualTime(null)}
+            taskId={taskForManualTime.task.id}
+            projectId={taskForManualTime.task.project_id}
+            taskName={taskForManualTime.task.name}
+            currentDuration={taskForManualTime.currentDuration}
+            onTimeEntryUpdated={() => {
+              // Refresh the timer display
+              // This will be handled by the timer context automatically
+            }}
+          />
+        )}
       </div>
     </TimeTrackingProvider>
   );

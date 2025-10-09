@@ -33,7 +33,6 @@ export function ManualTimeEntryModal({
   taskId,
   projectId,
   taskName,
-  currentDuration,
   onTimeEntryUpdated,
 }: ManualTimeEntryModalProps) {
   const [newDuration, setNewDuration] = useState<string>('');
@@ -43,8 +42,11 @@ export function ManualTimeEntryModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Get refresh function from timer context
-  const { refreshTimerForTask } = useTimeTrackingContext();
+  // Get timer context functions
+  const { refreshTimerForTask, getTotalDuration } = useTimeTrackingContext();
+
+  // Get real-time duration from timer context
+  const realTimeDuration = getTotalDuration(taskId);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -241,7 +243,7 @@ export function ManualTimeEntryModal({
               Current Duration
             </Label>
             <div className="text-lg font-mono text-gray-700">
-              {formatDuration(currentDuration)}
+              {formatDuration(realTimeDuration)}
             </div>
           </div>
 
@@ -295,7 +297,7 @@ export function ManualTimeEntryModal({
                   isSubmitting ||
                   isResetting ||
                   isRefreshing ||
-                  currentDuration === 0
+                  realTimeDuration === 0
                 }
               >
                 {isResetting ? 'Resetting...' : 'Reset Current Timer'}
@@ -323,7 +325,7 @@ export function ManualTimeEntryModal({
               !newDuration ||
               !!validationError ||
               !!errorMessage ||
-              projectedDuration === currentDuration
+              projectedDuration === realTimeDuration
             }
           >
             {isSubmitting ? 'Updating...' : 'Update Time Entry'}
