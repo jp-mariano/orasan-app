@@ -38,6 +38,7 @@ export function ManualTimeEntryModal({
 }: ManualTimeEntryModalProps) {
   const [newDuration, setNewDuration] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -170,7 +171,7 @@ export function ManualTimeEntryModal({
   };
 
   const handleResetTimer = async () => {
-    setIsSubmitting(true);
+    setIsResetting(true);
     setErrorMessage(null);
 
     try {
@@ -213,7 +214,7 @@ export function ManualTimeEntryModal({
       setErrorMessage(
         error instanceof Error ? error.message : 'Failed to reset timer'
       );
-      setIsSubmitting(false);
+      setIsResetting(false);
     }
   };
 
@@ -290,13 +291,14 @@ export function ManualTimeEntryModal({
               <Button
                 variant="destructive"
                 onClick={handleResetTimer}
-                disabled={isSubmitting || isRefreshing || currentDuration === 0}
+                disabled={
+                  isSubmitting ||
+                  isResetting ||
+                  isRefreshing ||
+                  currentDuration === 0
+                }
               >
-                {isSubmitting
-                  ? 'Resetting...'
-                  : isRefreshing
-                    ? 'Refreshing...'
-                    : 'Reset Current Timer'}
+                {isResetting ? 'Resetting...' : 'Reset Current Timer'}
               </Button>
             </div>
           </div>
@@ -307,7 +309,7 @@ export function ManualTimeEntryModal({
             variant="outline"
             type="button"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting || isRefreshing}
+            disabled={isSubmitting || isResetting || isRefreshing}
           >
             Cancel
           </Button>
@@ -316,6 +318,7 @@ export function ManualTimeEntryModal({
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
+              isResetting ||
               isRefreshing ||
               !newDuration ||
               !!validationError ||
@@ -323,11 +326,7 @@ export function ManualTimeEntryModal({
               projectedDuration === currentDuration
             }
           >
-            {isSubmitting
-              ? 'Updating...'
-              : isRefreshing
-                ? 'Refreshing...'
-                : 'Update Time Entry'}
+            {isSubmitting ? 'Updating...' : 'Update Time Entry'}
           </Button>
         </DialogFooter>
       </DialogContent>
