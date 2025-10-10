@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Clock, FolderOpen, Plus, TrendingUp } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
+import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectModal } from '@/components/projects/ProjectModal';
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
+import { TimeTrackingProvider } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types/index';
@@ -172,165 +174,124 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <Header
-        onSignOut={handleSignOut}
-        isSigningOut={isSigningOut}
-        onForceSignOut={handleManualSignOut}
-        showWelcome={true}
-      />
+    <TimeTrackingProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Header */}
+        <Header
+          onSignOut={handleSignOut}
+          isSigningOut={isSigningOut}
+          onForceSignOut={handleManualSignOut}
+          showWelcome={true}
+        />
 
-      {/* Dashboard Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">
-            Track your time and manage your projects
-          </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Projects
-              </CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{projectCount}/2</div>
-              <p className="text-xs text-muted-foreground">
-                {projectCount === 0
-                  ? 'No projects yet'
-                  : `${2 - projectCount} remaining on free tier`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Time Today</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0h 0m</div>
-              <p className="text-xs text-muted-foreground">
-                No time tracked today
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0h 0m</div>
-              <p className="text-xs text-muted-foreground">
-                No time tracked this week
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Projects Section */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-              <p className="text-gray-600">
-                Manage your projects and track progress
-              </p>
-            </div>
-            <Button onClick={handleCreateProject}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Project
-            </Button>
+        {/* Dashboard Content */}
+        <main className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+            <p className="text-gray-600">
+              Track your time and manage your projects
+            </p>
           </div>
 
-          {/* Non-Critical Error Message */}
-          {inlineErrorMessage && (
-            <Card className="border-red-200 bg-red-50">
-              <CardContent className="p-4">
-                <p className="text-red-600 text-sm">{inlineErrorMessage}</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Metrics Cards */}
+          <MetricsCards projectCount={projectCount} />
 
-          {/* Loading State */}
-          {projectsLoading && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                  </CardContent>
-                </Card>
-              ))}
+          {/* Projects Section */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+                <p className="text-gray-600">
+                  Manage your projects and track progress
+                </p>
+              </div>
+              <Button onClick={handleCreateProject}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Project
+              </Button>
             </div>
-          )}
 
-          {/* Projects Grid */}
-          {!projectsLoading && projects.length > 0 && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map(project => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onDelete={handleDeleteProject}
-                  onNavigate={handleNavigateToProject}
-                  onUpdate={handleUpdateProject}
-                />
-              ))}
-            </div>
-          )}
+            {/* Non-Critical Error Message */}
+            {inlineErrorMessage && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4">
+                  <p className="text-red-600 text-sm">{inlineErrorMessage}</p>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Empty State */}
-          {!projectsLoading && projects.length === 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>No Projects Yet</CardTitle>
-                <CardDescription>
-                  Create your first project to start tracking time and managing
-                  tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleCreateProject} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Project
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            {/* Loading State */}
+            {projectsLoading && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
-        {/* Create Project Modal */}
-        <ProjectModal
-          open={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-          onCreateProject={createProject}
-          canCreateProject={canCreateProject}
-          currentProjectCount={projectCount}
-        />
+            {/* Projects Grid */}
+            {!projectsLoading && projects.length > 0 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.map(project => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onDelete={handleDeleteProject}
+                    onNavigate={handleNavigateToProject}
+                    onUpdate={handleUpdateProject}
+                  />
+                ))}
+              </div>
+            )}
 
-        {/* Delete Project Modal */}
-        <DeleteProjectModal
-          open={isDeleteModalOpen}
-          onOpenChange={setIsDeleteModalOpen}
-          project={projectToDelete}
-          onConfirmDelete={handleConfirmDelete}
-          isDeleting={isDeleting}
-        />
-      </main>
-    </div>
+            {/* Empty State */}
+            {!projectsLoading && projects.length === 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>No Projects Yet</CardTitle>
+                  <CardDescription>
+                    Create your first project to start tracking time and
+                    managing tasks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={handleCreateProject} className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Project
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Create Project Modal */}
+          <ProjectModal
+            open={isCreateModalOpen}
+            onOpenChange={setIsCreateModalOpen}
+            onCreateProject={createProject}
+            canCreateProject={canCreateProject}
+            currentProjectCount={projectCount}
+          />
+
+          {/* Delete Project Modal */}
+          <DeleteProjectModal
+            open={isDeleteModalOpen}
+            onOpenChange={setIsDeleteModalOpen}
+            project={projectToDelete}
+            onConfirmDelete={handleConfirmDelete}
+            isDeleting={isDeleting}
+          />
+        </main>
+      </div>
+    </TimeTrackingProvider>
   );
 }
