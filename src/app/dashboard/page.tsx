@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Plus } from 'lucide-react';
 
+import { ActiveTimersSection } from '@/components/dashboard/ActiveTimersSection';
 import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
@@ -272,6 +273,9 @@ export default function DashboardPage() {
               </Card>
             )}
           </div>
+
+          {/* Active Timers Section */}
+          <ActiveTimersSection />
 
           {/* Create Project Modal */}
           <ProjectModal
