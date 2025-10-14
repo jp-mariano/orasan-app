@@ -21,7 +21,7 @@ export function ActiveTimersSection() {
 
   if (error) {
     return (
-      <Card>
+      <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -43,7 +43,7 @@ export function ActiveTimersSection() {
   }
 
   return (
-    <Card>
+    <Card className="mt-8">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
