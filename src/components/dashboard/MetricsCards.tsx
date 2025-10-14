@@ -22,11 +22,13 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
           <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{projectCount}/2</div>
+          <div className="text-2xl font-bold">{projectCount}</div>
           <p className="text-xs text-muted-foreground">
             {projectCount === 0
               ? 'No projects yet'
-              : `${2 - projectCount} remaining on free tier`}
+              : projectCount <= 2
+                ? `${2 - projectCount} remaining on free tier`
+                : ''}
           </p>
         </CardContent>
       </Card>
