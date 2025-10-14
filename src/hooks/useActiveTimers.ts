@@ -16,7 +16,6 @@ interface UseActiveTimersReturn {
   activeTimersWithDetails: ActiveTimerWithDetails[];
   isLoading: boolean;
   error: string | null;
-  refreshActiveTimers: () => Promise<void>;
 }
 
 export function useActiveTimers(): UseActiveTimersReturn {
@@ -102,10 +101,6 @@ export function useActiveTimers(): UseActiveTimersReturn {
     }
   }, [activeTimers]);
 
-  const refreshActiveTimers = useCallback(async () => {
-    await fetchActiveTimersDetails();
-  }, [fetchActiveTimersDetails]);
-
   // Fetch details when active timers change
   useEffect(() => {
     fetchActiveTimersDetails();
@@ -115,6 +110,5 @@ export function useActiveTimers(): UseActiveTimersReturn {
     activeTimersWithDetails,
     isLoading,
     error,
-    refreshActiveTimers,
   };
 }
