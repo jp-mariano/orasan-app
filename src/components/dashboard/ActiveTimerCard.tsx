@@ -2,13 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 
-import { Pause, Play, Square, Clock } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { TimerDisplay } from '@/components/ui/timer-display';
+import { useTimerActions } from '@/hooks/useTimerActions';
 import { LocalTimer } from '@/hooks/useTimeTracker';
-import { formatDuration } from '@/lib/utils';
 
 interface ActiveTimerCardProps {
   timer: LocalTimer;
@@ -27,28 +24,17 @@ export function ActiveTimerCard({
 }: ActiveTimerCardProps) {
   const router = useRouter();
   const {
+    timer: timerData,
+    duration,
+    canStart,
+    canResume,
+    canPause,
+    canStop,
+    startTimer,
     pauseTimer,
     resumeTimer,
     stopTimer,
-    getTotalDuration,
-    canPauseTimer,
-    canResumeTimer,
-    canStopTimer,
-  } = useTimeTrackingContext();
-
-  const currentDuration = getTotalDuration(timer.taskId);
-
-  const handlePause = async () => {
-    await pauseTimer(timer.taskId);
-  };
-
-  const handleResume = async () => {
-    await resumeTimer(timer.taskId);
-  };
-
-  const handleStop = async () => {
-    await stopTimer(timer.taskId);
-  };
+  } = useTimerActions(timer.taskId, timer.projectId);
 
   const handleNavigateToTask = () => {
     if (onNavigateToTask) {
@@ -81,67 +67,22 @@ export function ActiveTimerCard({
             </button>
 
             {/* Timer Display */}
-            <div className="flex items-center gap-2 mt-2">
-              <Clock className="h-4 w-4 text-gray-400" />
-              <span className="font-mono text-lg font-medium text-gray-900">
-                {formatDuration(currentDuration)}
-              </span>
-              {timer.isRunning && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-xs text-green-600 font-medium">
-                    Running
-                  </span>
-                </div>
-              )}
-              {timer.isPaused && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                  <span className="text-xs text-yellow-600 font-medium">
-                    Paused
-                  </span>
-                </div>
-              )}
+            <div className="mt-2">
+              <TimerDisplay
+                duration={duration}
+                isRunning={timerData?.isRunning || false}
+                isPaused={timerData?.isPaused || false}
+                canStart={canStart}
+                canResume={canResume}
+                canPause={canPause}
+                canStop={canStop}
+                onStart={startTimer}
+                onPause={pauseTimer}
+                onResume={resumeTimer}
+                onStop={stopTimer}
+                hasTimer={!!timerData}
+              />
             </div>
-          </div>
-
-          {/* Timer Controls */}
-          <div className="flex items-center gap-1 ml-4">
-            {timer.isRunning && canPauseTimer(timer.taskId) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handlePause}
-                className="h-8 w-8 p-0"
-                title="Pause timer"
-              >
-                <Pause className="h-4 w-4" />
-              </Button>
-            )}
-
-            {timer.isPaused && canResumeTimer(timer.taskId) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleResume}
-                className="h-8 w-8 p-0"
-                title="Resume timer"
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            )}
-
-            {canStopTimer(timer.taskId) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleStop}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                title="Stop timer"
-              >
-                <Square className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         </div>
       </CardContent>
