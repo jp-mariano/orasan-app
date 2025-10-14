@@ -1,8 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-import { Clock } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   Card,
@@ -23,22 +21,27 @@ interface ProjectTaskData {
 }
 
 export function ActiveTimersSection() {
-  const { activeTimers } = useTimeTrackingContext();
-  const activeTimersRef = useRef(activeTimers);
+  const { activeTimers, pausedTimers } = useTimeTrackingContext();
+  // Combine running and paused timers for display
+  const allActiveTimers = useMemo(
+    () => [...activeTimers, ...pausedTimers],
+    [activeTimers, pausedTimers]
+  );
+  const allActiveTimersRef = useRef(allActiveTimers);
   const [projectTaskMap, setProjectTaskMap] = useState<
     Map<string, ProjectTaskData>
   >(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Keep ref updated with current activeTimers
+  // Keep ref updated with current allActiveTimers
   useEffect(() => {
-    activeTimersRef.current = activeTimers;
-  }, [activeTimers]);
+    allActiveTimersRef.current = allActiveTimers;
+  }, [allActiveTimers]);
 
   // Fetch project and task details once when active timers change
   const fetchProjectTaskDetails = useCallback(async () => {
-    const currentActiveTimers = activeTimersRef.current;
+    const currentActiveTimers = allActiveTimersRef.current;
     if (currentActiveTimers.length === 0) {
       setProjectTaskMap(new Map());
       return;
@@ -100,7 +103,7 @@ export function ActiveTimersSection() {
   }, []);
 
   // Create a stable key based on timer IDs (not array reference)
-  const timerIdsKey = activeTimers
+  const timerIdsKey = allActiveTimers
     .map(timer => timer.id)
     .sort()
     .join(',');
@@ -115,14 +118,13 @@ export function ActiveTimersSection() {
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
             Active Timers
           </CardTitle>
           <CardDescription>Currently running and paused timers</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-red-600">Failed to load active timers</p>
+            <p className="text-red-600">Failed to load timer data</p>
           </div>
         </CardContent>
       </Card>
@@ -132,10 +134,7 @@ export function ActiveTimersSection() {
   return (
     <Card className="mt-8">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Active Timers
-        </CardTitle>
+        <CardTitle className="flex items-center gap-2">Active Timers</CardTitle>
         <CardDescription>Currently running and paused timers</CardDescription>
       </CardHeader>
       <CardContent>
@@ -147,17 +146,16 @@ export function ActiveTimersSection() {
               </div>
             ))}
           </div>
-        ) : activeTimers.length === 0 ? (
+        ) : allActiveTimers.length === 0 ? (
           <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">No active timers</p>
+            <p className="text-gray-500 mb-2">No active or paused timers</p>
             <p className="text-sm text-gray-400">
               Start a timer from any task to see it here
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {activeTimers.map(timer => {
+            {allActiveTimers.map(timer => {
               const projectTaskData = projectTaskMap.get(timer.projectId);
               if (!projectTaskData) {
                 return null; // Skip if we don't have the data yet
