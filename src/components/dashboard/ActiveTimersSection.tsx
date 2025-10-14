@@ -20,6 +20,11 @@ interface ProjectTaskData {
   tasks: Task[];
 }
 
+// Auto-fit grid that automatically adjusts columns based on available space
+function getGridColsClass(): string {
+  return 'grid-cols-[repeat(auto-fit,minmax(200px,1fr))]';
+}
+
 export function ActiveTimersSection() {
   const { activeTimers, pausedTimers } = useTimeTrackingContext();
   // Combine running and paused timers for display
@@ -139,10 +144,10 @@ export function ActiveTimersSection() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2].map(i => (
+          <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
+            {[1, 2, 3].map(i => (
               <div key={i} className="animate-pulse">
-                <div className="h-20 bg-gray-200 rounded-lg"></div>
+                <div className="bg-gray-200 rounded-lg"></div>
               </div>
             ))}
           </div>
@@ -154,7 +159,7 @@ export function ActiveTimersSection() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
             {allActiveTimers.map(timer => {
               const projectTaskData = projectTaskMap.get(timer.projectId);
               if (!projectTaskData) {

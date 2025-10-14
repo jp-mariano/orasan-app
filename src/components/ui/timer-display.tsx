@@ -18,6 +18,7 @@ interface TimerDisplayProps {
   onStop: () => void;
   className?: string;
   hasTimer?: boolean; // Whether a timer entry exists
+  compact?: boolean; // Whether to use compact styling
 }
 
 export function TimerDisplay({
@@ -34,6 +35,7 @@ export function TimerDisplay({
   onStop,
   className = '',
   hasTimer = false,
+  compact = false,
 }: TimerDisplayProps) {
   const getStatusColor = (): string => {
     if (isRunning) return 'text-green-600';
@@ -53,7 +55,9 @@ export function TimerDisplay({
       {hasTimer && (
         <div className="flex items-center gap-2">
           <span
-            className={`font-mono text-lg font-semibold ${getStatusColor()}`}
+            className={`font-mono font-semibold ${getStatusColor()} ${
+              compact ? 'text-sm' : 'text-lg'
+            }`}
           >
             {formatDuration(duration)}
           </span>
@@ -73,10 +77,10 @@ export function TimerDisplay({
               e.stopPropagation();
               onStart();
             }}
-            className="h-8 w-8 p-0"
+            className={`p-0 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}
             title="Start timer"
           >
-            <Play className="h-3 w-3" />
+            <Play className={compact ? 'h-2 w-2' : 'h-3 w-3'} />
           </Button>
         )}
 
@@ -88,10 +92,10 @@ export function TimerDisplay({
               e.stopPropagation();
               onResume();
             }}
-            className="h-8 w-8 p-0"
+            className={`p-0 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}
             title="Resume timer"
           >
-            <RotateCcw className="h-3 w-3" />
+            <RotateCcw className={compact ? 'h-2 w-2' : 'h-3 w-3'} />
           </Button>
         )}
 
@@ -103,10 +107,10 @@ export function TimerDisplay({
               e.stopPropagation();
               onPause();
             }}
-            className="h-8 w-8 p-0"
+            className={`p-0 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}
             title="Pause timer"
           >
-            <Pause className="h-3 w-3" />
+            <Pause className={compact ? 'h-2 w-2' : 'h-3 w-3'} />
           </Button>
         )}
 
@@ -118,10 +122,10 @@ export function TimerDisplay({
               e.stopPropagation();
               onStop();
             }}
-            className="h-8 w-8 p-0"
+            className={`p-0 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`}
             title="Stop timer"
           >
-            <Square className="h-3 w-3" />
+            <Square className={compact ? 'h-2 w-2' : 'h-3 w-3'} />
           </Button>
         )}
       </div>
