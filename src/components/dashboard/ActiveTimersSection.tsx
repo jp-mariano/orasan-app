@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ChevronDown, ChevronRight } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -39,10 +43,39 @@ export function ActiveTimersSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Accordion state - both sections open by default
+  const [expandedSections, setExpandedSections] = useState(
+    new Set(['active', 'paused'])
+  );
+
   // Keep ref updated with current allActiveTimers
   useEffect(() => {
     allActiveTimersRef.current = allActiveTimers;
   }, [allActiveTimers]);
+
+  // Toggle accordion section
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
+  };
+
+  // Get timers by state
+  const getTimersByState = (state: 'active' | 'paused') => {
+    const timers = state === 'active' ? activeTimers : pausedTimers;
+    return timers;
+  };
+
+  // Get total timers by state
+  const getTotalTimersByState = (state: 'active' | 'paused') => {
+    return getTimersByState(state).length;
+  };
 
   // Fetch project and task details once when active timers change
   const fetchProjectTaskDetails = useCallback(async () => {
@@ -159,30 +192,138 @@ export function ActiveTimersSection() {
             </p>
           </div>
         ) : (
-          <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
-            {allActiveTimers.map(timer => {
-              const projectTaskData = projectTaskMap.get(timer.projectId);
-              if (!projectTaskData) {
-                return null; // Skip if we don't have the data yet
-              }
+          <div className="space-y-4">
+            {/* Active Timers Section */}
+            {getTotalTimersByState('active') > 0 && (
+              <div className="pl-3">
+                {/* Active Timers Header */}
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+                  onClick={() => toggleSection('active')}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                  >
+                    {expandedSections.has('active') ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </Button>
 
-              const task = projectTaskData.tasks.find(
-                t => t.id === timer.taskId
-              );
-              if (!task) {
-                return null; // Skip if task not found
-              }
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">Active Timers</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {getTotalTimersByState('active')}{' '}
+                      {getTotalTimersByState('active') === 1
+                        ? 'timer'
+                        : 'timers'}
+                    </Badge>
+                  </div>
+                </div>
 
-              return (
-                <ActiveTimerCard
-                  key={timer.id}
-                  timer={timer}
-                  taskName={task.name}
-                  projectName={projectTaskData.project.name}
-                  projectColor={getProjectColor(projectTaskData.project.id)}
-                />
-              );
-            })}
+                {/* Active Timers Grid */}
+                {expandedSections.has('active') && (
+                  <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
+                    {getTimersByState('active').map(timer => {
+                      const projectTaskData = projectTaskMap.get(
+                        timer.projectId
+                      );
+                      if (!projectTaskData) {
+                        return null; // Skip if we don't have the data yet
+                      }
+
+                      const task = projectTaskData.tasks.find(
+                        t => t.id === timer.taskId
+                      );
+                      if (!task) {
+                        return null; // Skip if task not found
+                      }
+
+                      return (
+                        <ActiveTimerCard
+                          key={timer.id}
+                          timer={timer}
+                          taskName={task.name}
+                          projectName={projectTaskData.project.name}
+                          projectColor={getProjectColor(
+                            projectTaskData.project.id
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Paused Timers Section */}
+            {getTotalTimersByState('paused') > 0 && (
+              <div className="pl-3">
+                {/* Paused Timers Header */}
+                <div
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+                  onClick={() => toggleSection('paused')}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 hover:bg-transparent"
+                  >
+                    {expandedSections.has('paused') ? (
+                      <ChevronDown className="h-3 w-3" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3" />
+                    )}
+                  </Button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">Paused Timers</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {getTotalTimersByState('paused')}{' '}
+                      {getTotalTimersByState('paused') === 1
+                        ? 'timer'
+                        : 'timers'}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Paused Timers Grid */}
+                {expandedSections.has('paused') && (
+                  <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
+                    {getTimersByState('paused').map(timer => {
+                      const projectTaskData = projectTaskMap.get(
+                        timer.projectId
+                      );
+                      if (!projectTaskData) {
+                        return null; // Skip if we don't have the data yet
+                      }
+
+                      const task = projectTaskData.tasks.find(
+                        t => t.id === timer.taskId
+                      );
+                      if (!task) {
+                        return null; // Skip if task not found
+                      }
+
+                      return (
+                        <ActiveTimerCard
+                          key={timer.id}
+                          timer={timer}
+                          taskName={task.name}
+                          projectName={projectTaskData.project.name}
+                          projectColor={getProjectColor(
+                            projectTaskData.project.id
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
