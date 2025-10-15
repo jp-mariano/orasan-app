@@ -92,6 +92,27 @@ CREATE TABLE public.time_entries (
   CONSTRAINT unique_task_time_entry UNIQUE (task_id)
 );
 
+-- Create work_sessions table
+CREATE TABLE public.work_sessions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE,
+  duration_seconds INTEGER DEFAULT 0 NOT NULL,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'completed')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- Constraints for data integrity
+  CONSTRAINT check_work_session_duration_positive CHECK (duration_seconds >= 0),
+  CONSTRAINT check_work_session_end_after_start CHECK (end_time IS NULL OR end_time >= start_time),
+  CONSTRAINT check_work_session_status CHECK (status IN ('active', 'completed')),
+  CONSTRAINT check_work_session_status_end_time CHECK (
+    (status = 'completed' AND end_time IS NOT NULL) OR 
+    (status = 'active' AND end_time IS NULL)
+  )
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_projects_user_id ON public.projects(user_id);
 CREATE INDEX idx_projects_status ON public.projects(status);
@@ -105,12 +126,17 @@ CREATE INDEX idx_time_entries_user_status ON public.time_entries(user_id, timer_
 CREATE INDEX idx_time_entries_task_status ON public.time_entries(task_id, timer_status);
 CREATE INDEX idx_time_entries_created_at ON public.time_entries(created_at);
 CREATE INDEX idx_time_entries_start_time ON public.time_entries(start_time);
+CREATE INDEX idx_work_sessions_user_id ON public.work_sessions(user_id);
+CREATE INDEX idx_work_sessions_status ON public.work_sessions(status);
+CREATE INDEX idx_work_sessions_start_time ON public.work_sessions(start_time);
+CREATE INDEX idx_work_sessions_user_status ON public.work_sessions(user_id, status);
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.work_sessions ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
 CREATE POLICY "Users can view own profile" ON public.users
@@ -164,6 +190,19 @@ CREATE POLICY "Users can update own time entries" ON public.time_entries
 CREATE POLICY "Users can delete own time entries" ON public.time_entries
   FOR DELETE USING ((SELECT auth.uid()) = user_id);
 
+-- RLS Policies for work_sessions table
+CREATE POLICY "Users can view own work sessions" ON public.work_sessions
+  FOR SELECT USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can insert own work sessions" ON public.work_sessions
+  FOR INSERT WITH CHECK ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can update own work sessions" ON public.work_sessions
+  FOR UPDATE USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can delete own work sessions" ON public.work_sessions
+  FOR DELETE USING ((SELECT auth.uid()) = user_id);
+
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -184,4 +223,7 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON public.tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_time_entries_updated_at BEFORE UPDATE ON public.time_entries
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_work_sessions_updated_at BEFORE UPDATE ON public.work_sessions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -1,18 +1,15 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useWorkSessionContext } from '@/contexts/work-session-context';
+import { formatDuration } from '@/lib/utils';
 
 interface MetricsCardsProps {
   projectCount: number;
 }
 
 export function MetricsCards({ projectCount }: MetricsCardsProps) {
-  const {
-    stats,
-    isLoading: statsLoading,
-    formatDuration,
-  } = useDashboardStats();
+  const { stats, statsLoading } = useWorkSessionContext();
 
   return (
     <div className="grid grid-cols-3 gap-6 mb-8">
@@ -33,10 +30,10 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
         </CardContent>
       </Card>
 
-      {/* Time Today Card */}
+      {/* Work Time Today Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Time Today</CardTitle>
+          <CardTitle className="text-sm font-medium">Work Time Today</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
@@ -46,16 +43,18 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
             {statsLoading
               ? 'Loading...'
               : stats.todayTime === 0
-                ? 'No time tracked today'
-                : 'Daily total'}
+                ? 'No work time today'
+                : 'Actual work time'}
           </p>
         </CardContent>
       </Card>
 
-      {/* This Week Card */}
+      {/* Work Time This Week Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">This Week</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Work Time This Week
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
@@ -65,8 +64,8 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
             {statsLoading
               ? 'Loading...'
               : stats.weekTime === 0
-                ? 'No time tracked this week'
-                : 'Weekly total'}
+                ? 'No work time this week'
+                : 'Actual work time'}
           </p>
         </CardContent>
       </Card>
