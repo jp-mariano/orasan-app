@@ -15,7 +15,7 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
   } = useDashboardStats();
 
   return (
-    <div className="grid md:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-3 gap-6 mb-8">
       {/* Total Projects Card */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -67,21 +67,6 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
               : stats.weekTime === 0
                 ? 'No time tracked this week'
                 : 'Weekly total'}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Active Timers Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Timers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.activeTimersCount}</div>
-          <p className="text-xs text-muted-foreground">
-            {stats.activeTimersCount === 0
-              ? 'No active timers'
-              : `${stats.activeTimersCount} running`}
           </p>
         </CardContent>
       </Card>
