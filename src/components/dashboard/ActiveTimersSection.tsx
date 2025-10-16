@@ -180,7 +180,22 @@ export function ActiveTimersSection() {
           <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
             {[1, 2, 3].map(i => (
               <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 rounded-lg"></div>
+                <div className="bg-white border rounded-lg p-6 space-y-4">
+                  {/* Project name skeleton */}
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+
+                  {/* Task name skeleton */}
+                  <div className="h-5 bg-gray-200 rounded w-full"></div>
+
+                  {/* Timer display skeleton */}
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+
+                  {/* Action buttons skeleton */}
+                  <div className="flex gap-2">
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    <div className="h-8 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
