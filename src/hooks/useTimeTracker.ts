@@ -68,6 +68,22 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   const [timers, setTimers] = useState<LocalTimer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to set error with auto-clear timeout
+  const setErrorWithTimeout = useCallback((errorMessage: string) => {
+    // Clear any existing timeout
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(errorMessage);
+
+    // Auto-clear error after 5 seconds
+    errorTimeoutRef.current = setTimeout(() => {
+      setError(null);
+    }, 5000);
+  }, []);
 
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -95,6 +111,9 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     return () => {
       if (syncIntervalRef.current) {
         clearInterval(syncIntervalRef.current);
+      }
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
       }
     };
   }, []);
@@ -371,6 +390,16 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
 
+      // Check project timer limit (max 10 active timers per project)
+      const activeProjectTimers = timers.filter(
+        t => t.projectId === projectId && t.isRunning
+      );
+
+      if (activeProjectTimers.length >= 10) {
+        setErrorWithTimeout('Maximum 10 active timers per project allowed');
+        return false;
+      }
+
       try {
         // Check if timer already exists
         const existingTimer = getTimerForTask(taskId);
@@ -494,10 +523,21 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
 
-      try {
-        const timer = getTimerForTask(taskId);
-        if (!timer) return false;
+      // Get the timer to find its projectId
+      const timer = getTimerForTask(taskId);
+      if (!timer) return false;
 
+      // Check project timer limit (max 10 active timers per project)
+      const activeProjectTimers = timers.filter(
+        t => t.projectId === timer.projectId && t.isRunning
+      );
+
+      if (activeProjectTimers.length >= 10) {
+        setErrorWithTimeout('Maximum 10 active timers per project allowed');
+        return false;
+      }
+
+      try {
         const updatedTimer: LocalTimer = {
           ...timer,
           isRunning: true,
