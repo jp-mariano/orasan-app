@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { getProjectColor } from '@/lib/utils';
 import { Project, Task } from '@/types';
@@ -46,7 +46,7 @@ export function ActiveTimersSection() {
   const [error, setError] = useState<string | null>(null);
 
   // Pause all state
-  const [showPauseAllDialog, setShowPauseAllDialog] = useState(false);
+  const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
 
   // Accordion state - both sections open by default
@@ -160,7 +160,7 @@ export function ActiveTimersSection() {
     try {
       const success = await pauseAllTimers(runningTimerIds);
       if (success) {
-        setShowPauseAllDialog(false);
+        setShowPauseTimersModal(false);
       }
     } catch (error) {
       console.error('Error pausing all timers:', error);
@@ -213,7 +213,7 @@ export function ActiveTimersSection() {
           {allActiveTimers.some(timer => timer.isRunning) && (
             <Button
               size="sm"
-              onClick={() => setShowPauseAllDialog(true)}
+              onClick={() => setShowPauseTimersModal(true)}
               className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
             >
               Pause Timers
@@ -389,9 +389,9 @@ export function ActiveTimersSection() {
         )}
       </CardContent>
 
-      <ConfirmationDialog
-        open={showPauseAllDialog}
-        onOpenChange={setShowPauseAllDialog}
+      <PauseTimersModal
+        open={showPauseTimersModal}
+        onOpenChange={setShowPauseTimersModal}
         title="Pause All Running Timers"
         description="Are you sure you want to pause all running timers? This will pause all currently running timers."
         confirmText="Proceed"

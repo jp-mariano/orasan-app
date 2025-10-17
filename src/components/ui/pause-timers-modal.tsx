@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-interface ConfirmationDialogProps {
+interface PauseTimersModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
@@ -25,7 +25,7 @@ interface ConfirmationDialogProps {
   children?: ReactNode;
 }
 
-export function ConfirmationDialog({
+export function PauseTimersModal({
   open,
   onOpenChange,
   title,
@@ -36,7 +36,7 @@ export function ConfirmationDialog({
   onCancel,
   isLoading = false,
   children,
-}: ConfirmationDialogProps) {
+}: PauseTimersModalProps) {
   const handleCancel = () => {
     onCancel?.();
     onOpenChange(false);

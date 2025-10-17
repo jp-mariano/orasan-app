@@ -21,11 +21,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ErrorDisplay } from '@/components/ui/error-display';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
+import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
@@ -45,7 +45,7 @@ export default function ProjectDetailPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Pause all state
-  const [showPauseAllDialog, setShowPauseAllDialog] = useState(false);
+  const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
 
   // Handle errors with the new error display hook
@@ -286,7 +286,7 @@ export default function ProjectDetailPage() {
     try {
       const success = await pauseAllTimers(runningTimerIds);
       if (success) {
-        setShowPauseAllDialog(false);
+        setShowPauseTimersModal(false);
       }
     } catch (error) {
       console.error('Error pausing all timers:', error);
@@ -550,7 +550,7 @@ export default function ProjectDetailPage() {
                 ) && (
                   <Button
                     size="sm"
-                    onClick={() => setShowPauseAllDialog(true)}
+                    onClick={() => setShowPauseTimersModal(true)}
                     className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
                   >
                     Pause Timers
@@ -631,9 +631,9 @@ export default function ProjectDetailPage() {
         />
       )}
 
-      <ConfirmationDialog
-        open={showPauseAllDialog}
-        onOpenChange={setShowPauseAllDialog}
+      <PauseTimersModal
+        open={showPauseTimersModal}
+        onOpenChange={setShowPauseTimersModal}
         title="Pause All Running Timers in Project"
         description="Are you sure you want to pause all running timers for this project? This will pause all currently running timers in this project."
         confirmText="Proceed"
