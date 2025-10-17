@@ -556,9 +556,9 @@ export default function ProjectDetailPage() {
             ) && (
               <div className="mb-4 flex justify-end">
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => setShowPauseAllDialog(true)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
                 >
                   Pause Timers
                 </Button>
@@ -631,9 +631,9 @@ export default function ProjectDetailPage() {
       <ConfirmationDialog
         open={showPauseAllDialog}
         onOpenChange={setShowPauseAllDialog}
-        title="Pause All Project Timers"
-        description="Are you sure you want to pause all active timers for this project? This will stop all currently running timers in this project."
-        confirmText="Pause All"
+        title="Pause All Running Timers in Project"
+        description="Are you sure you want to pause all running timers for this project? This will pause all currently running timers in this project."
+        confirmText="Proceed"
         onConfirm={handlePauseAll}
         isLoading={isPausingAll}
       />

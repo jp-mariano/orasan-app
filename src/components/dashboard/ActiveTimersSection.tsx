@@ -212,10 +212,9 @@ export function ActiveTimersSection() {
           </div>
           {allActiveTimers.some(timer => timer.isRunning) && (
             <Button
-              variant="outline"
               size="sm"
               onClick={() => setShowPauseAllDialog(true)}
-              className="ml-4"
+              className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
             >
               Pause Timers
             </Button>
@@ -276,7 +275,7 @@ export function ActiveTimersSection() {
                   </Button>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">Active Timers</span>
+                    <span className="font-medium text-sm">Running Timers</span>
                     <Badge variant="secondary" className="text-xs">
                       {getTotalTimersByState('active')}{' '}
                       {getTotalTimersByState('active') === 1
@@ -393,9 +392,9 @@ export function ActiveTimersSection() {
       <ConfirmationDialog
         open={showPauseAllDialog}
         onOpenChange={setShowPauseAllDialog}
-        title="Pause All Timers"
-        description="Are you sure you want to pause all active timers? This will stop all currently running timers."
-        confirmText="Pause All"
+        title="Pause All Running Timers"
+        description="Are you sure you want to pause all running timers? This will pause all currently running timers."
+        confirmText="Proceed"
         onConfirm={handlePauseAll}
         isLoading={isPausingAll}
       />
