@@ -21,11 +21,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { ErrorDisplay } from '@/components/ui/error-display';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -41,6 +43,10 @@ export default function ProjectDetailPage() {
   const [loadingProject, setLoadingProject] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Pause all state
+  const [showPauseAllDialog, setShowPauseAllDialog] = useState(false);
+  const [isPausingAll, setIsPausingAll] = useState(false);
 
   // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
@@ -75,6 +81,9 @@ export default function ProjectDetailPage() {
 
   // Project management
   const { updateProject, deleteProject } = useProjects();
+
+  // Time tracking
+  const { activeTimers, pauseAllTimers } = useTimeTrackingContext();
 
   // Fetch project data
   useEffect(() => {
@@ -260,6 +269,29 @@ export default function ProjectDetailPage() {
 
       // Re-throw the error so InlineEdit can catch it
       throw err;
+    }
+  };
+
+  // Handle pause all timers for this project
+  const handlePauseAll = async () => {
+    const runningTimerIds = activeTimers
+      .filter(timer => timer.isRunning && timer.projectId === projectId)
+      .map(timer => timer.id);
+
+    if (runningTimerIds.length === 0) {
+      return;
+    }
+
+    setIsPausingAll(true);
+    try {
+      const success = await pauseAllTimers(runningTimerIds);
+      if (success) {
+        setShowPauseAllDialog(false);
+      }
+    } catch (error) {
+      console.error('Error pausing all timers:', error);
+    } finally {
+      setIsPausingAll(false);
     }
   };
 
@@ -519,6 +551,19 @@ export default function ProjectDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {activeTimers.some(
+              timer => timer.isRunning && timer.projectId === projectId
+            ) && (
+              <div className="mb-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowPauseAllDialog(true)}
+                >
+                  Pause Timers
+                </Button>
+              </div>
+            )}
             <TaskList
               tasks={tasks}
               loading={tasksLoading}
@@ -582,6 +627,16 @@ export default function ProjectDetailPage() {
           }}
         />
       )}
+
+      <ConfirmationDialog
+        open={showPauseAllDialog}
+        onOpenChange={setShowPauseAllDialog}
+        title="Pause All Project Timers"
+        description="Are you sure you want to pause all active timers for this project? This will stop all currently running timers in this project."
+        confirmText="Pause All"
+        onConfirm={handlePauseAll}
+        isLoading={isPausingAll}
+      />
     </div>
   );
 }

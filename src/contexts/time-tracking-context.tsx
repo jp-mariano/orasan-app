@@ -13,6 +13,7 @@ interface TimeTrackingContextType {
   // Timer actions
   startTimer: (taskId: string, projectId: string) => Promise<boolean>;
   pauseTimer: (taskId: string) => Promise<boolean>;
+  pauseAllTimers: (timerIds: string[]) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
   resetTimer: (taskId: string) => Promise<boolean>;

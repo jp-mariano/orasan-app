@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { getProjectColor } from '@/lib/utils';
 import { Project, Task } from '@/types';
@@ -30,7 +31,8 @@ function getGridColsClass(): string {
 }
 
 export function ActiveTimersSection() {
-  const { activeTimers, pausedTimers } = useTimeTrackingContext();
+  const { activeTimers, pausedTimers, pauseAllTimers } =
+    useTimeTrackingContext();
   // Combine running and paused timers for display
   const allActiveTimers = useMemo(
     () => [...activeTimers, ...pausedTimers],
@@ -42,6 +44,10 @@ export function ActiveTimersSection() {
   >(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pause all state
+  const [showPauseAllDialog, setShowPauseAllDialog] = useState(false);
+  const [isPausingAll, setIsPausingAll] = useState(false);
 
   // Accordion state - both sections open by default
   const [expandedSections, setExpandedSections] = useState(
@@ -140,6 +146,29 @@ export function ActiveTimersSection() {
     }
   }, []);
 
+  // Handle pause all timers
+  const handlePauseAll = useCallback(async () => {
+    const runningTimerIds = allActiveTimers
+      .filter(timer => timer.isRunning)
+      .map(timer => timer.id);
+
+    if (runningTimerIds.length === 0) {
+      return;
+    }
+
+    setIsPausingAll(true);
+    try {
+      const success = await pauseAllTimers(runningTimerIds);
+      if (success) {
+        setShowPauseAllDialog(false);
+      }
+    } catch (error) {
+      console.error('Error pausing all timers:', error);
+    } finally {
+      setIsPausingAll(false);
+    }
+  }, [allActiveTimers, pauseAllTimers]);
+
   // Create a stable key based on timer IDs (not array reference)
   const timerIdsKey = allActiveTimers
     .map(timer => timer.id)
@@ -172,8 +201,26 @@ export function ActiveTimersSection() {
   return (
     <Card className="mt-8">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">Active Timers</CardTitle>
-        <CardDescription>Currently running and paused timers</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              Active Timers
+            </CardTitle>
+            <CardDescription>
+              Currently running and paused timers
+            </CardDescription>
+          </div>
+          {allActiveTimers.some(timer => timer.isRunning) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPauseAllDialog(true)}
+              className="ml-4"
+            >
+              Pause Timers
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -342,6 +389,16 @@ export function ActiveTimersSection() {
           </div>
         )}
       </CardContent>
+
+      <ConfirmationDialog
+        open={showPauseAllDialog}
+        onOpenChange={setShowPauseAllDialog}
+        title="Pause All Timers"
+        description="Are you sure you want to pause all active timers? This will stop all currently running timers."
+        confirmText="Pause All"
+        onConfirm={handlePauseAll}
+        isLoading={isPausingAll}
+      />
     </Card>
   );
 }

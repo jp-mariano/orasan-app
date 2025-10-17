@@ -34,6 +34,7 @@ export interface UseTimeTrackerReturn {
   // Timer actions
   startTimer: (taskId: string, projectId: string) => Promise<boolean>;
   pauseTimer: (taskId: string) => Promise<boolean>;
+  pauseAllTimers: (timerIds: string[]) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
   resetTimer: (taskId: string) => Promise<boolean>;
@@ -515,6 +516,75 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers]
   );
 
+  // Pause all timers
+  const pauseAllTimers = useCallback(
+    async (timerIds: string[]): Promise<boolean> => {
+      if (!timerIds || timerIds.length === 0) {
+        setError('No timers to pause');
+        return false;
+      }
+
+      try {
+        // Pre-calculate durations using EXACT same logic as individual pause
+        const updates = timerIds
+          .map(timerId => {
+            // Find timer by ID (not taskId)
+            const timer = timers.find(t => t.id === timerId);
+            if (!timer) return null;
+
+            // Use IDENTICAL duration calculation as individual pause
+            const currentDuration =
+              timer.isRunning && timer.localStartTime
+                ? timer.duration +
+                  Math.floor((Date.now() - timer.localStartTime) / 1000)
+                : timer.duration;
+
+            return {
+              id: timerId,
+              duration_seconds: currentDuration,
+              timer_status: 'paused',
+              end_time: undefined, // Keep null for paused timers (same as individual pause)
+              updated_at: new Date().toISOString(),
+            };
+          })
+          .filter(Boolean); // Remove null entries
+
+        if (updates.length === 0) {
+          setError('No valid timers to pause');
+          return false;
+        }
+
+        // Call the batch API
+        const response = await fetch('/api/time-entries/pause-all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ updates }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          setError(errorData.error || 'Failed to pause timers');
+          return false;
+        }
+
+        // Refresh all timers from database to get updated state
+        await loadTimersFromDatabase();
+
+        setError(null);
+        return true;
+      } catch (error) {
+        console.error('Error pausing all timers:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to pause timers'
+        );
+        return false;
+      }
+    },
+    [timers, loadTimersFromDatabase]
+  );
+
   // Resume timer
   const resumeTimer = useCallback(
     async (taskId: string): Promise<boolean> => {
@@ -745,6 +815,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     // Timer actions
     startTimer,
     pauseTimer,
+    pauseAllTimers,
     resumeTimer,
     stopTimer,
     resetTimer,
