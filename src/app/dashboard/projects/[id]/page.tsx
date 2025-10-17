@@ -544,26 +544,29 @@ export default function ProjectDetailPage() {
                 <CardTitle>Tasks</CardTitle>
                 <CardDescription>Manage tasks for this project</CardDescription>
               </div>
-              <Button size="sm" onClick={() => setIsCreateTaskModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Task
-              </Button>
+              <div className="flex items-center gap-2">
+                {activeTimers.some(
+                  timer => timer.isRunning && timer.projectId === projectId
+                ) && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPauseAllDialog(true)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
+                  >
+                    Pause Timers
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => setIsCreateTaskModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Task
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            {activeTimers.some(
-              timer => timer.isRunning && timer.projectId === projectId
-            ) && (
-              <div className="mb-4 flex justify-end">
-                <Button
-                  size="sm"
-                  onClick={() => setShowPauseAllDialog(true)}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
-                >
-                  Pause Timers
-                </Button>
-              </div>
-            )}
             <TaskList
               tasks={tasks}
               loading={tasksLoading}
