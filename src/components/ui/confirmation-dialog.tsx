@@ -44,7 +44,6 @@ export function ConfirmationDialog({
 
   const handleConfirm = () => {
     onConfirm();
-    onOpenChange(false);
   };
 
   return (
