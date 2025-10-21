@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
+import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useWorkSessionContext } from '@/contexts/work-session-context';
 
@@ -24,10 +25,9 @@ export function useSignOutWithTimerCheck({
   onSignOut,
   onPauseComplete,
 }: UseSignOutWithTimerCheckOptions): UseSignOutWithTimerCheckReturn {
+  const { isSigningOut } = useAuth();
   const { activeTimers, pauseAllTimers } = useTimeTrackingContext();
   const { currentSession, endWorkSession } = useWorkSessionContext();
-
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
 
@@ -53,13 +53,11 @@ export function useSignOutWithTimerCheck({
 
     // No active timers, proceed with sign out
     try {
-      setIsSigningOut(true);
       await onSignOut();
+      // The auth context will handle isSigningOut state
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
-    } finally {
-      setIsSigningOut(false);
     }
   }, [activeTimers.length, onSignOut]);
 
@@ -84,8 +82,8 @@ export function useSignOutWithTimerCheck({
         await endWorkSessionIfExists();
 
         // Now proceed with sign out
-        setIsSigningOut(true);
         await onSignOut();
+        // The auth context will handle isSigningOut state
       } else {
         console.error('Failed to pause timers');
         // Keep modal open to let user retry or cancel
@@ -95,7 +93,6 @@ export function useSignOutWithTimerCheck({
       // Keep modal open to let user retry or cancel
     } finally {
       setIsPausingAll(false);
-      setIsSigningOut(false);
     }
   }, [
     activeTimers,

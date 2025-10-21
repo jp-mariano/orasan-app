@@ -28,7 +28,13 @@ import { useSignOutWithTimerCheck } from '@/hooks/useSignOutWithTimerCheck';
 import { Project } from '@/types/index';
 
 export default function DashboardPage() {
-  const { user, loading, signOut, manualSignOut } = useAuth();
+  const {
+    user,
+    loading,
+    isSigningOut: authIsSigningOut,
+    signOut,
+    manualSignOut,
+  } = useAuth();
   const router = useRouter();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -38,7 +44,6 @@ export default function DashboardPage() {
   // Sign out with timer check
   const {
     handleSignOut,
-    isSigningOut,
     showPauseTimersModal,
     setShowPauseTimersModal,
     isPausingAll,
@@ -130,13 +135,13 @@ export default function DashboardPage() {
 
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
   useEffect(() => {
-    if (!loading && !user && !isSigningOut) {
+    if (!loading && !user && !authIsSigningOut) {
       router.push('/auth/signin');
     }
-  }, [loading, user, router, isSigningOut]);
+  }, [loading, user, router, authIsSigningOut]);
 
   // Show loading screen only when auth context is loading
-  if (loading && !isSigningOut) {
+  if (loading && !authIsSigningOut) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -150,7 +155,7 @@ export default function DashboardPage() {
   }
 
   // If signing out, show signing out state instead of loading
-  if (isSigningOut) {
+  if (authIsSigningOut) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -197,10 +202,10 @@ export default function DashboardPage() {
           <Button
             onClick={handleSignOut}
             variant="ghost"
-            disabled={isSigningOut}
+            disabled={authIsSigningOut}
             className="text-gray-600 hover:text-gray-900"
           >
-            {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+            {authIsSigningOut ? 'Signing Out...' : 'Sign Out'}
           </Button>
         </div>
 

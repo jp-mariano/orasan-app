@@ -17,6 +17,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isSigningOut: boolean;
   signIn: (provider: 'github' | 'google' | 'twitter') => Promise<void>;
   signOut: () => Promise<void>;
   manualSignOut: () => void;
@@ -240,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    isSigningOut,
     signIn,
     signOut,
     manualSignOut,
