@@ -67,6 +67,11 @@ export function useWorkSession(): UseWorkSessionReturn {
 
       const response = await fetch('/api/work-sessions?status=active');
       if (!response.ok) {
+        // Handle authentication errors gracefully during sign out
+        if (response.status === 401) {
+          setCurrentSession(null);
+          return;
+        }
         throw new Error('Failed to fetch current session');
       }
 
@@ -104,6 +109,10 @@ export function useWorkSession(): UseWorkSessionReturn {
         );
 
         if (!response.ok) {
+          // Handle authentication errors gracefully during sign out
+          if (response.status === 401) {
+            return false;
+          }
           const errorData = await response.json();
           throw new Error(
             errorData.error || 'Failed to update session duration'
@@ -158,11 +167,16 @@ export function useWorkSession(): UseWorkSessionReturn {
 
       // Fetch all work sessions (we'll filter client-side for efficiency)
       const response = await fetch('/api/work-sessions');
-      const data = await response.json();
 
       if (!response.ok) {
+        // Handle authentication errors gracefully during sign out
+        if (response.status === 401) {
+          return;
+        }
         throw new Error('Failed to fetch work session statistics');
       }
+
+      const data = await response.json();
 
       const allSessions = data.work_sessions || [];
 

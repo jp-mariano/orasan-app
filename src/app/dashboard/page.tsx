@@ -20,19 +20,52 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
+import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
+import { useSignOutWithTimerCheck } from '@/hooks/useSignOutWithTimerCheck';
 import { Project } from '@/types/index';
 
 export default function DashboardPage() {
   const { user, loading, signOut, manualSignOut } = useAuth();
   const router = useRouter();
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sign out with timer check
+  const {
+    handleSignOut,
+    isSigningOut,
+    showPauseTimersModal,
+    setShowPauseTimersModal,
+    isPausingAll,
+    handlePauseAll,
+    handleCancelPause,
+  } = useSignOutWithTimerCheck({
+    onSignOut: async () => {
+      try {
+        // Set a timeout to force redirect if sign out takes too long
+        const timeoutId = setTimeout(() => {
+          router.push('/');
+        }, 3000);
+
+        await signOut();
+
+        // Clear timeout if sign out completes normally
+        clearTimeout(timeoutId);
+
+        // Force redirect after sign out
+        router.push('/');
+      } catch (error) {
+        console.error('Sign out failed, using manual fallback:', error);
+        manualSignOut();
+        router.push('/');
+      }
+    },
+  });
 
   // Project management
   const {
@@ -45,32 +78,6 @@ export default function DashboardPage() {
     updateProject,
     deleteProject,
   } = useProjects();
-
-  const handleSignOut = async () => {
-    try {
-      setIsSigningOut(true);
-
-      // Set a timeout to force redirect if sign out takes too long
-      const timeoutId = setTimeout(() => {
-        setIsSigningOut(false);
-        router.push('/');
-      }, 3000);
-
-      await signOut();
-
-      // Clear timeout if sign out completes normally
-      clearTimeout(timeoutId);
-
-      // Force redirect after sign out
-      router.push('/');
-    } catch (error) {
-      console.error('Sign out failed, using manual fallback:', error);
-      manualSignOut();
-      router.push('/');
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
 
   const handleManualSignOut = () => {
     manualSignOut();
@@ -176,20 +183,25 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <Header
-        onSignOut={handleSignOut}
-        isSigningOut={isSigningOut}
-        onForceSignOut={handleManualSignOut}
-        showWelcome={true}
-      />
+      <Header showWelcome={true} />
 
       {/* Dashboard Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">
-            Track your time and manage your projects
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+            <p className="text-gray-600">
+              Track your time and manage your projects
+            </p>
+          </div>
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            disabled={isSigningOut}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+          </Button>
         </div>
 
         {/* Metrics Cards */}
@@ -291,6 +303,19 @@ export default function DashboardPage() {
           project={projectToDelete}
           onConfirmDelete={handleConfirmDelete}
           isDeleting={isDeleting}
+        />
+
+        {/* Pause Timers Modal for Sign Out */}
+        <PauseTimersModal
+          open={showPauseTimersModal}
+          onOpenChange={setShowPauseTimersModal}
+          title="Pause All Running Timers Before Sign Out"
+          description="You have running timers. Would you like to pause them before signing out?"
+          confirmText="Pause All & Sign Out"
+          cancelText="Cancel"
+          onConfirm={handlePauseAll}
+          onCancel={handleCancelPause}
+          isLoading={isPausingAll}
         />
       </main>
     </div>

@@ -22,9 +22,7 @@ export function useWorkSessionManager(): void {
       // At least one timer is running and no work session exists
       startWorkSession().catch(error => {
         // Handle the case where a session already exists
-        if (error.message.includes('already exists')) {
-          console.log('Work session already exists, skipping creation');
-        } else {
+        if (!error.message.includes('already exists')) {
           console.error('Failed to start work session:', error);
         }
       });
@@ -32,7 +30,12 @@ export function useWorkSessionManager(): void {
     // Check if we need to end a work session
     else if (currentActiveCount === 0 && currentSession) {
       // No timers are running, but work session exists
-      endWorkSession();
+      endWorkSession().catch(error => {
+        // Handle the case where the user might be signed out
+        if (!error.message.includes('Unauthorized')) {
+          console.error('Failed to end work session:', error);
+        }
+      });
     }
   }, [
     activeTimers.length,
