@@ -20,7 +20,6 @@ interface AuthContextType {
   isSigningOut: boolean;
   signIn: (provider: 'github' | 'google' | 'twitter') => Promise<void>;
   signOut: () => Promise<void>;
-  manualSignOut: () => void;
   refreshUser: () => Promise<void>;
 }
 
@@ -161,7 +160,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const manualSignOut = useCallback(() => {
+  // Helper function to clear auth state
+  const clearAuthState = useCallback(() => {
     setIsSigningOut(false);
     setLoading(false);
     setUser(null);
@@ -190,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Set a timeout to ensure loading state is cleared even if auth state change doesn't fire
       setTimeout(() => {
         if (isSigningOut) {
-          manualSignOut();
+          clearAuthState();
         }
       }, 2000); // Reduced to 2 second timeout
 
@@ -202,12 +202,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               data: { user: currentUser },
             } = await supabase.auth.getUser();
             if (!currentUser) {
-              manualSignOut();
+              clearAuthState();
             } else {
-              manualSignOut();
+              clearAuthState();
             }
           } catch {
-            manualSignOut();
+            clearAuthState();
           }
         }
       }, 1000);
@@ -215,8 +215,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Don't set loading to false here - let the auth state change handler do it
     } catch (error) {
       console.error('Sign out error:', error);
-      // Fallback to manual sign out on error
-      manualSignOut();
+      // Fallback to clear auth state on error
+      clearAuthState();
       throw error;
     }
   };
@@ -244,7 +244,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSigningOut,
     signIn,
     signOut,
-    manualSignOut,
     refreshUser,
   };
 
