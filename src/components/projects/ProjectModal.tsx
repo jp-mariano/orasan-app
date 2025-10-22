@@ -207,7 +207,7 @@ export function ProjectModal({
           .filter(([field]) => hasActualChanges(field))
           .map(([field, getValue]) => [field, getValue()])
       );
-      console.log('updateData', updateData);
+
       result = await onUpdateProject(updateData);
     } else if (!isEditMode && onCreateProject) {
       // Create mode - include all fields
