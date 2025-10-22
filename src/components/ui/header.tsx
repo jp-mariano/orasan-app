@@ -2,10 +2,15 @@
 
 import Link from 'next/link';
 
-import { Clock } from 'lucide-react';
+import { Clock, User, LogOut, LayoutDashboard } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { useAuth } from '@/contexts/auth-context';
 import { useSignOutWithTimerCheck } from '@/hooks/useSignOutWithTimerCheck';
 
@@ -42,14 +47,50 @@ export function Header() {
           {user ? (
             // Authenticated user
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={handleSignOut}
-                variant="ghost"
-                disabled={isSigningOut}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-              </Button>
+              {/* User Dropdown */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-900 p-2"
+                    disabled={isSigningOut}
+                  >
+                    <User className="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end">
+                  <div className="space-y-2">
+                    <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
+                      {user.user_metadata?.full_name ||
+                        user.user_metadata?.name ||
+                        user.email}
+                    </div>
+                    <div className="border-t border-gray-100 pt-2 space-y-1">
+                      <Link href="/dashboard">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                        >
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Button
+                        onClick={handleSignOut}
+                        variant="ghost"
+                        size="sm"
+                        disabled={isSigningOut}
+                        className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           ) : (
             // Unauthenticated user
