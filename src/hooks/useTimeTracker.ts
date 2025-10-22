@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+import { useAuth } from '@/contexts/auth-context';
+
 export interface TimeEntry {
   id: string;
   task_id: string;
@@ -66,6 +68,7 @@ const UPDATE_INTERVAL = 1000; // 1 second for UI updates
 const STORAGE_SYNC_INTERVAL = 5 * 1000; // 5 seconds for localStorage sync
 
 export function useTimeTracker(): UseTimeTrackerReturn {
+  const { user } = useAuth();
   const [timers, setTimers] = useState<LocalTimer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,8 +106,22 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   // Load timers from localStorage on mount
   useEffect(() => {
     loadTimersFromStorage();
-    loadTimersFromDatabase();
   }, []);
+
+  // Load timers when user becomes available
+  useEffect(() => {
+    if (user) {
+      loadTimersFromDatabase();
+    }
+  }, [user]);
+
+  // Clear timers when user signs out
+  useEffect(() => {
+    if (!user) {
+      setTimers([]);
+      setError(null);
+    }
+  }, [user]);
 
   // Start sync interval
   useEffect(() => {
@@ -199,6 +216,11 @@ export function useTimeTracker(): UseTimeTrackerReturn {
 
   // Load timers from database
   const loadTimersFromDatabase = useCallback(async () => {
+    // Don't load if user is not authenticated
+    if (!user) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -272,7 +294,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // Update timer in database
   const updateTimerInDatabase = useCallback(async (timer: LocalTimer) => {
@@ -309,7 +331,8 @@ export function useTimeTracker(): UseTimeTrackerReturn {
 
   // Sync with database
   const syncWithDatabase = useCallback(async () => {
-    if (timersRef.current.length === 0) return;
+    // Don't sync if user is not authenticated
+    if (!user || timersRef.current.length === 0) return;
 
     try {
       for (const timer of timersRef.current) {
@@ -386,6 +409,12 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   // Start timer
   const startTimer = useCallback(
     async (taskId: string, projectId: string): Promise<boolean> => {
+      // Don't start timer if user is not authenticated
+      if (!user) {
+        setError('Please sign in to start timers');
+        return false;
+      }
+
       if (!canStartTimer(taskId)) {
         setError('Cannot start timer for this task');
         return false;

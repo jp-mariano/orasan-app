@@ -20,57 +20,18 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
-import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
-import { useSignOutWithTimerCheck } from '@/hooks/useSignOutWithTimerCheck';
 import { Project } from '@/types/index';
 
 export default function DashboardPage() {
-  const {
-    user,
-    loading,
-    isSigningOut: authIsSigningOut,
-    signOut,
-    manualSignOut,
-  } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Sign out with timer check
-  const {
-    handleSignOut,
-    showPauseTimersModal,
-    setShowPauseTimersModal,
-    isPausingAll,
-    handlePauseAll,
-    handleCancelPause,
-  } = useSignOutWithTimerCheck({
-    onSignOut: async () => {
-      try {
-        // Set a timeout to force redirect if sign out takes too long
-        const timeoutId = setTimeout(() => {
-          router.push('/');
-        }, 3000);
-
-        await signOut();
-
-        // Clear timeout if sign out completes normally
-        clearTimeout(timeoutId);
-
-        // Force redirect after sign out
-        router.push('/');
-      } catch (error) {
-        console.error('Sign out failed, using manual fallback:', error);
-        manualSignOut();
-        router.push('/');
-      }
-    },
-  });
 
   // Project management
   const {
@@ -83,11 +44,6 @@ export default function DashboardPage() {
     updateProject,
     deleteProject,
   } = useProjects();
-
-  const handleManualSignOut = () => {
-    manualSignOut();
-    router.push('/');
-  };
 
   const handleCreateProject = () => {
     setIsCreateModalOpen(true);
@@ -135,41 +91,19 @@ export default function DashboardPage() {
 
   // Auth redirect effect - only handle redirects, let auth context handle profile creation
   useEffect(() => {
-    if (!loading && !user && !authIsSigningOut) {
+    if (!loading && !user) {
       router.push('/auth/signin');
     }
-  }, [loading, user, router, authIsSigningOut]);
+  }, [loading, user, router]);
 
   // Show loading screen only when auth context is loading
-  if (loading && !authIsSigningOut) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading...</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If signing out, show signing out state instead of loading
-  if (authIsSigningOut) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Signing out...</p>
-            <Button
-              onClick={handleManualSignOut}
-              variant="ghost"
-              size="sm"
-              className="mt-4 text-red-600 hover:text-red-700"
-            >
-              Force Sign Out
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -188,25 +122,15 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <Header showWelcome={true} />
+      <Header />
 
       {/* Dashboard Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">
-              Track your time and manage your projects
-            </p>
-          </div>
-          <Button
-            onClick={handleSignOut}
-            variant="ghost"
-            disabled={authIsSigningOut}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            {authIsSigningOut ? 'Signing Out...' : 'Sign Out'}
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-gray-600">
+            Track your time and manage your projects
+          </p>
         </div>
 
         {/* Metrics Cards */}
@@ -308,19 +232,6 @@ export default function DashboardPage() {
           project={projectToDelete}
           onConfirmDelete={handleConfirmDelete}
           isDeleting={isDeleting}
-        />
-
-        {/* Pause Timers Modal for Sign Out */}
-        <PauseTimersModal
-          open={showPauseTimersModal}
-          onOpenChange={setShowPauseTimersModal}
-          title="Pause All Running Timers Before Sign Out"
-          description="You have running timers. Would you like to pause them before signing out?"
-          confirmText="Pause All & Sign Out"
-          cancelText="Cancel"
-          onConfirm={handlePauseAll}
-          onCancel={handleCancelPause}
-          isLoading={isPausingAll}
         />
       </main>
     </div>

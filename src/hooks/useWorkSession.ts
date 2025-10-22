@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '@/contexts/auth-context';
+
 interface WorkSession {
   id: string;
   user_id: string;
@@ -31,6 +33,7 @@ interface UseWorkSessionReturn {
 }
 
 export function useWorkSession(): UseWorkSessionReturn {
+  const { user } = useAuth();
   const [currentSession, setCurrentSession] = useState<WorkSession | null>(
     null
   );
@@ -46,10 +49,22 @@ export function useWorkSession(): UseWorkSessionReturn {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
 
-  // Load current active session on mount
+  // Load current active session when user becomes available
   useEffect(() => {
-    loadCurrentSession();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (user) {
+      loadCurrentSession();
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear work session state when user signs out
+  useEffect(() => {
+    if (!user) {
+      setCurrentSession(null);
+      setError(null);
+      setStats({ todayTime: 0, weekTime: 0 });
+      setStatsError(null);
+    }
+  }, [user]);
 
   // Clean up interval on unmount
   useEffect(() => {
@@ -61,6 +76,11 @@ export function useWorkSession(): UseWorkSessionReturn {
   }, []);
 
   const loadCurrentSession = useCallback(async () => {
+    // Don't load if user is not authenticated
+    if (!user) {
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -90,7 +110,7 @@ export function useWorkSession(): UseWorkSessionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateSessionDuration = useCallback(
     async (duration: number): Promise<boolean> => {
@@ -146,6 +166,11 @@ export function useWorkSession(): UseWorkSessionReturn {
 
   // Fetch work session statistics
   const fetchStats = useCallback(async () => {
+    // Don't fetch if user is not authenticated
+    if (!user) {
+      return;
+    }
+
     try {
       setStatsLoading(true);
       setStatsError(null);
@@ -218,7 +243,7 @@ export function useWorkSession(): UseWorkSessionReturn {
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const startWorkSession = useCallback(async (): Promise<boolean> => {
     try {

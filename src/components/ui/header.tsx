@@ -5,14 +5,27 @@ import Link from 'next/link';
 import { Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
+import { useSignOutWithTimerCheck } from '@/hooks/useSignOutWithTimerCheck';
 
-interface HeaderProps {
-  showWelcome?: boolean; // Whether to show welcome message (default: false)
-}
+export function Header() {
+  const { user, isSigningOut, signOut } = useAuth();
 
-export function Header({ showWelcome = false }: HeaderProps) {
-  const { user } = useAuth();
+  // Sign out with timer check
+  const {
+    handleSignOut,
+    showPauseTimersModal,
+    setShowPauseTimersModal,
+    isPausingAll,
+    handlePauseAll,
+    handleCancelPause,
+  } = useSignOutWithTimerCheck({
+    onSignOut: async () => {
+      // Call the actual signOut function from auth context
+      await signOut();
+    },
+  });
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-sm">
@@ -29,14 +42,14 @@ export function Header({ showWelcome = false }: HeaderProps) {
           {user ? (
             // Authenticated user
             <div className="flex items-center space-x-4">
-              {showWelcome && (
-                <span className="text-gray-600">
-                  Welcome,{' '}
-                  {user.user_metadata?.full_name ||
-                    user.user_metadata?.name ||
-                    user.email}
-                </span>
-              )}
+              <Button
+                onClick={handleSignOut}
+                variant="ghost"
+                disabled={isSigningOut}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+              </Button>
             </div>
           ) : (
             // Unauthenticated user
@@ -51,6 +64,19 @@ export function Header({ showWelcome = false }: HeaderProps) {
           )}
         </nav>
       </div>
+
+      {/* Pause Timers Modal for Sign Out */}
+      <PauseTimersModal
+        open={showPauseTimersModal}
+        onOpenChange={setShowPauseTimersModal}
+        title="Pause All Running Timers Before Sign Out"
+        description="You have running timers. Would you like to pause them before signing out?"
+        confirmText="Pause All & Sign Out"
+        cancelText="Cancel"
+        onConfirm={handlePauseAll}
+        onCancel={handleCancelPause}
+        isLoading={isPausingAll}
+      />
     </header>
   );
 }

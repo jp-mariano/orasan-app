@@ -3,8 +3,6 @@
 import { ReactNode } from 'react';
 
 import { TimerLimitDisplay } from '@/components/ui/timer-limit-display';
-import { TimeTrackingProvider } from '@/contexts/time-tracking-context';
-import { WorkSessionProvider } from '@/contexts/work-session-context';
 import { useWorkSessionManager } from '@/hooks/useWorkSessionManager';
 
 interface DashboardLayoutProps {
@@ -19,12 +17,10 @@ function WorkSessionManager() {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <TimeTrackingProvider>
-      <WorkSessionProvider>
-        <WorkSessionManager />
-        <TimerLimitDisplay />
-        {children}
-      </WorkSessionProvider>
-    </TimeTrackingProvider>
+    <>
+      <WorkSessionManager />
+      <TimerLimitDisplay />
+      {children}
+    </>
   );
 }
