@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import {
   CreateProjectRequest,
   Project,
@@ -49,6 +50,9 @@ export function useProjects(): UseProjectsReturn {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get timer context for pause functionality
+  const { activeTimers, pauseAllTimers } = useTimeTrackingContext();
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -144,32 +148,51 @@ export function useProjects(): UseProjectsReturn {
     []
   );
 
-  const deleteProject = useCallback(async (id: string) => {
-    try {
-      const response = await fetch(`/api/projects/${id}`, {
-        method: 'DELETE',
-      });
+  const deleteProject = useCallback(
+    async (id: string) => {
+      try {
+        // Check if project has any active timers and pause them first
+        const projectTimers = activeTimers.filter(
+          timer => timer.projectId === id
+        );
+        if (projectTimers.length > 0) {
+          const timerIds = projectTimers.map(timer => timer.id);
+          const pauseSuccess = await pauseAllTimers(timerIds);
+          if (!pauseSuccess) {
+            return {
+              success: false,
+              error: 'Failed to pause timers before deleting project',
+            };
+          }
+        }
 
-      const result = await response.json();
+        const response = await fetch(`/api/projects/${id}`, {
+          method: 'DELETE',
+        });
 
-      if (!response.ok) {
+        const result = await response.json();
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: result.error || 'Failed to delete project',
+          };
+        }
+
+        // Remove from local state
+        setProjects(prev => prev.filter(project => project.id !== id));
+        return { success: true };
+      } catch (err) {
+        console.error('Error deleting project:', err);
         return {
           success: false,
-          error: result.error || 'Failed to delete project',
+          error:
+            err instanceof Error ? err.message : 'Failed to delete project',
         };
       }
-
-      // Remove from local state
-      setProjects(prev => prev.filter(project => project.id !== id));
-      return { success: true };
-    } catch (err) {
-      console.error('Error deleting project:', err);
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : 'Failed to delete project',
-      };
-    }
-  }, []);
+    },
+    [activeTimers, pauseAllTimers]
+  );
 
   const refreshProjects = useCallback(async () => {
     try {
