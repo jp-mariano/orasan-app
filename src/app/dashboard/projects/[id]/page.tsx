@@ -32,6 +32,7 @@ import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
+import { validateEmail, validatePhone } from '@/lib/validation';
 import { TaskWithDetails } from '@/types';
 import { Project } from '@/types/index';
 
@@ -250,6 +251,24 @@ export default function ProjectDetailPage() {
     value: string | number | null
   ) => {
     if (!project) return;
+
+    // Validate email if it's the client_email field
+    if (field === 'client_email' && typeof value === 'string') {
+      const emailError = validateEmail(value);
+      if (emailError) {
+        setFieldErrors(prev => ({ ...prev, [field]: emailError }));
+        throw new Error(emailError);
+      }
+    }
+
+    // Validate phone if it's the client_phone field
+    if (field === 'client_phone' && typeof value === 'string') {
+      const phoneError = validatePhone(value);
+      if (phoneError) {
+        setFieldErrors(prev => ({ ...prev, [field]: phoneError }));
+        throw new Error(phoneError);
+      }
+    }
 
     try {
       const updatedProject = await updateProject(project.id, {

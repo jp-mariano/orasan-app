@@ -30,6 +30,7 @@ import {
   convertRateTypeEmptyToNull,
   validatePricingConsistency,
 } from '@/lib/utils';
+import { validateEmail, validatePhone } from '@/lib/validation';
 import {
   CreateProjectRequest,
   Project,
@@ -158,6 +159,20 @@ export function ProjectModal({
 
     if (!formData.name.trim()) {
       setNameError('Project name is required');
+      return;
+    }
+
+    // Validate email if provided
+    const emailError = validateEmail(formData.client_email || '');
+    if (emailError) {
+      setErrorMessage(emailError);
+      return;
+    }
+
+    // Validate phone if provided
+    const phoneError = validatePhone(formData.client_phone || '');
+    if (phoneError) {
+      setErrorMessage(phoneError);
       return;
     }
 
