@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { CreateTaskRequest, TaskWithDetails, UpdateTaskRequest } from '@/types';
 
 interface UseTasksOptions {
@@ -26,6 +27,9 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const [tasks, setTasks] = useState<TaskWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get timer context for pause functionality
+  const { getTimerForTask, pauseTimer } = useTimeTrackingContext();
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
@@ -166,6 +170,16 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
           throw new Error('Project ID is required to delete a task');
         }
 
+        // Check if task has an active timer and pause it first
+        const timer = getTimerForTask(id);
+        if (timer && (timer.isRunning || timer.isPaused)) {
+          console.log(`Pausing timer for task ${id} before deletion`);
+          const pauseSuccess = await pauseTimer(id);
+          if (!pauseSuccess) {
+            throw new Error('Failed to pause timer before deleting task');
+          }
+        }
+
         const response = await fetch(
           `/api/projects/${options.projectId}/tasks/${id}`,
           {
@@ -190,7 +204,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         return false;
       }
     },
-    [options.projectId]
+    [options.projectId, getTimerForTask, pauseTimer]
   );
 
   // Refresh tasks
