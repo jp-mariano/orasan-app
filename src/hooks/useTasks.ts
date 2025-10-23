@@ -173,7 +173,6 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         // Check if task has an active timer and pause it first
         const timer = getTimerForTask(id);
         if (timer && (timer.isRunning || timer.isPaused)) {
-          console.log(`Pausing timer for task ${id} before deletion`);
           const pauseSuccess = await pauseTimer(id);
           if (!pauseSuccess) {
             throw new Error('Failed to pause timer before deleting task');
