@@ -454,6 +454,66 @@ export default function ProjectDetailPage() {
               </div>
             ) : null}
 
+            {/* Client Email */}
+            {project.client_email ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Client Email
+                </Label>
+                <InlineEdit
+                  value={project.client_email}
+                  onSave={async value =>
+                    await handleSaveField('client_email', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, client_email: error }))
+                  }
+                  error={fieldErrors.client_email}
+                  placeholder="No client email specified"
+                />
+              </div>
+            ) : null}
+
+            {/* Client Address */}
+            {project.client_address ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Client Address
+                </Label>
+                <InlineEdit
+                  value={project.client_address}
+                  onSave={async value =>
+                    await handleSaveField('client_address', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, client_address: error }))
+                  }
+                  error={fieldErrors.client_address}
+                  placeholder="No client address specified"
+                />
+              </div>
+            ) : null}
+
+            {/* Client Phone */}
+            {project.client_phone ? (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-500">
+                  Client Phone
+                </Label>
+                <InlineEdit
+                  value={project.client_phone}
+                  onSave={async value =>
+                    await handleSaveField('client_phone', value)
+                  }
+                  onError={error =>
+                    setFieldErrors(prev => ({ ...prev, client_phone: error }))
+                  }
+                  error={fieldErrors.client_phone}
+                  placeholder="No client phone specified"
+                />
+              </div>
+            ) : null}
+
             {/* Project Rate Type and Price/Currency */}
             {project.rate_type && project.price !== null ? (
               <div className="grid grid-cols-2 gap-4 py-4">

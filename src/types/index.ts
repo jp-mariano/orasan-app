@@ -20,6 +20,9 @@ export interface Project {
   name: string;
   description?: string;
   client_name?: string;
+  client_email?: string;
+  client_address?: string;
+  client_phone?: string;
   rate_type?: RateType | null;
   price?: number | null;
   currency_code?: string | null;
@@ -100,6 +103,9 @@ export interface CreateProjectRequest {
   name: string;
   description?: string;
   client_name?: string;
+  client_email?: string;
+  client_address?: string;
+  client_phone?: string;
   rate_type?: RateType | null;
   price?: number | null;
   currency_code?: string | null;
@@ -109,6 +115,9 @@ export interface UpdateProjectRequest {
   name?: string;
   description?: string;
   client_name?: string;
+  client_email?: string;
+  client_address?: string;
+  client_phone?: string;
   rate_type?: RateType | null;
   price?: number | null;
   currency_code?: string | null;

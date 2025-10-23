@@ -71,6 +71,9 @@ export function ProjectModal({
       name: '',
       description: '',
       client_name: '',
+      client_email: '',
+      client_address: '',
+      client_phone: '',
       rate_type: undefined,
       price: undefined,
       currency_code: undefined,
@@ -129,6 +132,9 @@ export function ProjectModal({
         name: project.name,
         description: project.description || '',
         client_name: project.client_name || '',
+        client_email: project.client_email || '',
+        client_address: project.client_address || '',
+        client_phone: project.client_phone || '',
         rate_type: project.rate_type || undefined,
         price: project.price,
         currency_code: project.currency_code || undefined,
@@ -177,6 +183,9 @@ export function ProjectModal({
         name: () => formData.name.trim(),
         description: () => formData.description?.trim() || '',
         client_name: () => formData.client_name?.trim() || '',
+        client_email: () => formData.client_email?.trim() || '',
+        client_address: () => formData.client_address?.trim() || '',
+        client_phone: () => formData.client_phone?.trim() || '',
         rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
         price: () =>
           formData.price !== undefined ? formData.price : undefined,
@@ -192,7 +201,16 @@ export function ProjectModal({
         const formValue = formData[field as keyof typeof formData];
 
         // For string fields, compare raw values (before conversion)
-        if (['description', 'client_name', 'name'].includes(field)) {
+        if (
+          [
+            'description',
+            'client_name',
+            'client_email',
+            'client_address',
+            'client_phone',
+            'name',
+          ].includes(field)
+        ) {
           const originalStr = originalValue || '';
           const formStr = formValue || '';
           return originalStr !== formStr;
@@ -215,6 +233,9 @@ export function ProjectModal({
         name: formData.name.trim(),
         description: formData.description?.trim() || undefined,
         client_name: formData.client_name?.trim() || undefined,
+        client_email: formData.client_email?.trim() || undefined,
+        client_address: formData.client_address?.trim() || undefined,
+        client_phone: formData.client_phone?.trim() || undefined,
         rate_type: convertRateTypeEmptyToNull(formData.rate_type),
         price: formData.price !== undefined ? formData.price : undefined,
         currency_code: convertCurrencyEmptyToNull(formData.currency_code),
@@ -363,6 +384,40 @@ export function ProjectModal({
               value={formData.client_name}
               onChange={e => handleInputChange('client_name', e.target.value)}
               placeholder="Client or company name"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_email">Client Email</Label>
+            <Input
+              id="client_email"
+              type="email"
+              value={formData.client_email}
+              onChange={e => handleInputChange('client_email', e.target.value)}
+              placeholder="client@company.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_address">Client Address</Label>
+            <Input
+              id="client_address"
+              value={formData.client_address}
+              onChange={e =>
+                handleInputChange('client_address', e.target.value)
+              }
+              placeholder="Client address"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_phone">Client Phone</Label>
+            <Input
+              id="client_phone"
+              type="tel"
+              value={formData.client_phone}
+              onChange={e => handleInputChange('client_phone', e.target.value)}
+              placeholder="+1 (555) 123-4567"
             />
           </div>
 
