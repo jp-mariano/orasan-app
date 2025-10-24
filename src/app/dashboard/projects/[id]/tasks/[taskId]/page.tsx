@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerActions } from '@/hooks/useTimerActions';
+import { useUser } from '@/hooks/useUser';
 import { formatDate } from '@/lib/utils';
 import { TaskWithDetails } from '@/types';
 
@@ -64,6 +65,7 @@ function ManualTimeEntryModalWrapper({
 
 export default function TaskDetailPage() {
   const { user, loading } = useAuth();
+  const { user: userProfile } = useUser();
   const params = useParams();
   const router = useRouter();
 
@@ -423,6 +425,7 @@ export default function TaskDetailPage() {
                             id: user.id,
                             email: user.email || '',
                             name:
+                              userProfile?.name ||
                               user.user_metadata?.full_name ||
                               user.user_metadata?.name,
                             created_at: new Date().toISOString(),

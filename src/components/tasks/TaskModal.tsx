@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
+import { useUser } from '@/hooks/useUser';
 import { currencies } from '@/lib/currencies';
 import { getPriorityOptions } from '@/lib/priority';
 import { getStatusOptions } from '@/lib/status';
@@ -72,6 +73,7 @@ export function TaskModal({
   onSubmit,
 }: TaskModalProps) {
   const { user: currentUser } = useAuth();
+  const { user: userProfile } = useUser();
   const isEditMode = !!task;
 
   // Default form data for create mode
@@ -453,6 +455,7 @@ export function TaskModal({
                       {getAssigneeDisplayName(
                         {
                           name:
+                            userProfile?.name ||
                             currentUser.user_metadata?.full_name ||
                             currentUser.user_metadata?.name,
                           email: currentUser.email || '',
