@@ -60,44 +60,37 @@ export function Header() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-56" align="end">
-                  <div className="space-y-2">
-                    <div className="px-2 py-1.5 text-sm font-medium text-gray-900">
-                      {user.user_metadata?.full_name ||
-                        user.user_metadata?.name ||
-                        user.email}
-                    </div>
-                    <div className="border-t border-gray-100 pt-2 space-y-1">
-                      <Link href="/dashboard">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                        >
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
-                          Dashboard
-                        </Button>
-                      </Link>
-                      <Link href="/user-settings">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                        >
-                          <UserPen className="mr-2 h-4 w-4" />
-                          User Settings
-                        </Button>
-                      </Link>
+                  <div className="space-y-1">
+                    <Link href="/dashboard">
                       <Button
-                        onClick={handleSignOut}
                         variant="ghost"
                         size="sm"
-                        disabled={isSigningOut}
                         className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Dashboard
                       </Button>
-                    </div>
+                    </Link>
+                    <Link href="/user-settings">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                      >
+                        <UserPen className="mr-2 h-4 w-4" />
+                        User Settings
+                      </Button>
+                    </Link>
+                    <Button
+                      onClick={handleSignOut}
+                      variant="ghost"
+                      size="sm"
+                      disabled={isSigningOut}
+                      className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>
