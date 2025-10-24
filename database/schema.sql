@@ -16,6 +16,7 @@ CREATE TABLE public.users (
   subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('active', 'inactive', 'cancelled')),
   -- Business information for invoicing
   business_name TEXT,
+  business_email TEXT,
   business_address TEXT,
   business_phone TEXT,
   tax_id TEXT,
