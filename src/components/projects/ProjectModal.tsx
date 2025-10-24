@@ -392,6 +392,32 @@ export function ProjectModal({
             />
           </div>
 
+          {/* Status field - only show in edit mode */}
+          {isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status || undefined}
+                onValueChange={value =>
+                  handleInputChange('status', value as ProjectStatus)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getStatusOptions().map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className={option.color}>{option.label}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="border-t"></div>
+
           <div className="space-y-2">
             <Label htmlFor="client_name">Client Name</Label>
             <Input
@@ -435,30 +461,6 @@ export function ProjectModal({
               placeholder="+1 (555) 123-4567"
             />
           </div>
-
-          {/* Status field - only show in edit mode */}
-          {isEditMode && (
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status || undefined}
-                onValueChange={value =>
-                  handleInputChange('status', value as ProjectStatus)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getStatusOptions().map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <span className={option.color}>{option.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <div className="border-t"></div>
 
