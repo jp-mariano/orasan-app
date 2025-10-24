@@ -153,46 +153,47 @@ export default function UserSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Business Name */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Business Name
-                  </Label>
-                  <InlineEdit
-                    value={user?.business_name || ''}
-                    onSave={async value =>
-                      await handleSaveField('business_name', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({
-                        ...prev,
-                        business_name: error,
-                      }))
-                    }
-                    error={fieldErrors.business_name}
-                    placeholder="Enter your business name"
-                  />
-                </div>
+                {/* Business Name and Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Business Name
+                    </Label>
+                    <InlineEdit
+                      value={user?.business_name || ''}
+                      onSave={async value =>
+                        await handleSaveField('business_name', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({
+                          ...prev,
+                          business_name: error,
+                        }))
+                      }
+                      error={fieldErrors.business_name}
+                      placeholder="Enter your business name"
+                    />
+                  </div>
 
-                {/* Business Email */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Business Email
-                  </Label>
-                  <InlineEdit
-                    value={user?.business_email || ''}
-                    onSave={async value =>
-                      await handleSaveField('business_email', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({
-                        ...prev,
-                        business_email: error,
-                      }))
-                    }
-                    error={fieldErrors.business_email}
-                    placeholder="Enter your business email"
-                  />
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Business Email
+                    </Label>
+                    <InlineEdit
+                      value={user?.business_email || ''}
+                      onSave={async value =>
+                        await handleSaveField('business_email', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({
+                          ...prev,
+                          business_email: error,
+                        }))
+                      }
+                      error={fieldErrors.business_email}
+                      placeholder="Enter your business email"
+                    />
+                  </div>
                 </div>
 
                 {/* Business Address */}
@@ -216,43 +217,44 @@ export default function UserSettingsPage() {
                   />
                 </div>
 
-                {/* Business Phone */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Business Phone
-                  </Label>
-                  <InlineEdit
-                    value={user?.business_phone || ''}
-                    onSave={async value =>
-                      await handleSaveField('business_phone', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({
-                        ...prev,
-                        business_phone: error,
-                      }))
-                    }
-                    error={fieldErrors.business_phone}
-                    placeholder="Enter your business phone number"
-                  />
-                </div>
+                {/* Business Phone and Tax ID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Business Phone
+                    </Label>
+                    <InlineEdit
+                      value={user?.business_phone || ''}
+                      onSave={async value =>
+                        await handleSaveField('business_phone', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({
+                          ...prev,
+                          business_phone: error,
+                        }))
+                      }
+                      error={fieldErrors.business_phone}
+                      placeholder="Enter your business phone number"
+                    />
+                  </div>
 
-                {/* Tax ID */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Tax ID
-                  </Label>
-                  <InlineEdit
-                    value={user?.tax_id || ''}
-                    onSave={async value =>
-                      await handleSaveField('tax_id', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({ ...prev, tax_id: error }))
-                    }
-                    error={fieldErrors.tax_id}
-                    placeholder="Enter your tax ID"
-                  />
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Tax ID
+                    </Label>
+                    <InlineEdit
+                      value={user?.tax_id || ''}
+                      onSave={async value =>
+                        await handleSaveField('tax_id', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({ ...prev, tax_id: error }))
+                      }
+                      error={fieldErrors.tax_id}
+                      placeholder="Enter your tax ID"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -277,35 +279,38 @@ export default function UserSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Name */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Display Name
-                  </Label>
-                  <InlineEdit
-                    value={user?.name || ''}
-                    onSave={async value => await handleSaveField('name', value)}
-                    onError={error =>
-                      setFieldErrors(prev => ({ ...prev, name: error }))
-                    }
-                    error={fieldErrors.name}
-                    placeholder="Enter your name"
-                  />
-                </div>
-
-                {/* Email (Read-only) */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-500">
-                    Email
-                  </Label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
-                    {user?.email || 'No email available'}
+                {/* Display Name and Email */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Display Name
+                    </Label>
+                    <InlineEdit
+                      value={user?.name || ''}
+                      onSave={async value =>
+                        await handleSaveField('name', value)
+                      }
+                      onError={error =>
+                        setFieldErrors(prev => ({ ...prev, name: error }))
+                      }
+                      error={fieldErrors.name}
+                      placeholder="Enter your name"
+                    />
                   </div>
-                  <p className="text-xs text-red-600 font-medium">
-                    This email cannot be changed here. It is managed by your
-                    OAuth provider (GitHub, Google, etc.). To change this email,
-                    update it in your provider account settings.
-                  </p>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-500">
+                      Email
+                    </Label>
+                    <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                      {user?.email || 'No email available'}
+                    </div>
+                    <p className="text-xs text-red-600 font-medium">
+                      This email cannot be changed here. It is managed by your
+                      OAuth provider (GitHub, Google, etc.). To change this
+                      email, update it in your provider account settings.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
