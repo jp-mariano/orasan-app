@@ -44,6 +44,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profileCreationAttempted.current.add(user.id);
 
     try {
+      // First check if user profile exists to avoid overriding custom names
+      const checkResponse = await fetch('/api/users');
+      let shouldUpdateName = true;
+
+      if (checkResponse.ok) {
+        const { user: existingUser } = await checkResponse.json();
+        // Only update name if it's null/empty (preserve custom names)
+        shouldUpdateName =
+          !existingUser?.name || existingUser.name.trim() === '';
+      }
+
       // Use our API route to create/update user profile
       const response = await fetch('/api/users', {
         method: 'POST',
@@ -52,8 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({
           email: user.email,
-          name:
-            user.user_metadata?.full_name || user.user_metadata?.name || null,
+          name: shouldUpdateName
+            ? user.user_metadata?.full_name || user.user_metadata?.name || null
+            : undefined, // Don't send name if we shouldn't update it
         }),
       });
 
