@@ -40,11 +40,8 @@ export default function UserSettingsPage() {
     try {
       setFieldErrors(prev => ({ ...prev, [field]: '' }));
 
-      // Validate email if it's the business_email or email field
-      if (
-        (field === 'business_email' || field === 'email') &&
-        typeof value === 'string'
-      ) {
+      // Validate email if it's the business_email field
+      if (field === 'business_email' && typeof value === 'string') {
         const emailError = validateEmail(value);
         if (emailError) {
           setFieldErrors(prev => ({ ...prev, [field]: emailError }));
@@ -283,7 +280,7 @@ export default function UserSettingsPage() {
                 {/* Name */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-500">
-                    Name
+                    Display Name
                   </Label>
                   <InlineEdit
                     value={user?.name || ''}
@@ -296,25 +293,18 @@ export default function UserSettingsPage() {
                   />
                 </div>
 
-                {/* Email */}
+                {/* Email (Read-only) */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-gray-500">
                     Email
                   </Label>
-                  <InlineEdit
-                    value={user?.email || ''}
-                    onSave={async value =>
-                      await handleSaveField('email', value)
-                    }
-                    onError={error =>
-                      setFieldErrors(prev => ({ ...prev, email: error }))
-                    }
-                    error={fieldErrors.email}
-                    placeholder="Enter your email address"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Changing your email will require verification. You&apos;ll
-                    receive a confirmation link at the new email address.
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                    {user?.email || 'No email available'}
+                  </div>
+                  <p className="text-xs text-red-600 font-medium">
+                    This email cannot be changed here. It is managed by your
+                    OAuth provider (GitHub, Google, etc.). To change this email,
+                    update it in your provider account settings.
                   </p>
                 </div>
               </CardContent>
