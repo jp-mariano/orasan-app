@@ -11,6 +11,7 @@ import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectModal } from '@/components/projects/ProjectModal';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -126,6 +127,12 @@ export default function DashboardPage() {
 
       {/* Dashboard Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <Breadcrumb
+          items={[{ label: 'Dashboard', href: '/dashboard' }]}
+          className="mb-6"
+        />
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
           <p className="text-gray-600">
@@ -203,12 +210,6 @@ export default function DashboardPage() {
                   tasks
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button onClick={handleCreateProject} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Project
-                </Button>
-              </CardContent>
             </Card>
           )}
         </div>
