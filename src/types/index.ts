@@ -13,6 +13,21 @@ export interface User {
   updated_at: string;
   subscription_tier?: 'free' | 'pro' | 'enterprise';
   subscription_status?: 'active' | 'inactive' | 'cancelled';
+  // Business information for invoicing
+  business_name?: string;
+  business_email?: string;
+  business_address?: string;
+  business_phone?: string;
+  tax_id?: string;
+}
+
+export interface UpdateUserRequest {
+  name?: string;
+  business_name?: string;
+  business_email?: string;
+  business_address?: string;
+  business_phone?: string;
+  tax_id?: string;
 }
 
 export interface Project {

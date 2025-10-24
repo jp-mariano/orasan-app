@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { Clock, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { Clock, User, LogOut, LayoutDashboard, UserPen } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
@@ -75,6 +75,16 @@ export function Header() {
                         >
                           <LayoutDashboard className="mr-2 h-4 w-4" />
                           Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/user-settings">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                        >
+                          <UserPen className="mr-2 h-4 w-4" />
+                          User Settings
                         </Button>
                       </Link>
                       <Button
