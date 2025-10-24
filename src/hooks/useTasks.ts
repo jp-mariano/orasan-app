@@ -54,11 +54,11 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         : `/api/projects/${options.projectId}/tasks`;
 
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error('Failed to fetch tasks');
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch tasks');
+      }
       setTasks(data.tasks || []);
     } catch (err) {
       const errorMessage =
