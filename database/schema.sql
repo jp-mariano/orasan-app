@@ -20,6 +20,11 @@ CREATE TABLE public.users (
   business_address TEXT,
   business_phone TEXT,
   tax_id TEXT,
+  -- Account deletion tracking
+  deletion_requested_at TIMESTAMP WITH TIME ZONE,
+  deletion_confirmed_at TIMESTAMP WITH TIME ZONE,
+  deletion_token TEXT,
+  deletion_token_expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -197,6 +202,9 @@ CREATE INDEX idx_invoices_issue_date ON public.invoices(issue_date);
 CREATE INDEX idx_invoices_user_invoice_number ON public.invoices(user_id, invoice_number);
 CREATE INDEX idx_invoice_items_invoice_id ON public.invoice_items(invoice_id);
 CREATE INDEX idx_invoice_items_task_id ON public.invoice_items(task_id);
+-- Account deletion cleanup index
+CREATE INDEX idx_users_deletion_confirmed ON public.users(deletion_confirmed_at) 
+WHERE deletion_confirmed_at IS NOT NULL;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
