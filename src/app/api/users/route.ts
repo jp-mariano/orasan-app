@@ -203,3 +203,219 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+// Helper function to generate secure deletion token
+function generateDeletionToken(): string {
+  return crypto.randomUUID();
+}
+
+// Helper function to create deletion confirmation email HTML
+function createDeletionEmailHtml(
+  userName: string,
+  confirmationLink: string
+): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .button { background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Confirm Account Deletion</h2>
+        <p>Hello ${userName || 'User'},</p>
+        <p>You requested to delete your account from our time tracking application.</p>
+        
+        <div class="warning">
+          <strong>⚠️ Warning:</strong> This action will permanently delete all your data including:
+          <ul>
+            <li>All projects and tasks</li>
+            <li>All time entries and work sessions</li>
+            <li>All invoices and business information</li>
+            <li>Your account profile</li>
+          </ul>
+        </div>
+        
+        <p>Click the button below to confirm account deletion:</p>
+        <a href="${confirmationLink}" class="button">Confirm Account Deletion</a>
+        
+        <p><strong>Grace Period:</strong> Your account will be permanently deleted after 7 days. You can cancel this request anytime before then by logging into your account.</p>
+        
+        <p>If you didn't request this deletion, please ignore this email or contact support.</p>
+        
+        <div class="footer">
+          <p>This email was sent because you requested account deletion. If you have questions, please contact our support team.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Get the current user from the session
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { confirmUserId, confirmEmail } = await request.json();
+
+    // Validate confirmation data
+    if (!confirmUserId || !confirmEmail) {
+      return NextResponse.json(
+        { error: 'Missing confirmation data' },
+        { status: 400 }
+      );
+    }
+
+    // Verify user ID and email match
+    if (confirmUserId !== user.id || confirmEmail !== user.email) {
+      return NextResponse.json(
+        { error: 'Confirmation failed - user ID or email mismatch' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already has a pending deletion
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('deletion_requested_at, deletion_confirmed_at')
+      .eq('id', user.id)
+      .single();
+
+    if (existingUser?.deletion_confirmed_at) {
+      return NextResponse.json(
+        { error: 'Account deletion already confirmed and in progress' },
+        { status: 400 }
+      );
+    }
+
+    // Step 1: Generate deletion token and set expiration
+    const deletionToken = generateDeletionToken();
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setHours(tokenExpiresAt.getHours() + 24); // 24 hours
+
+    // Step 2: Mark account for deletion
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        deletion_requested_at: new Date().toISOString(),
+        deletion_token: deletionToken,
+        deletion_token_expires_at: tokenExpiresAt.toISOString(),
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error marking account for deletion:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to initiate account deletion' },
+        { status: 500 }
+      );
+    }
+
+    // Step 4: Send confirmation email
+    const confirmationLink = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm-deletion?token=${deletionToken}`;
+    const emailHtml = createDeletionEmailHtml(
+      user.user_metadata?.name || user.email,
+      confirmationLink
+    );
+
+    // TODO: Implement actual email sending
+    // For now, we'll log the email content
+    console.log('Deletion confirmation email would be sent to:', user.email);
+    console.log('Confirmation link:', confirmationLink);
+    console.log('Email HTML:', emailHtml);
+
+    return NextResponse.json({
+      success: true,
+      message:
+        'Account deletion initiated. Please check your email for confirmation.',
+    });
+  } catch (error) {
+    console.error('Error in account deletion API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    // Get the current user from the session
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { action } = await request.json();
+
+    if (action === 'cancel-deletion') {
+      // Check if user has a pending deletion
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('deletion_requested_at, deletion_confirmed_at')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingUser?.deletion_requested_at) {
+        return NextResponse.json(
+          { error: 'No pending account deletion found' },
+          { status: 400 }
+        );
+      }
+
+      // Clear all deletion-related fields
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          deletion_requested_at: null,
+          deletion_confirmed_at: null,
+          deletion_token: null,
+          deletion_token_expires_at: null,
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Error canceling account deletion:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to cancel account deletion' },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Account deletion has been canceled successfully.',
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    console.error('Error in account deletion cancellation API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

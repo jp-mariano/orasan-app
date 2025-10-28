@@ -19,6 +19,11 @@ export interface User {
   business_address?: string;
   business_phone?: string;
   tax_id?: string;
+  // Account deletion tracking
+  deletion_requested_at?: string;
+  deletion_confirmed_at?: string;
+  deletion_token?: string;
+  deletion_token_expires_at?: string;
 }
 
 export interface UpdateUserRequest {

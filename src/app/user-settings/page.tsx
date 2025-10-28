@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Breadcrumb } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,18 +13,29 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { DeletionStatus } from '@/components/ui/deletion-status';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
+import { useAccountDeletion } from '@/hooks/useAccountDeletion';
 import { useUser } from '@/hooks/useUser';
 import { validateEmail, validatePhone } from '@/lib/validation';
 
 export default function UserSettingsPage() {
   const { user: authUser, loading: authLoading } = useAuth();
-  const { user, loading, error, updateUser } = useUser();
+  const { user, loading, error, updateUser, refreshUser } = useUser();
   const router = useRouter();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Account deletion state
+  const {
+    isDeleting,
+    error: deletionError,
+    requestAccountDeletion,
+  } = useAccountDeletion();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState('');
 
   // Auth redirect effect
   useEffect(() => {
@@ -31,6 +43,22 @@ export default function UserSettingsPage() {
       router.push('/auth/signin');
     }
   }, [authLoading, authUser, router]);
+
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (!authUser || !user) return;
+
+    const success = await requestAccountDeletion(
+      authUser.id,
+      authUser.email || ''
+    );
+    if (success) {
+      setShowDeleteConfirm(false);
+      setConfirmEmail('');
+      // Refresh user data to get updated deletion status
+      await refreshUser();
+    }
+  };
 
   // Handle field updates
   const handleSaveField = async (
@@ -305,12 +333,129 @@ export default function UserSettingsPage() {
                     <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
                       {user?.email || 'No email available'}
                     </div>
-                    <p className="text-xs text-red-600 font-medium">
+                    <p className="text-xs text-blue-800 font-medium">
                       This email cannot be changed here. It is managed by your
                       OAuth provider (GitHub, Google, etc.). To change this
                       email, update it in your provider account settings.
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Account Deletion Section */}
+          <div>
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Account Management
+              </h2>
+              <p className="text-gray-600">Manage your account and data</p>
+            </div>
+
+            {/* Show deletion status if there's a pending deletion */}
+            {user &&
+              (user.deletion_requested_at || user.deletion_confirmed_at) && (
+                <div className="mb-6">
+                  <DeletionStatus user={user} />
+                </div>
+              )}
+
+            {/* Delete Account Card */}
+            <Card className="border-red-200">
+              <CardHeader>
+                <CardTitle className="text-red-800">Delete Account</CardTitle>
+                <CardDescription className="text-red-700">
+                  Permanently delete your account and all associated data. This
+                  action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <h4 className="text-red-800 font-medium text-sm mb-2">
+                      What happens when you delete your account:
+                    </h4>
+                    <ul className="text-red-700 text-sm space-y-1">
+                      <li>
+                        • All your projects, tasks, and time entries will be
+                        permanently deleted
+                      </li>
+                      <li>
+                        • All active timers will be paused before deletion
+                      </li>
+                      <li>
+                        • Your account will be marked for deletion with a 7-day
+                        grace period
+                      </li>
+                    </ul>
+                  </div>
+
+                  {deletionError && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-red-700 text-sm">{deletionError}</p>
+                    </div>
+                  )}
+
+                  {!showDeleteConfirm ? (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={isDeleting || !!user?.deletion_requested_at}
+                    >
+                      Delete My Account
+                    </Button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="rounded-md p-4">
+                        <h4 className="font-medium text-sm">
+                          To confirm deletion, please enter your email address
+                          exactly as shown:
+                        </h4>
+                        <div className="my-1 space-y-2">
+                          <div>
+                            <input
+                              type="email"
+                              value={confirmEmail}
+                              onChange={e => setConfirmEmail(e.target.value)}
+                              placeholder={authUser?.email}
+                              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-blue-800 text-xs">
+                          <strong>Important:</strong> After confirming deletion,
+                          you&apos;ll receive an email with a confirmation link.
+                          You can cancel the deletion anytime during the 7-day
+                          grace period by clicking the &quot;Cancel
+                          Deletion&quot; button that will appear on this page.
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteAccount}
+                          disabled={
+                            isDeleting || confirmEmail !== authUser?.email
+                          }
+                        >
+                          {isDeleting
+                            ? 'Deleting Account...'
+                            : 'Yes, Delete My Account'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setConfirmEmail('');
+                          }}
+                          disabled={isDeleting}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

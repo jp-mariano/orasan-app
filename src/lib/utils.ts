@@ -242,3 +242,59 @@ export function hasAnyPricingField(
 
   return hasRateType || hasPrice || hasCurrencyCode;
 }
+
+/**
+ * Calculates the deletion date (7 days after confirmation)
+ * @param confirmationDate - The date when deletion was confirmed
+ * @returns The deletion date as a Date object
+ */
+export function calculateDeletionDate(confirmationDate: string): Date {
+  const confirmedDate = new Date(confirmationDate);
+  const deletionDate = new Date(confirmedDate);
+  deletionDate.setDate(deletionDate.getDate() + 7);
+  return deletionDate;
+}
+
+/**
+ * Checks if account deletion is pending
+ * @param user - The user object
+ * @returns True if deletion is pending
+ */
+export function isDeletionPending(user: {
+  deletion_requested_at?: string;
+  deletion_confirmed_at?: string;
+}): boolean {
+  return !!(user.deletion_requested_at && !user.deletion_confirmed_at);
+}
+
+/**
+ * Checks if account deletion is confirmed and in grace period
+ * @param user - The user object
+ * @returns True if deletion is confirmed and in grace period
+ */
+export function isDeletionConfirmed(user: {
+  deletion_confirmed_at?: string;
+}): boolean {
+  return !!user.deletion_confirmed_at;
+}
+
+/**
+ * Gets the deletion status message
+ * @param user - The user object
+ * @returns Status message for deletion
+ */
+export function getDeletionStatusMessage(user: {
+  deletion_requested_at?: string;
+  deletion_confirmed_at?: string;
+}): string | null {
+  if (isDeletionPending(user)) {
+    return 'Account deletion requested. Please check your email for confirmation.';
+  }
+
+  if (isDeletionConfirmed(user)) {
+    const deletionDate = calculateDeletionDate(user.deletion_confirmed_at!);
+    return `Account will be deleted on ${formatDate(deletionDate)}. You can cancel this request anytime.`;
+  }
+
+  return null;
+}
