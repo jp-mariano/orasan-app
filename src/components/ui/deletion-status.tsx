@@ -5,7 +5,6 @@ import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAccountDeletion } from '@/hooks/useAccountDeletion';
-import { useUser } from '@/hooks/useUser';
 import { calculateDeletionDate, formatDate } from '@/lib/utils';
 
 interface DeletionStatusProps {
@@ -13,19 +12,20 @@ interface DeletionStatusProps {
     deletion_requested_at?: string;
     deletion_confirmed_at?: string;
   };
+  onCancelled?: () => Promise<void> | void;
 }
 
-export function DeletionStatus({ user }: DeletionStatusProps) {
+export function DeletionStatus({ user, onCancelled }: DeletionStatusProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const { isCanceling, error, cancelAccountDeletion } = useAccountDeletion();
-  const { refreshUser } = useUser();
 
   const handleCancelDeletion = async () => {
     const success = await cancelAccountDeletion();
     if (success) {
       setShowCancelConfirm(false);
-      // Refresh user data to update the UI
-      await refreshUser();
+      if (onCancelled) {
+        await onCancelled();
+      }
     }
   };
 

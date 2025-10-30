@@ -357,7 +357,12 @@ export default function UserSettingsPage() {
             {user &&
               (user.deletion_requested_at || user.deletion_confirmed_at) && (
                 <div className="mb-6">
-                  <DeletionStatus user={user} />
+                  <DeletionStatus
+                    user={user}
+                    onCancelled={async () => {
+                      await refreshUser();
+                    }}
+                  />
                 </div>
               )}
 
