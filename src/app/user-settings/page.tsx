@@ -19,6 +19,7 @@ import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useAccountDeletion } from '@/hooks/useAccountDeletion';
+import { useDataExport } from '@/hooks/useDataExport';
 import { useUser } from '@/hooks/useUser';
 import { validateEmail, validatePhone } from '@/lib/validation';
 
@@ -36,6 +37,9 @@ export default function UserSettingsPage() {
   } = useAccountDeletion();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [confirmEmail, setConfirmEmail] = useState('');
+
+  // Data export
+  const { isExporting, error: exportError, exportUserData } = useDataExport();
 
   // Auth redirect effect
   useEffect(() => {
@@ -352,6 +356,29 @@ export default function UserSettingsPage() {
               </h2>
               <p className="text-gray-600">Manage your account and data</p>
             </div>
+
+            {/* Data Export Card */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Download your data</CardTitle>
+                <CardDescription>
+                  Export your projects, tasks, time entries, work sessions, and
+                  invoices as JSON and CSV.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {exportError && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <p className="text-red-700 text-sm">{exportError}</p>
+                    </div>
+                  )}
+                  <Button onClick={exportUserData} disabled={isExporting}>
+                    {isExporting ? 'Preparing export…' : 'Download My Data'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Show deletion status if there's a pending deletion */}
             {user &&
