@@ -6,7 +6,7 @@ CREATE TYPE project_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed'
 CREATE TYPE task_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed');
 CREATE TYPE priority AS ENUM ('low', 'medium', 'high', 'urgent');
 CREATE TYPE rate_type AS ENUM ('hourly', 'monthly', 'fixed');
-CREATE TYPE activity_action AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'EXPORT_DATA', 'REQUEST_ACCOUNT_DELETION', 'CONFIRM_ACCOUNT_DELETION');
+CREATE TYPE activity_action AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'EXPORT_DATA', 'REQUEST_ACCOUNT_DELETION', 'CONFIRM_ACCOUNT_DELETION', 'CANCEL_ACCOUNT_DELETION');
 CREATE TYPE activity_entity_type AS ENUM ('project', 'task', 'time_entry', 'work_session', 'invoice', 'user', 'data_export', 'account_deletion');
 
 -- Create users table (extends Supabase auth.users)
