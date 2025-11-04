@@ -3,18 +3,21 @@ import { useCallback, useState } from 'react';
 interface UseDataExportReturn {
   isExporting: boolean;
   error: string | null;
+  retryAfter: Date | null;
   exportUserData: (includeActivityLog?: boolean) => Promise<boolean>;
 }
 
 export function useDataExport(): UseDataExportReturn {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryAfter, setRetryAfter] = useState<Date | null>(null);
 
   const exportUserData = useCallback(
     async (includeActivityLog = false): Promise<boolean> => {
       try {
         setIsExporting(true);
         setError(null);
+        setRetryAfter(null);
 
         const exportUrl = new URL('/api/export', window.location.origin);
         if (includeActivityLog) {
@@ -27,6 +30,17 @@ export function useDataExport(): UseDataExportReturn {
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
+
+          // Handle throttling (429 status)
+          if (response.status === 429 && data.retryAfter) {
+            const retryDate = new Date(data.retryAfter);
+            setRetryAfter(retryDate);
+            throw new Error(
+              data.error ||
+                `Export limit reached. Please try again after ${retryDate.toLocaleString()}.`
+            );
+          }
+
           throw new Error(data.error || 'Failed to generate export');
         }
 
@@ -52,5 +66,5 @@ export function useDataExport(): UseDataExportReturn {
     []
   );
 
-  return { isExporting, error, exportUserData };
+  return { isExporting, error, retryAfter, exportUserData };
 }

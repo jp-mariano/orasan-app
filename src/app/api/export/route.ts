@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
 
 import { logDataExport } from '@/lib/activity-log';
+import {
+  checkExportThrottle,
+  EXPORT_THROTTLE_CONFIG,
+} from '@/lib/export-throttle';
 import { createClient } from '@/lib/supabase/server';
 
 function toCsv(rows: Array<Record<string, unknown>>): string {
@@ -57,6 +61,28 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const includeActivityLog =
       searchParams.get('includeActivityLog') === 'true';
+
+    // Check export throttling
+    const throttleResult = await checkExportThrottle(user.id);
+    if (!throttleResult.allowed) {
+      const headers = new Headers();
+      if (throttleResult.retryAfter) {
+        const retryAfterSeconds = Math.ceil(
+          (throttleResult.retryAfter.getTime() - Date.now()) / 1000
+        );
+        headers.set('Retry-After', retryAfterSeconds.toString());
+      }
+
+      return NextResponse.json(
+        {
+          error: throttleResult.error || 'Export limit exceeded',
+          retryAfter: throttleResult.retryAfter?.toISOString(),
+          limit: EXPORT_THROTTLE_CONFIG.maxExports,
+          timeWindowHours: EXPORT_THROTTLE_CONFIG.timeWindowHours,
+        },
+        { status: 429, headers }
+      );
+    }
 
     // Build queries map and resolve in parallel
     const queries = {

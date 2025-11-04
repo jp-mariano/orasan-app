@@ -39,8 +39,14 @@ export default function UserSettingsPage() {
   const [confirmEmail, setConfirmEmail] = useState('');
 
   // Data export
-  const { isExporting, error: exportError, exportUserData } = useDataExport();
+  const {
+    isExporting,
+    error: exportError,
+    retryAfter,
+    exportUserData,
+  } = useDataExport();
   const [includeActivityLog, setIncludeActivityLog] = useState(false);
+  const [timeUntilRetry, setTimeUntilRetry] = useState<string | null>(null);
 
   // Auth redirect effect
   useEffect(() => {
@@ -48,6 +54,41 @@ export default function UserSettingsPage() {
       router.push('/auth/signin');
     }
   }, [authLoading, authUser, router]);
+
+  // Update time until retry countdown
+  useEffect(() => {
+    if (!retryAfter) {
+      setTimeUntilRetry(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const diff = retryAfter.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setTimeUntilRetry(null);
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (hours > 0) {
+        setTimeUntilRetry(`${hours}h ${minutes}m`);
+      } else if (minutes > 0) {
+        setTimeUntilRetry(`${minutes}m ${seconds}s`);
+      } else {
+        setTimeUntilRetry(`${seconds}s`);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [retryAfter]);
 
   // Handle account deletion
   const handleDeleteAccount = async () => {
@@ -371,7 +412,14 @@ export default function UserSettingsPage() {
                 <div className="space-y-3">
                   {exportError && (
                     <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                      <p className="text-red-700 text-sm">{exportError}</p>
+                      <p className="text-red-700 text-sm font-medium">
+                        {exportError}
+                      </p>
+                      {retryAfter && timeUntilRetry && (
+                        <p className="text-red-600 text-xs mt-1">
+                          You can try again in {timeUntilRetry}
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className="flex items-center space-x-2">
@@ -381,19 +429,28 @@ export default function UserSettingsPage() {
                       checked={includeActivityLog}
                       onChange={e => setIncludeActivityLog(e.target.checked)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      disabled={isExporting || !!retryAfter}
                     />
                     <Label
                       htmlFor="includeActivityLog"
-                      className="text-sm font-normal cursor-pointer"
+                      className={`text-sm font-normal ${
+                        isExporting || retryAfter
+                          ? 'text-gray-400'
+                          : 'cursor-pointer'
+                      }`}
                     >
                       Include activity log (may be large)
                     </Label>
                   </div>
                   <Button
                     onClick={() => exportUserData(includeActivityLog)}
-                    disabled={isExporting}
+                    disabled={isExporting || !!retryAfter}
                   >
-                    {isExporting ? 'Preparing export…' : 'Download My Data'}
+                    {isExporting
+                      ? 'Preparing export…'
+                      : retryAfter
+                        ? `Try again in ${timeUntilRetry || '...'}`
+                        : 'Download My Data'}
                   </Button>
                 </div>
               </CardContent>
