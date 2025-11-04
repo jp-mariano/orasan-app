@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  logAccountDeletionCancellation,
+  logAccountDeletionRequest,
+} from '@/lib/activity-log';
 import { sendDeletionConfirmationEmail } from '@/lib/email';
 import { createClient } from '@/lib/supabase/server';
 import { UpdateUserRequest } from '@/types';
@@ -307,6 +311,11 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Log the account deletion request activity (non-blocking)
+    logAccountDeletionRequest(user.id).catch(error => {
+      console.error('Failed to log account deletion request activity:', error);
+    });
+
     return NextResponse.json({
       success: true,
       message:
@@ -370,6 +379,14 @@ export async function PUT(request: NextRequest) {
           { status: 500 }
         );
       }
+
+      // Log the account deletion cancellation activity (non-blocking)
+      logAccountDeletionCancellation(user.id).catch(error => {
+        console.error(
+          'Failed to log account deletion cancellation activity:',
+          error
+        );
+      });
 
       return NextResponse.json({
         success: true,

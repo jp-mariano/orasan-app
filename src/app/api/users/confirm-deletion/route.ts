@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logAccountDeletionConfirmation } from '@/lib/activity-log';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -73,6 +74,14 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Log the account deletion confirmation activity (non-blocking)
+    logAccountDeletionConfirmation(user.id).catch(error => {
+      console.error(
+        'Failed to log account deletion confirmation activity:',
+        error
+      );
+    });
 
     return NextResponse.json({
       success: true,

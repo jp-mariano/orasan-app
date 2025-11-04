@@ -38,6 +38,8 @@ export function createAccountDeletionEmailHtml(
         
         <p><strong>Grace Period:</strong> Your account will be permanently deleted after 7 days. You can cancel this request anytime before then by logging into your account.</p>
         
+        <p><strong>Activity Log Retention:</strong> For security and compliance purposes, we will archive your activity log for 1 year after account deletion, then permanently delete it.</p>
+        
         <p>If you didn't request this deletion, please ignore this email or contact support.</p>
         
         <div class="footer">

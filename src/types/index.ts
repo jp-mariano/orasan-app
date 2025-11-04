@@ -4,6 +4,23 @@ export type ProjectStatus = Status;
 export type TaskStatus = Status;
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type RateType = 'hourly' | 'monthly' | 'fixed';
+export type ActivityAction =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'EXPORT_DATA'
+  | 'REQUEST_ACCOUNT_DELETION'
+  | 'CONFIRM_ACCOUNT_DELETION'
+  | 'CANCEL_ACCOUNT_DELETION';
+export type ActivityEntityType =
+  | 'project'
+  | 'task'
+  | 'time_entry'
+  | 'work_session'
+  | 'invoice'
+  | 'user'
+  | 'data_export'
+  | 'account_deletion';
 
 export interface User {
   id: string;
@@ -181,4 +198,14 @@ export interface UpdateTimeEntryRequest {
   end_time?: string;
   duration_seconds?: number;
   timer_status?: 'running' | 'paused' | 'stopped';
+}
+
+export interface UserActivityLog {
+  id: string;
+  user_id: string | null;
+  action: ActivityAction;
+  entity_type: ActivityEntityType;
+  entity_id: string | null;
+  created_at: string;
+  user_deleted_at: string | null;
 }

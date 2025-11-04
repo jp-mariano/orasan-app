@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import JSZip from 'jszip';
 
+import { logDataExport } from '@/lib/activity-log';
 import { createClient } from '@/lib/supabase/server';
 
 function toCsv(rows: Array<Record<string, unknown>>): string {
@@ -168,6 +169,11 @@ export async function GET() {
     const filename = `orasan-export-${new Date()
       .toISOString()
       .slice(0, 10)}.zip`;
+
+    // Log the data export activity (non-blocking)
+    logDataExport(user.id).catch(error => {
+      console.error('Failed to log data export activity:', error);
+    });
 
     return new NextResponse(Buffer.from(content), {
       status: 200,
