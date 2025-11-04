@@ -40,7 +40,7 @@ function toCsv(rows: Array<Record<string, unknown>>): string {
   return '\uFEFF' + [headerLine, ...dataLines].join('\n');
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient();
 
@@ -52,6 +52,11 @@ export async function GET() {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Check if activity log should be included
+    const { searchParams } = new URL(request.url);
+    const includeActivityLog =
+      searchParams.get('includeActivityLog') === 'true';
 
     // Build queries map and resolve in parallel
     const queries = {
@@ -81,6 +86,13 @@ export async function GET() {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
+      ...(includeActivityLog && {
+        activity_log: supabase
+          .from('user_activity_log')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+      }),
     } as const;
 
     const resultsArray = await Promise.all(Object.values(queries));
@@ -128,6 +140,14 @@ export async function GET() {
       JSON.stringify(results.invoices.data || [], null, 2)
     );
 
+    // Add activity log if requested
+    if (includeActivityLog && results.activity_log) {
+      jsonFolder?.file(
+        'user_activity_log.json',
+        JSON.stringify(results.activity_log.data || [], null, 2)
+      );
+    }
+
     // CSV files for flat tables
     csvFolder?.file(
       'user.csv',
@@ -160,9 +180,55 @@ export async function GET() {
       toCsv((results.invoices.data as Array<Record<string, unknown>>) || [])
     );
 
+    // Add activity log CSV if requested
+    if (includeActivityLog && results.activity_log) {
+      csvFolder?.file(
+        'user_activity_log.csv',
+        toCsv(
+          (results.activity_log.data as Array<Record<string, unknown>>) || []
+        )
+      );
+    }
+
     // README documentation
-    const readme = `Orasan Data Export\n\nContents:\n- json/user.json\n- json/projects.json\n- json/tasks.json\n- json/time_entries.json\n- json/work_sessions.json\n- json/invoices.json\n- csv/user.csv\n- csv/projects.csv\n- csv/tasks.csv\n- csv/time_entries.csv\n- csv/work_sessions.csv\n- csv/invoices.csv\n\nNotes:\n- JSON is the authoritative, lossless export.\n- CSV is provided for spreadsheet users; nested fields are JSON-stringified.\n- Timestamps are ISO 8601 (UTC). IDs are strings.\n- Relationships:\n  - tasks.project_id links tasks to projects\n  - time_entries.task_id and time_entries.project_id link to tasks/projects\n  - work_sessions may link to time_entries via time_entry_id (if present)\n  - invoices may link to projects or users depending on schema\n`;
-    root?.file('README.txt', readme);
+    const readmeContents = [
+      'Orasan Data Export',
+      '',
+      'Contents:',
+      '- json/user.json',
+      '- json/projects.json',
+      '- json/tasks.json',
+      '- json/time_entries.json',
+      '- json/work_sessions.json',
+      '- json/invoices.json',
+      ...(includeActivityLog
+        ? ['- json/user_activity_log.json (optional)']
+        : []),
+      '- csv/user.csv',
+      '- csv/projects.csv',
+      '- csv/tasks.csv',
+      '- csv/time_entries.csv',
+      '- csv/work_sessions.csv',
+      '- csv/invoices.csv',
+      ...(includeActivityLog ? ['- csv/user_activity_log.csv (optional)'] : []),
+      '',
+      'Notes:',
+      '- JSON is the authoritative, lossless export.',
+      '- CSV is provided for spreadsheet users; nested fields are JSON-stringified.',
+      '- Timestamps are ISO 8601 (UTC). IDs are strings.',
+      ...(includeActivityLog
+        ? [
+            '- Activity logs are only included if requested (optional).',
+            '- Activity logs may be large and contain sensitive audit information.',
+          ]
+        : []),
+      '- Relationships:',
+      '  - tasks.project_id links tasks to projects',
+      '  - time_entries.task_id and time_entries.project_id link to tasks/projects',
+      '  - work_sessions may link to time_entries via time_entry_id (if present)',
+      '  - invoices may link to projects or users depending on schema',
+    ].join('\n');
+    root?.file('README.txt', readmeContents);
 
     const content = await zip.generateAsync({ type: 'uint8array' });
 

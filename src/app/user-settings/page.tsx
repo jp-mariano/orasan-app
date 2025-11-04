@@ -40,6 +40,7 @@ export default function UserSettingsPage() {
 
   // Data export
   const { isExporting, error: exportError, exportUserData } = useDataExport();
+  const [includeActivityLog, setIncludeActivityLog] = useState(false);
 
   // Auth redirect effect
   useEffect(() => {
@@ -373,7 +374,25 @@ export default function UserSettingsPage() {
                       <p className="text-red-700 text-sm">{exportError}</p>
                     </div>
                   )}
-                  <Button onClick={exportUserData} disabled={isExporting}>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="includeActivityLog"
+                      checked={includeActivityLog}
+                      onChange={e => setIncludeActivityLog(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <Label
+                      htmlFor="includeActivityLog"
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Include activity log (may be large)
+                    </Label>
+                  </div>
+                  <Button
+                    onClick={() => exportUserData(includeActivityLog)}
+                    disabled={isExporting}
+                  >
                     {isExporting ? 'Preparing export…' : 'Download My Data'}
                   </Button>
                 </div>
