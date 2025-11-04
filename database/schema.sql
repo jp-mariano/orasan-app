@@ -6,6 +6,8 @@ CREATE TYPE project_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed'
 CREATE TYPE task_status AS ENUM ('new', 'on_hold', 'in_progress', 'completed');
 CREATE TYPE priority AS ENUM ('low', 'medium', 'high', 'urgent');
 CREATE TYPE rate_type AS ENUM ('hourly', 'monthly', 'fixed');
+CREATE TYPE activity_action AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'EXPORT_DATA', 'REQUEST_ACCOUNT_DELETION', 'CONFIRM_ACCOUNT_DELETION');
+CREATE TYPE activity_entity_type AS ENUM ('project', 'task', 'time_entry', 'work_session', 'invoice', 'user', 'data_export', 'account_deletion');
 
 -- Create users table (extends Supabase auth.users)
 CREATE TABLE public.users (
@@ -177,6 +179,23 @@ CREATE TABLE public.invoice_items (
   )
 );
 
+-- Create user_activity_log table
+CREATE TABLE public.user_activity_log (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  action activity_action NOT NULL,
+  entity_type activity_entity_type NOT NULL,
+  entity_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- Track when user was deleted (set by cleanup job before user deletion)
+  user_deleted_at TIMESTAMP WITH TIME ZONE,
+  -- Ensure user_deleted_at is only set when user_id is NULL
+  CONSTRAINT check_user_deleted_at_consistency CHECK (
+    (user_id IS NULL AND user_deleted_at IS NOT NULL) OR
+    (user_id IS NOT NULL AND user_deleted_at IS NULL)
+  )
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_projects_user_id ON public.projects(user_id);
 CREATE INDEX idx_projects_status ON public.projects(status);
@@ -205,6 +224,13 @@ CREATE INDEX idx_invoice_items_task_id ON public.invoice_items(task_id);
 -- Account deletion cleanup index
 CREATE INDEX idx_users_deletion_confirmed ON public.users(deletion_confirmed_at) 
 WHERE deletion_confirmed_at IS NOT NULL;
+-- User activity log indexes
+CREATE INDEX idx_user_activity_log_user_id ON public.user_activity_log(user_id);
+CREATE INDEX idx_user_activity_log_action ON public.user_activity_log(action);
+CREATE INDEX idx_user_activity_log_entity_type ON public.user_activity_log(entity_type);
+CREATE INDEX idx_user_activity_log_created_at ON public.user_activity_log(created_at);
+CREATE INDEX idx_user_activity_log_user_deleted_at ON public.user_activity_log(user_deleted_at)
+WHERE user_deleted_at IS NOT NULL;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -214,6 +240,7 @@ ALTER TABLE public.time_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_activity_log ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
 CREATE POLICY "Users can view own profile" ON public.users
@@ -329,6 +356,27 @@ CREATE POLICY "Users can delete own invoice items" ON public.invoice_items
       AND invoices.user_id = (SELECT auth.uid())
     )
   );
+
+-- RLS Policies for user_activity_log table
+-- Users can view their own activity logs (only when user_id is not NULL)
+CREATE POLICY "Users can view own activity logs" ON public.user_activity_log
+  FOR SELECT USING (
+    (SELECT auth.uid()) = user_id AND user_id IS NOT NULL
+  );
+
+-- Only system can insert activity logs (via API with service role or triggers)
+-- Note: This policy allows inserts when authenticated, but we'll control this via API-level checks
+CREATE POLICY "System can insert activity logs" ON public.user_activity_log
+  FOR INSERT WITH CHECK (
+    (SELECT auth.uid()) = user_id OR user_id IS NULL
+  );
+
+-- Users cannot update or delete their own activity logs (immutable audit trail)
+CREATE POLICY "Activity logs are immutable" ON public.user_activity_log
+  FOR UPDATE USING (false);
+
+CREATE POLICY "Activity logs cannot be deleted" ON public.user_activity_log
+  FOR DELETE USING (false);
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
