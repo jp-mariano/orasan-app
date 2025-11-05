@@ -67,7 +67,7 @@ CREATE TABLE public.tasks (
   status task_status DEFAULT 'new',
   priority priority NOT NULL DEFAULT 'low',
   due_date DATE,
-  assignee UUID REFERENCES public.users(id),
+  assignee UUID REFERENCES public.users(id) ON DELETE SET NULL,
   -- Rate information at task creation time (locked after creation)
   rate_type rate_type DEFAULT NULL,
   price DECIMAL(10,2) DEFAULT NULL,
@@ -405,3 +405,23 @@ CREATE TRIGGER update_work_sessions_updated_at BEFORE UPDATE ON public.work_sess
 
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create function to set user_deleted_at on activity logs when user is deleted
+CREATE OR REPLACE FUNCTION set_user_deleted_at_on_logs()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- When a user is about to be deleted, set user_deleted_at on all their activity logs
+  -- This happens BEFORE deletion, so the user_id still exists for the WHERE clause
+  UPDATE public.user_activity_log
+  SET user_deleted_at = NOW(), user_id = NULL
+  WHERE user_id = OLD.id AND user_deleted_at IS NULL;
+  
+  RETURN OLD;
+END;
+$$ language 'plpgsql' SECURITY DEFINER SET search_path = public;
+
+-- Create trigger to set user_deleted_at before user deletion
+CREATE TRIGGER set_user_deleted_at_before_user_delete
+  BEFORE DELETE ON public.users
+  FOR EACH ROW
+  EXECUTE FUNCTION set_user_deleted_at_on_logs();
