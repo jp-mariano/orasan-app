@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 import {
   CreateProjectRequest,
   Project,
@@ -63,6 +64,10 @@ export function useProjects(): UseProjectsReturn {
       const data = await response.json();
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected, no need to continue
+        }
         throw new Error(data.error || 'Failed to fetch projects');
       }
 
@@ -90,6 +95,10 @@ export function useProjects(): UseProjectsReturn {
         const result = await response.json();
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return { success: false, error: 'Unauthorized' };
+          }
           return {
             success: false,
             error: result.error || 'Failed to create project',
@@ -127,6 +136,10 @@ export function useProjects(): UseProjectsReturn {
         const result = await response.json();
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            throw new Error('Unauthorized');
+          }
           throw new Error(result.error || 'Failed to update project');
         }
 
@@ -173,6 +186,10 @@ export function useProjects(): UseProjectsReturn {
         const result = await response.json();
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return { success: false, error: 'Unauthorized' };
+          }
           return {
             success: false,
             error: result.error || 'Failed to delete project',
@@ -203,6 +220,10 @@ export function useProjects(): UseProjectsReturn {
       const data = await response.json();
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected, no need to continue
+        }
         throw new Error(data.error || 'Failed to fetch projects');
       }
 

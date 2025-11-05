@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 import { UpdateUserRequest, User } from '@/types';
 
 interface UseUserReturn {
@@ -24,7 +25,12 @@ export function useUser(): UseUserReturn {
       const response = await fetch('/api/users');
       const data = await response.json();
 
+      // Check for unauthorized errors before processing response
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected, no need to continue
+        }
         throw new Error(data.error || 'Failed to fetch user data');
       }
 
@@ -55,7 +61,12 @@ export function useUser(): UseUserReturn {
 
         const data = await response.json();
 
+        // Check for unauthorized errors before processing response
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
           throw new Error(data.error || 'Failed to update user data');
         }
 

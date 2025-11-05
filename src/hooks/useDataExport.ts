@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
+
 interface UseDataExportReturn {
   isExporting: boolean;
   error: string | null;
@@ -29,6 +31,12 @@ export function useDataExport(): UseDataExportReturn {
         });
 
         if (!response.ok) {
+          // Check for unauthorized errors first
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
+
           const data = await response.json().catch(() => ({}));
 
           // Handle throttling (429 status)

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useAuth } from '@/contexts/auth-context';
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 
 export interface TimeEntry {
   id: string;
@@ -227,6 +228,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     try {
       const response = await fetch('/api/time-entries');
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected
+        }
         throw new Error('Failed to load timers');
       }
 
@@ -318,6 +323,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       });
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          throw new Error('Unauthorized');
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.error || `HTTP ${response.status}: Failed to update timer`
@@ -365,6 +374,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       // Fetch the latest time entry for this task
       const response = await fetch(`/api/time-entries?task_id=${taskId}`);
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected
+        }
         throw new Error('Failed to fetch time entry');
       }
 
@@ -453,6 +466,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         });
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
           const errorData = await response.json();
 
           // If timer already exists, try to resume it instead
@@ -593,6 +610,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         });
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
           const errorData = await response.json();
           setError(errorData.error || 'Failed to pause timers');
           return false;
@@ -738,6 +759,10 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         });
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to clear timer');
         }

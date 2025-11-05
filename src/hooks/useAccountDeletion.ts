@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 
 interface UseAccountDeletionReturn {
   isDeleting: boolean;
@@ -53,6 +54,10 @@ export function useAccountDeletion(): UseAccountDeletionReturn {
       const data = await response.json();
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return false; // User will be redirected
+        }
         throw new Error(data.error || 'Failed to request account deletion');
       }
 
@@ -85,6 +90,10 @@ export function useAccountDeletion(): UseAccountDeletionReturn {
       const data = await response.json();
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return false; // User will be redirected
+        }
         throw new Error(data.error || 'Failed to cancel account deletion');
       }
 

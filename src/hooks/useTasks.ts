@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 import { CreateTaskRequest, TaskWithDetails, UpdateTaskRequest } from '@/types';
 
 interface UseTasksOptions {
@@ -57,6 +58,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       const data = await response.json();
 
       if (!response.ok) {
+        const handled = await checkAndHandleUnauthorized(response);
+        if (handled) {
+          return; // User will be redirected, no need to continue
+        }
         throw new Error(data.error || 'Failed to fetch tasks');
       }
       setTasks(data.tasks || []);
@@ -92,6 +97,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         );
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return null; // User will be redirected
+          }
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to create task');
         }
@@ -139,6 +148,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         );
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            throw new Error('Unauthorized');
+          }
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to update task');
         }
@@ -187,6 +200,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         );
 
         if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to delete task');
         }
