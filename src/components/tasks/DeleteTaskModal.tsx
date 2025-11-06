@@ -64,6 +64,10 @@ export function DeleteTaskModal({
               <li>• All associated time entries</li>
               <li>• Task history and data</li>
               <li>• Any ongoing timers</li>
+              <li>
+                • Invoice items referencing this task will lose their task
+                association
+              </li>
             </ul>
           </div>
         </div>

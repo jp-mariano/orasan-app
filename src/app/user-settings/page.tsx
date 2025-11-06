@@ -490,6 +490,10 @@ export default function UserSettingsPage() {
                         permanently deleted
                       </li>
                       <li>
+                        • All invoices and invoice items will be permanently
+                        deleted
+                      </li>
+                      <li>
                         • All active timers will be paused before deletion
                       </li>
                       <li>

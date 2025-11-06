@@ -59,6 +59,7 @@ export function DeleteProjectModal({
             <ul className="text-sm text-red-600 mt-2 ml-4 space-y-1">
               <li>• All associated tasks</li>
               <li>• All time entries</li>
+              <li>• All invoices and invoice items</li>
               <li>• Project history and data</li>
             </ul>
           </div>
