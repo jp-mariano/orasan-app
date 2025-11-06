@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { Clock, User, LogOut, LayoutDashboard, UserPen } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, UserPen } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
@@ -37,7 +37,6 @@ export function Header() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo and Brand */}
         <div className="flex items-center space-x-2">
-          <Clock className="h-8 w-8 text-blue-600" />
           <span className="text-2xl font-bold text-gray-900">Orasan</span>
         </div>
 
