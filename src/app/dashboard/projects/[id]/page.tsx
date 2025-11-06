@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { Edit, MoreVertical, Plus, Trash2 } from 'lucide-react';
+import { Edit, MoreVertical, Plus, ReceiptText, Trash2 } from 'lucide-react';
 
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectModal } from '@/components/projects/ProjectModal';
@@ -48,6 +48,9 @@ export default function ProjectDetailPage() {
   // Pause all state
   const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
+  // Stop all state (for invoice generation)
+  const [showStopAllTimersModal, setShowStopAllTimersModal] = useState(false);
+  const [isStoppingAll, setIsStoppingAll] = useState(false);
 
   // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
@@ -84,7 +87,8 @@ export default function ProjectDetailPage() {
   const { updateProject, deleteProject } = useProjects();
 
   // Time tracking
-  const { activeTimers, pauseAllTimers } = useTimeTrackingContext();
+  const { activeTimers, pauseAllTimers, stopAllTimers } =
+    useTimeTrackingContext();
 
   // Fetch project data
   useEffect(() => {
@@ -314,6 +318,21 @@ export default function ProjectDetailPage() {
     }
   };
 
+  // Handle stop all timers for this project (for invoice generation)
+  const handleStopAllForInvoice = async () => {
+    setIsStoppingAll(true);
+    try {
+      const success = await stopAllTimers(projectId);
+      if (success) {
+        setShowStopAllTimersModal(false);
+      }
+    } catch (error) {
+      console.error('Error stopping all timers:', error);
+    } finally {
+      setIsStoppingAll(false);
+    }
+  };
+
   if (loading || loadingProject) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -399,6 +418,16 @@ export default function ProjectDetailPage() {
                       >
                         <Edit className="h-4 w-4" />
                         <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowStopAllTimersModal(true);
+                          setShowActions(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                      >
+                        <ReceiptText className="h-4 w-4" />
+                        <span>Invoice</span>
                       </button>
                       <button
                         onClick={() => {
@@ -718,6 +747,15 @@ export default function ProjectDetailPage() {
         confirmText="Proceed"
         onConfirm={handlePauseAll}
         isLoading={isPausingAll}
+      />
+      <PauseTimersModal
+        open={showStopAllTimersModal}
+        onOpenChange={setShowStopAllTimersModal}
+        title="Create Invoice"
+        description="This will prepare your project for invoice generation. All active timers (running or paused, if any) within the project will be stopped. New timer entries will be created when you start working on tasks again."
+        confirmText="Create Invoice"
+        onConfirm={handleStopAllForInvoice}
+        isLoading={isStoppingAll}
       />
     </div>
   );

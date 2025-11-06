@@ -99,14 +99,14 @@ CREATE TABLE public.time_entries (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   
   -- Constraints for data integrity
+  -- Multiple time entries per task are allowed for invoice generation workflows
   CONSTRAINT check_duration_seconds_positive CHECK (duration_seconds >= 0),
   CONSTRAINT check_end_after_start CHECK (end_time IS NULL OR end_time >= start_time),
   CONSTRAINT check_timer_status CHECK (timer_status IN ('running', 'paused', 'stopped')),
   CONSTRAINT check_status_end_time CHECK (
     (timer_status = 'stopped') OR 
     (timer_status IN ('running', 'paused') AND end_time IS NULL)
-  ),
-  CONSTRAINT unique_task_time_entry UNIQUE (task_id)
+  )
 );
 
 -- Create work_sessions table

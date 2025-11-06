@@ -130,24 +130,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Check for existing timer on the same task (1:1 relationship)
-    const { data: existingTimer } = await supabase
-      .from('time_entries')
-      .select('id, timer_status')
-      .eq('task_id', timeEntryData.task_id)
-      .eq('user_id', user.id)
-      .single();
+    // Check for existing RUNNING timer on the same task (only one running timer per task allowed)
+    // Multiple time entries per task are allowed, but only one can be running at a time
+    if (timeEntryData.timer_status === 'running') {
+      const { data: runningTimer } = await supabase
+        .from('time_entries')
+        .select('id, timer_status')
+        .eq('task_id', timeEntryData.task_id)
+        .eq('user_id', user.id)
+        .eq('timer_status', 'running')
+        .single();
 
-    if (existingTimer) {
-      return NextResponse.json(
-        {
-          error:
-            'A timer already exists for this task. Use PATCH to update it instead.',
-          existing_timer_id: existingTimer.id,
-          current_status: existingTimer.timer_status,
-        },
-        { status: 400 }
-      );
+      if (runningTimer) {
+        return NextResponse.json(
+          {
+            error:
+              'A timer is already running for this task. Stop or pause it first.',
+            existing_timer_id: runningTimer.id,
+            current_status: runningTimer.timer_status,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Create the time entry

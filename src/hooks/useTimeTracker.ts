@@ -38,6 +38,7 @@ export interface UseTimeTrackerReturn {
   startTimer: (taskId: string, projectId: string) => Promise<boolean>;
   pauseTimer: (taskId: string) => Promise<boolean>;
   pauseAllTimers: (timerIds: string[]) => Promise<boolean>;
+  stopAllTimers: (projectId: string) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
   resetTimer: (taskId: string) => Promise<boolean>;
@@ -238,27 +239,69 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       const data = await response.json();
       const timeEntries: TimeEntry[] = data.time_entries || [];
 
-      // Convert database entries to local timers
-      const dbTimers: LocalTimer[] = timeEntries.map(entry => {
-        let localStartTime = null;
-        if (entry.timer_status === 'running') {
-          // For running timers, set localStartTime to now
-          // The duration_seconds contains accumulated time from previous sessions
-          // getTotalDuration will calculate: duration_seconds + (now - localStartTime)
-          localStartTime = Date.now();
+      // Filter to get only the most recent entry per task
+      // Only load running or paused entries (stopped entries are not shown in UI)
+      // Priority: running > paused (most recent)
+      const entriesByTask = new Map<string, TimeEntry>();
+      for (const entry of timeEntries) {
+        // Skip stopped entries - they are preserved in DB for invoice generation
+        // but not shown in UI. A new entry will be created when user starts a timer.
+        if (entry.timer_status === 'stopped') {
+          continue;
         }
 
-        return {
-          id: entry.id,
-          taskId: entry.task_id,
-          projectId: entry.project_id,
-          duration: entry.duration_seconds, // Duration is already in seconds
-          isRunning: entry.timer_status === 'running',
-          isPaused: entry.timer_status === 'paused',
-          localStartTime,
-          lastSyncTime: Date.now(),
-        };
-      });
+        const existing = entriesByTask.get(entry.task_id);
+        if (!existing) {
+          entriesByTask.set(entry.task_id, entry);
+        } else {
+          // Priority: running > paused
+          const statusPriority: Record<'running' | 'paused', number> = {
+            running: 2,
+            paused: 1,
+          };
+          const existingPriority =
+            existing.timer_status === 'running' ||
+            existing.timer_status === 'paused'
+              ? statusPriority[existing.timer_status]
+              : 0;
+          const entryPriority =
+            entry.timer_status === 'running' || entry.timer_status === 'paused'
+              ? statusPriority[entry.timer_status]
+              : 0;
+
+          if (
+            entryPriority > existingPriority ||
+            (entryPriority === existingPriority &&
+              new Date(entry.created_at) > new Date(existing.created_at))
+          ) {
+            entriesByTask.set(entry.task_id, entry);
+          }
+        }
+      }
+
+      // Convert database entries to local timers (only one per task)
+      const dbTimers: LocalTimer[] = Array.from(entriesByTask.values()).map(
+        entry => {
+          let localStartTime = null;
+          if (entry.timer_status === 'running') {
+            // For running timers, set localStartTime to now
+            // The duration_seconds contains accumulated time from previous sessions
+            // getTotalDuration will calculate: duration_seconds + (now - localStartTime)
+            localStartTime = Date.now();
+          }
+
+          return {
+            id: entry.id,
+            taskId: entry.task_id,
+            projectId: entry.project_id,
+            duration: entry.duration_seconds, // Duration is already in seconds
+            isRunning: entry.timer_status === 'running',
+            isPaused: entry.timer_status === 'paused',
+            localStartTime,
+            lastSyncTime: Date.now(),
+          };
+        }
+      );
 
       // Merge database data with localStorage data to preserve localStartTime
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -635,6 +678,45 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers, loadTimersFromDatabase]
   );
 
+  // Stop all running timers for a project (for invoice generation)
+  const stopAllTimers = useCallback(
+    async (projectId: string): Promise<boolean> => {
+      try {
+        // Call the batch stop API
+        const response = await fetch('/api/time-entries/stop-all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ project_id: projectId }),
+        });
+
+        if (!response.ok) {
+          const handled = await checkAndHandleUnauthorized(response);
+          if (handled) {
+            return false; // User will be redirected
+          }
+          const errorData = await response.json();
+          setError(errorData.error || 'Failed to stop timers');
+          return false;
+        }
+
+        // Refresh all timers from database to get updated state
+        await loadTimersFromDatabase();
+
+        setError(null);
+        return true;
+      } catch (error) {
+        console.error('Error stopping all timers:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to stop timers'
+        );
+        return false;
+      }
+    },
+    [loadTimersFromDatabase]
+  );
+
   // Resume timer
   const resumeTimer = useCallback(
     async (taskId: string): Promise<boolean> => {
@@ -707,23 +789,24 @@ export function useTimeTracker(): UseTimeTrackerReturn {
               Math.floor((Date.now() - timer.localStartTime) / 1000)
             : timer.duration;
 
-        const updatedTimer: LocalTimer = {
+        // Update existing time_entry to 'stopped' status with final duration
+        // This preserves the record for invoice generation
+        await updateTimerInDatabase({
           ...timer,
           duration: finalDuration,
           isRunning: false,
           isPaused: false,
           localStartTime: null,
           lastSyncTime: Date.now(),
-        };
+        });
 
-        const updatedTimers = timersRef.current.map(t =>
-          t.taskId === taskId ? updatedTimer : t
+        // Remove timer from local state (stopped timers are not shown in UI)
+        // A new timer entry will be created when user starts a new timer
+        const updatedTimers = timersRef.current.filter(
+          t => t.taskId !== taskId
         );
         setTimers(updatedTimers);
-        saveTimersToStorage(updatedTimers); // Save immediately for state changes
-
-        // Update in database immediately using updateTimerInDatabase
-        await updateTimerInDatabase(updatedTimer);
+        saveTimersToStorage(updatedTimers);
 
         setError(null);
         return true;
@@ -735,7 +818,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
     },
-    [timers]
+    [timers, updateTimerInDatabase]
   );
 
   // Get timer for specific task
@@ -870,6 +953,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     startTimer,
     pauseTimer,
     pauseAllTimers,
+    stopAllTimers,
     resumeTimer,
     stopTimer,
     resetTimer,
