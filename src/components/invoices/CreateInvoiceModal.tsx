@@ -47,7 +47,7 @@ export function CreateInvoiceModal({
   project,
   onInvoiceCreated,
 }: CreateInvoiceModalProps) {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const [formData, setFormData] = useState<CreateInvoiceRequest>({
     project_id: project.id,
     invoice_number: '',
@@ -80,6 +80,8 @@ export function CreateInvoiceModal({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (open) {
+      // Refresh user data when modal opens to get latest business info
+      refreshUser();
       setFormData({
         project_id: project.id,
         invoice_number: '',
@@ -98,7 +100,7 @@ export function CreateInvoiceModal({
       setTimeEntryPreview([]);
       setTotalDurationSeconds(0);
     }
-  }, [open, project]);
+  }, [open, project, refreshUser]);
 
   const fetchTimeEntryPreview = useCallback(async () => {
     setIsLoadingPreview(true);

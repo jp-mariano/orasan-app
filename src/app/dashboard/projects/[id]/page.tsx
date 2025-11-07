@@ -123,6 +123,45 @@ export default function ProjectDetailPage() {
     fetchProject();
   }, [projectId]);
 
+  // Page Visibility API - refresh project when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && projectId) {
+        // User returned to the tab - refresh project data
+        const fetchProject = async () => {
+          try {
+            setLoadingProject(true);
+            setError(null);
+
+            const response = await fetch(`/api/projects/${projectId}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to fetch project');
+            }
+
+            setProject(data.project);
+          } catch (err) {
+            console.error('Error fetching project:', err);
+            setError(
+              err instanceof Error ? err.message : 'Failed to fetch project'
+            );
+          } finally {
+            setLoadingProject(false);
+          }
+        };
+
+        fetchProject();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [projectId]);
+
   // Auth redirect effect
   useEffect(() => {
     if (!loading && !user) {

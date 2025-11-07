@@ -244,6 +244,22 @@ export function useProjects(): UseProjectsReturn {
     fetchProjects();
   }, [fetchProjects]);
 
+  // Page Visibility API - refresh when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab - refresh projects
+        refreshProjects();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshProjects]);
+
   return {
     projects,
     loading,

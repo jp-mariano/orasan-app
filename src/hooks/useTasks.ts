@@ -233,6 +233,22 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     fetchTasks();
   }, [fetchTasks]);
 
+  // Page Visibility API - refresh when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab - refresh tasks
+        refreshTasks();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshTasks]);
+
   return {
     tasks,
     loading,

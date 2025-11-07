@@ -94,6 +94,22 @@ export function useUser(): UseUserReturn {
     fetchUser();
   }, [fetchUser]);
 
+  // Page Visibility API - refresh when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to the tab - refresh user data
+        refreshUser();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshUser]);
+
   return {
     user,
     loading,
