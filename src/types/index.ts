@@ -209,3 +209,76 @@ export interface UserActivityLog {
   created_at: string;
   user_deleted_at: string | null;
 }
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
+export interface Invoice {
+  id: string;
+  user_id: string;
+  project_id: string;
+  invoice_number: string;
+  status: InvoiceStatus;
+  issue_date: string;
+  due_date?: string;
+  payment_terms: string;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total_amount: number;
+  currency_code: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceItem {
+  id: string;
+  invoice_id: string;
+  task_id?: string | null;
+  name: string;
+  description?: string;
+  quantity: number;
+  unit_cost: number;
+  total_cost: number;
+  created_at: string;
+}
+
+export interface InvoiceWithDetails extends Invoice {
+  project: Project;
+  items: InvoiceItem[];
+}
+
+export interface CreateInvoiceRequest {
+  invoice_number?: string; // Optional - will auto-generate if not provided
+  project_id: string;
+  issue_date: string;
+  due_date?: string;
+  payment_terms?: string;
+  tax_rate?: number;
+  currency_code?: string;
+  notes?: string;
+  date_range: {
+    from: string;
+    to: string;
+  };
+}
+
+export interface UpdateInvoiceRequest {
+  invoice_number?: string;
+  status?: InvoiceStatus;
+  issue_date?: string;
+  due_date?: string;
+  payment_terms?: string;
+  tax_rate?: number;
+  currency_code?: string;
+  notes?: string;
+  items?: Array<{
+    id?: string; // Optional - if not provided, will be treated as new item
+    task_id?: string | null;
+    name: string;
+    description?: string;
+    quantity: number;
+    unit_cost: number;
+    total_cost: number;
+  }>;
+}
