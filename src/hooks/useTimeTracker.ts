@@ -682,13 +682,48 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   const stopAllTimers = useCallback(
     async (projectId: string): Promise<boolean> => {
       try {
+        // Get all active timers (running or paused) for this project
+        const activeTimers = timers.filter(
+          t => t.projectId === projectId && (t.isRunning || t.isPaused)
+        );
+
+        if (activeTimers.length === 0) {
+          // No active timers to stop
+          return true;
+        }
+
+        // Pre-calculate durations using EXACT same logic as individual stop
+        const updates = activeTimers
+          .map(timer => {
+            // Calculate final duration by adding elapsed time
+            const finalDuration =
+              timer.isRunning && timer.localStartTime
+                ? timer.duration +
+                  Math.floor((Date.now() - timer.localStartTime) / 1000)
+                : timer.duration;
+
+            return {
+              id: timer.id,
+              duration_seconds: finalDuration,
+              timer_status: 'stopped',
+              end_time: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+          })
+          .filter(Boolean);
+
+        if (updates.length === 0) {
+          setError('No valid timers to stop');
+          return false;
+        }
+
         // Call the batch stop API
         const response = await fetch('/api/time-entries/stop-all', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ project_id: projectId }),
+          body: JSON.stringify({ updates }),
         });
 
         if (!response.ok) {
@@ -714,7 +749,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
     },
-    [loadTimersFromDatabase]
+    [timers, loadTimersFromDatabase]
   );
 
   // Resume timer
