@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { Edit, MoreVertical, Plus, ReceiptText, Trash2 } from 'lucide-react';
 
-import { InvoiceCreationModal } from '@/components/invoices/InvoiceCreationModal';
+import { CreateInvoiceModal } from '@/components/invoices/CreateInvoiceModal';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectModal } from '@/components/projects/ProjectModal';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
@@ -22,14 +22,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { ErrorDisplay } from '@/components/ui/error-display';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
@@ -62,7 +54,6 @@ export default function ProjectDetailPage() {
   const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] =
     useState(false);
-  const [showPricingErrorModal, setShowPricingErrorModal] = useState(false);
 
   // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
@@ -435,16 +426,6 @@ export default function ProjectDetailPage() {
                       </button>
                       <button
                         onClick={() => {
-                          // Check if project has pricing before proceeding
-                          if (
-                            !project?.rate_type ||
-                            project.price === null ||
-                            project.price === undefined
-                          ) {
-                            setShowPricingErrorModal(true);
-                            setShowActions(false);
-                            return;
-                          }
                           setShowStopAllTimersModal(true);
                           setShowActions(false);
                         }}
@@ -784,7 +765,7 @@ export default function ProjectDetailPage() {
 
       {/* Invoice Creation Modal */}
       {project && (
-        <InvoiceCreationModal
+        <CreateInvoiceModal
           open={showInvoiceCreationModal}
           onOpenChange={setShowInvoiceCreationModal}
           project={project}
@@ -795,40 +776,6 @@ export default function ProjectDetailPage() {
           }}
         />
       )}
-
-      {/* Pricing Error Modal */}
-      <Dialog
-        open={showPricingErrorModal}
-        onOpenChange={setShowPricingErrorModal}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cannot Create Invoice</DialogTitle>
-            <DialogDescription>
-              Pricing information is required to generate invoices. This project
-              does not have pricing information configured. Please add a rate
-              type and price to the project (or to individual tasks) before
-              creating an invoice.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowPricingErrorModal(false)}
-            >
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                setShowPricingErrorModal(false);
-                setIsEditModalOpen(true);
-              }}
-            >
-              Edit Project
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

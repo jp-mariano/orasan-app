@@ -23,10 +23,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import { useUser } from '@/hooks/useUser';
 import { cn, formatDate, formatDuration } from '@/lib/utils';
 import { CreateInvoiceRequest, Project } from '@/types';
 
-interface InvoiceCreationModalProps {
+interface CreateInvoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project;
@@ -40,12 +41,13 @@ interface TimeEntryPreview {
   entry_count: number;
 }
 
-export function InvoiceCreationModal({
+export function CreateInvoiceModal({
   open,
   onOpenChange,
   project,
   onInvoiceCreated,
-}: InvoiceCreationModalProps) {
+}: CreateInvoiceModalProps) {
+  const { user } = useUser();
   const [formData, setFormData] = useState<CreateInvoiceRequest>({
     project_id: project.id,
     invoice_number: '',
@@ -306,6 +308,68 @@ export function InvoiceCreationModal({
           errorMessage={errorMessage}
           onClose={() => setErrorMessage(null)}
         />
+
+        {/* Reminders for missing business/client information */}
+        {(!user?.business_name ||
+          !user?.business_email ||
+          !project.client_name ||
+          !project.client_email ||
+          !project.rate_type ||
+          project.price === null ||
+          project.price === undefined) && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+            <div className="space-y-2">
+              {(!user?.business_name || !user?.business_email) && (
+                <>
+                  <p className="text-amber-800 font-medium mb-1">
+                    Business Information Missing
+                  </p>
+                  <p className="text-amber-700">
+                    To generate professional invoices, please set your business
+                    information in{' '}
+                    <a
+                      href="/user-settings"
+                      className="underline hover:text-amber-900"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      User Settings
+                    </a>
+                    .
+                  </p>
+                </>
+              )}
+
+              {(!project.client_name || !project.client_email) && (
+                <>
+                  <p className=" text-amber-800 font-medium mb-1">
+                    Client Information Missing
+                  </p>
+                  <p className=" text-amber-700">
+                    For complete invoices, consider adding client information
+                    (name, email, address).
+                  </p>
+                </>
+              )}
+
+              {(!project.rate_type ||
+                project.price === null ||
+                project.price === undefined) && (
+                <>
+                  <p className=" text-amber-800 font-medium mb-1">
+                    Pricing Information Missing
+                  </p>
+                  <p className=" text-amber-700">
+                    This project does not have pricing configured. Please add a
+                    rate type and price to the project (or to individual tasks)
+                    before creating an invoice. Invoices require pricing
+                    information to calculate amounts.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Date Range */}
