@@ -33,9 +33,7 @@ function LoginPageContent() {
     return <ErrorDisplayComponent />;
   }
 
-  const handleOAuthSignIn = async (
-    provider: 'github' | 'google' | 'twitter'
-  ) => {
+  const handleOAuthSignIn = async (provider: 'github' | 'google' | 'x') => {
     try {
       setIsLoading(provider);
       await signIn(provider);
@@ -93,10 +91,10 @@ function LoginPageContent() {
             <Button
               variant="outline"
               className="w-full h-11"
-              onClick={() => handleOAuthSignIn('twitter')}
+              onClick={() => handleOAuthSignIn('x')}
               disabled={isLoading !== null}
             >
-              {isLoading === 'twitter' ? (
+              {isLoading === 'x' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
               ) : (
                 <SiX className="h-4 w-4 mr-2" />
