@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Step 1: Validate all timers exist, are running, and belong to the user
     const { data: validTimers, error: validationError } = await supabase
       .from('time_entries')
-      .select('id, user_id, timer_status, task_id')
+      .select('id, user_id, timer_status, task_id, project_id')
       .in('id', timerIds)
       .eq('user_id', user.id)
       .eq('timer_status', 'running');
@@ -58,9 +58,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a map of timer ID to task_id for upsert
+    // Create a map of timer ID to task_id and project_id for upsert
     const timerToTaskMap = new Map(
       validTimers.map(timer => [timer.id, timer.task_id])
+    );
+    const timerToProjectMap = new Map(
+      validTimers.map(timer => [timer.id, timer.project_id])
     );
 
     // Step 2: Use upsert for batch update
@@ -70,6 +73,7 @@ export async function POST(request: NextRequest) {
         updates.map(update => ({
           id: update.id,
           task_id: timerToTaskMap.get(update.id), // Add task_id for NOT NULL constraint
+          project_id: timerToProjectMap.get(update.id), // Add project_id for NOT NULL constraint
           duration_seconds: update.duration_seconds,
           timer_status: 'paused',
           end_time: update.end_time,
