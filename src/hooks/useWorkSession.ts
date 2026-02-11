@@ -37,7 +37,7 @@ export function useWorkSession(): UseWorkSessionReturn {
   const [currentSession, setCurrentSession] = useState<WorkSession | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,6 +63,7 @@ export function useWorkSession(): UseWorkSessionReturn {
       setError(null);
       setStats({ todayTime: 0, weekTime: 0 });
       setStatsError(null);
+      setIsLoading(false);
     }
   }, [user]);
 
