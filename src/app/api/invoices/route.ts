@@ -262,37 +262,38 @@ export async function POST(request: NextRequest) {
 
       let quantity = 1;
       let unitCost = 0;
-      let totalCost = 0;
 
       if (rateType === 'hourly' && rate > 0) {
         // Calculate hours from seconds
         const hours = totalDurationSeconds / 3600;
         quantity = hours;
         unitCost = rate;
-        totalCost = hours * rate;
       } else if (rateType === 'fixed' && rate > 0) {
         // Fixed price per task
         quantity = 1;
         unitCost = rate;
-        totalCost = rate;
       } else {
         // No rate defined - still create item but with 0 cost
         const hours = totalDurationSeconds / 3600;
         quantity = hours;
         unitCost = 0;
-        totalCost = 0;
       }
+
+      // Round to 2 decimals so DB constraint total_cost = quantity * unit_cost holds
+      const q = Math.round(quantity * 100) / 100;
+      const u = Math.round(unitCost * 100) / 100;
+      const itemTotal = Math.round(q * u * 100) / 100;
 
       invoiceItems.push({
         task_id: task.id,
         name: task.name,
         description: task.description || undefined,
-        quantity: Math.round(quantity * 100) / 100, // Round to 2 decimal places
-        unit_cost: Math.round(unitCost * 100) / 100,
-        total_cost: Math.round(totalCost * 100) / 100,
+        quantity: q,
+        unit_cost: u,
+        total_cost: itemTotal,
       });
 
-      subtotal += totalCost;
+      subtotal += itemTotal;
     }
 
     if (invoiceItems.length === 0) {

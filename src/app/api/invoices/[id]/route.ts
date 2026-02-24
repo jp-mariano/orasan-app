@@ -204,12 +204,20 @@ export async function PUT(
         }
       }
 
-      // Calculate new subtotal from items
-      newSubtotal = updateData.items.reduce(
+      // Normalize items so total_cost = quantity × unit_cost (for DB constraint)
+      const normalizedItems = updateData.items.map(item => {
+        const q = Math.round(item.quantity * 100) / 100;
+        const u = Math.round(item.unit_cost * 100) / 100;
+        const total = Math.round(q * u * 100) / 100;
+        return { ...item, quantity: q, unit_cost: u, total_cost: total };
+      });
+      newSubtotal = normalizedItems.reduce(
         (sum, item) => sum + item.total_cost,
         0
       );
       newSubtotal = Math.round(newSubtotal * 100) / 100;
+      // Keep normalized items for insert below
+      (updateData as { items: typeof normalizedItems }).items = normalizedItems;
     }
 
     // Prepare update payload (exclude items from invoice update, handle separately)
@@ -256,7 +264,7 @@ export async function PUT(
         );
       }
 
-      // Insert new items
+      // Insert new items (already normalized above: total_cost = quantity × unit_cost)
       const itemsToInsert = updateData.items.map(item => ({
         invoice_id: invoiceId,
         task_id: item.task_id || null,
