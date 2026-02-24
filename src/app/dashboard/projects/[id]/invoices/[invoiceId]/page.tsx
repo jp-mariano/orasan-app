@@ -125,7 +125,10 @@ export default function InvoiceDetailPage() {
           items={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: projectName, href: `/dashboard/projects/${projectId}` },
-            { label: 'Invoices', href: `/dashboard/projects/${projectId}` },
+            {
+              label: 'Invoices',
+              href: `/dashboard/projects/${projectId}/invoices`,
+            },
             {
               label: `Invoice ${invoice.invoice_number}`,
               href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
