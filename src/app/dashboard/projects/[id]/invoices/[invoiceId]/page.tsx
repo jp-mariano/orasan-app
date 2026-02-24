@@ -85,27 +85,27 @@ export default function InvoiceDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="flex-1 container py-6">
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <p className="text-muted-foreground">Loading invoice…</p>
-        </main>
+        </div>
       </div>
     );
   }
 
   if (error || !invoice) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="flex-1 container py-6">
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <p className="text-destructive">{error ?? 'Invoice not found'}</p>
           <Button variant="link" asChild className="mt-2 pl-0">
             <Link href={`/dashboard/projects/${projectId}`}>
               Back to project
             </Link>
           </Button>
-        </main>
+        </div>
       </div>
     );
   }
@@ -118,9 +118,9 @@ export default function InvoiceDetailPage() {
   const clientPhone = project?.client_phone ?? '';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="flex-1 container py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <Breadcrumb
           items={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -131,9 +131,10 @@ export default function InvoiceDetailPage() {
               href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
             },
           ]}
+          className="mb-6"
         />
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Invoice</h1>
             <p className="text-muted-foreground">
@@ -158,7 +159,7 @@ export default function InvoiceDetailPage() {
           </Button>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 mb-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Bill To</CardTitle>
@@ -204,7 +205,7 @@ export default function InvoiceDetailPage() {
           </Card>
         </div>
 
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base">Items</CardTitle>
           </CardHeader>
@@ -281,7 +282,7 @@ export default function InvoiceDetailPage() {
         </Card>
 
         {invoice.notes && (
-          <Card>
+          <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-base">Notes</CardTitle>
             </CardHeader>
@@ -292,7 +293,7 @@ export default function InvoiceDetailPage() {
             </CardContent>
           </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 }
