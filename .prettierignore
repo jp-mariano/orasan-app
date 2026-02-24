@@ -73,6 +73,7 @@ tmp/
 temp/
 
 # Editor directories and files
+.cursor/
 .vscode/
 .idea/
 *.swp
