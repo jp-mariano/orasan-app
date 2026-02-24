@@ -240,6 +240,7 @@ export interface InvoiceItem {
   quantity: number;
   unit_cost: number;
   total_cost: number;
+  rate_type?: RateType | null;
   created_at: string;
 }
 
@@ -280,5 +281,6 @@ export interface UpdateInvoiceRequest {
     quantity: number;
     unit_cost: number;
     total_cost: number;
+    rate_type?: RateType | null;
   }>;
 }

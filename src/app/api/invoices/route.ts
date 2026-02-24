@@ -238,6 +238,7 @@ export async function POST(request: NextRequest) {
       quantity: number;
       unit_cost: number;
       total_cost: number;
+      rate_type: 'hourly' | 'fixed' | null;
     }> = [];
     let subtotal = 0;
 
@@ -291,6 +292,7 @@ export async function POST(request: NextRequest) {
         quantity: q,
         unit_cost: u,
         total_cost: itemTotal,
+        rate_type: rateType ?? null,
       });
 
       subtotal += itemTotal;
@@ -346,6 +348,7 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
       unit_cost: item.unit_cost,
       total_cost: item.total_cost,
+      rate_type: item.rate_type ?? null,
     }));
 
     const { data: newInvoiceItems, error: itemsError } = await supabase

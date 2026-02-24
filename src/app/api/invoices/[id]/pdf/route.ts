@@ -37,8 +37,8 @@ export async function GET(
         ),
         items:invoice_items (
           name,
-          description,
           quantity,
+          rate_type,
           unit_cost,
           total_cost
         )
@@ -77,8 +77,8 @@ export async function GET(
     } | null;
     const items = (invoiceRow.items ?? []) as Array<{
       name: string;
-      description?: string;
       quantity: number;
+      rate_type?: string | null;
       unit_cost: number;
       total_cost: number;
     }>;
@@ -97,7 +97,15 @@ export async function GET(
         payment_terms: invoiceRow.payment_terms ?? null,
         notes: invoiceRow.notes ?? null,
       },
-      items,
+      items: items.map(
+        ({ name, quantity, rate_type, unit_cost, total_cost }) => ({
+          name,
+          quantity,
+          rate_type: rate_type ?? null,
+          unit_cost,
+          total_cost,
+        })
+      ),
       business: {
         business_name: userRow.business_name ?? null,
         business_email: userRow.business_email ?? null,

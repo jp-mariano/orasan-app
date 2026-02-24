@@ -209,7 +209,13 @@ export async function PUT(
         const q = Math.round(item.quantity * 100) / 100;
         const u = Math.round(item.unit_cost * 100) / 100;
         const total = Math.round(q * u * 100) / 100;
-        return { ...item, quantity: q, unit_cost: u, total_cost: total };
+        return {
+          ...item,
+          quantity: q,
+          unit_cost: u,
+          total_cost: total,
+          rate_type: item.rate_type ?? null,
+        };
       });
       newSubtotal = normalizedItems.reduce(
         (sum, item) => sum + item.total_cost,
@@ -273,6 +279,7 @@ export async function PUT(
         quantity: item.quantity,
         unit_cost: item.unit_cost,
         total_cost: item.total_cost,
+        rate_type: item.rate_type ?? null,
       }));
 
       const { error: insertItemsError } = await supabase

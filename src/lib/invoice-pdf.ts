@@ -19,8 +19,8 @@ export interface InvoicePdfData {
   };
   items: Array<{
     name: string;
-    description?: string | null;
     quantity: number;
+    rate_type?: string | null;
     unit_cost: number;
     total_cost: number;
   }>;
@@ -125,7 +125,7 @@ export async function generateInvoicePdf(
 
     doc.y = Math.max(doc.y, y) + 20;
 
-    // ---- Invoice header (number, dates, status) ----
+    // ---- Details (invoice number, dates, payment terms) ----
     const headerY = doc.y;
     doc.fontSize(10).font('Helvetica-Bold').text('Invoice Number', 0, headerY);
     doc.font('Helvetica').text(invoice.invoice_number ?? '—', 0, headerY + 14);
@@ -137,66 +137,70 @@ export async function generateInvoicePdf(
     doc
       .font('Helvetica')
       .text(formatDate(invoice.due_date ?? null), 220, headerY + 14);
-    doc.font('Helvetica-Bold').text('Status', 320, headerY);
-    doc
-      .font('Helvetica')
-      .text(String(invoice.status ?? '—').toUpperCase(), 320, headerY + 14);
     doc.y = headerY + 32;
+    if (invoice.payment_terms) {
+      doc.font('Helvetica-Bold').text('Payment Terms', 320, headerY);
+      doc.font('Helvetica').text(invoice.payment_terms, 320, headerY + 14);
+    }
     doc.moveDown(2);
 
     // ---- Items table ----
     const tableTop = doc.y;
     const colWidths = {
-      name: 140,
-      description: 130,
-      qty: 45,
+      name: 180,
+      qty: 55,
+      rateType: 55,
       unit: 75,
-      total: 80,
+      amount: 85,
     };
     const rowHeight = 20;
     const tableHeaderY = tableTop;
 
     doc.fontSize(9).font('Helvetica-Bold');
     doc.text('Name', 0, tableHeaderY);
-    doc.text('Description', colWidths.name, tableHeaderY);
-    doc.text('Qty', colWidths.name + colWidths.description, tableHeaderY);
+    doc.text('Quantity', colWidths.name, tableHeaderY);
+    doc.text('Rate type', colWidths.name + colWidths.qty, tableHeaderY);
     doc.text(
       'Unit Cost',
-      colWidths.name + colWidths.description + colWidths.qty,
+      colWidths.name + colWidths.qty + colWidths.rateType,
       tableHeaderY
     );
     doc.text(
-      'Total',
-      colWidths.name + colWidths.description + colWidths.qty + colWidths.unit,
+      'Amount',
+      colWidths.name + colWidths.qty + colWidths.rateType + colWidths.unit,
       tableHeaderY
     );
     doc.moveDown(0.5);
     doc.moveTo(0, doc.y).lineTo(CONTENT_WIDTH, doc.y).stroke();
     doc.moveDown(0.3);
 
+    function formatRateType(rt: string | null | undefined): string {
+      if (!rt) return '—';
+      const s = String(rt).toLowerCase();
+      if (s === 'hourly') return 'Hourly';
+      if (s === 'fixed') return 'Fixed';
+      if (s === 'monthly') return 'Monthly';
+      return rt;
+    }
+
     doc.font('Helvetica');
     let rowY = doc.y;
     for (const item of items) {
-      const desc =
-        (item.description || '—').slice(0, 50) +
-        ((item.description?.length ?? 0) > 50 ? '…' : '');
       doc.fontSize(9).text(item.name, 0, rowY, { width: colWidths.name - 4 });
-      doc.text(desc, colWidths.name, rowY, {
-        width: colWidths.description - 4,
-      });
+      doc.text(String(item.quantity), colWidths.name, rowY);
       doc.text(
-        String(item.quantity),
-        colWidths.name + colWidths.description,
+        formatRateType(item.rate_type ?? null),
+        colWidths.name + colWidths.qty,
         rowY
       );
       doc.text(
         formatMoney(item.unit_cost, currencyCode),
-        colWidths.name + colWidths.description + colWidths.qty,
+        colWidths.name + colWidths.qty + colWidths.rateType,
         rowY
       );
       doc.text(
         formatMoney(item.total_cost, currencyCode),
-        colWidths.name + colWidths.description + colWidths.qty + colWidths.unit,
+        colWidths.name + colWidths.qty + colWidths.rateType + colWidths.unit,
         rowY
       );
       rowY += rowHeight + 4;
@@ -230,12 +234,7 @@ export async function generateInvoicePdf(
     doc.font('Helvetica').fontSize(10);
     doc.moveDown(2);
 
-    // ---- Payment terms and notes ----
-    if (invoice.payment_terms) {
-      doc.font('Helvetica-Bold').text('Payment Terms', 0, doc.y);
-      doc.font('Helvetica').text(invoice.payment_terms, 0, doc.y + 14);
-      doc.moveDown(1.2);
-    }
+    // ---- Invoice notes ----
     if (invoice.notes) {
       doc.font('Helvetica-Bold').text('Notes', 0, doc.y);
       doc.font('Helvetica').text(invoice.notes, 0, doc.y + 14, {

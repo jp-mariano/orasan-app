@@ -33,7 +33,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       </Link>
 
       {items.map((item, index) => (
-        <div key={item.href} className="flex items-center">
+        <div key={`${item.href}-${index}`} className="flex items-center">
           <ChevronRight className="h-4 w-4 mx-1 text-gray-400" />
           {index === items.length - 1 ? (
             // Last item - current page (not clickable)

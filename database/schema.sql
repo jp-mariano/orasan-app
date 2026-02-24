@@ -168,6 +168,7 @@ CREATE TABLE public.invoice_items (
   quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
   unit_cost DECIMAL(10,2) NOT NULL,
   total_cost DECIMAL(10,2) NOT NULL,
+  rate_type rate_type DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- Ensure positive amounts
   CONSTRAINT check_invoice_item_amounts_positive CHECK (

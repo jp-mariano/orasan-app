@@ -31,7 +31,8 @@ interface CreateInvoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project;
-  onInvoiceCreated?: () => void;
+  /** Called after successful creation with the created invoice id and project id */
+  onInvoiceCreated?: (invoiceId: string, projectId: string) => void;
 }
 
 interface TimeEntryPreview {
@@ -283,9 +284,17 @@ export function CreateInvoiceModal({
         throw new Error(errorData.error || 'Failed to create invoice');
       }
 
-      // Success - close modal and refresh
+      const data = await response.json();
+      const createdInvoice = data.invoice ?? data;
+      const id = typeof createdInvoice === 'object' && createdInvoice?.id;
+
+      // Success - close modal and notify with invoice id for navigation
       onOpenChange(false);
-      onInvoiceCreated?.();
+      if (id) {
+        onInvoiceCreated?.(id, project.id);
+      } else {
+        onInvoiceCreated?.('', project.id);
+      }
     } catch (error) {
       console.error('Error creating invoice:', error);
       setErrorMessage(

@@ -808,10 +808,13 @@ export default function ProjectDetailPage() {
           open={showInvoiceCreationModal}
           onOpenChange={setShowInvoiceCreationModal}
           project={project}
-          onInvoiceCreated={() => {
-            // Refresh project data or navigate to invoices page
-            // For now, just close the modal
+          onInvoiceCreated={invoiceId => {
             setShowInvoiceCreationModal(false);
+            if (invoiceId && projectId) {
+              router.push(
+                `/dashboard/projects/${projectId}/invoices/${invoiceId}`
+              );
+            }
           }}
         />
       )}
