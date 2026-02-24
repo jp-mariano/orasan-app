@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { Edit, MoreVertical, Plus, ReceiptText, Trash2 } from 'lucide-react';
@@ -54,6 +55,7 @@ export default function ProjectDetailPage() {
   const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] =
     useState(false);
+  const [invoiceCount, setInvoiceCount] = useState<number>(0);
 
   // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
@@ -121,6 +123,28 @@ export default function ProjectDetailPage() {
     };
 
     fetchProject();
+  }, [projectId]);
+
+  // Fetch invoice count for this project (to show "View Invoices" when applicable)
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    async function fetchInvoiceCount() {
+      try {
+        const res = await fetch(`/api/invoices?project_id=${projectId}`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.invoices)) {
+          setInvoiceCount(data.invoices.length);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchInvoiceCount();
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   // Page Visibility API - refresh project when user returns to tab
@@ -678,6 +702,20 @@ export default function ProjectDetailPage() {
               />
             </div>
 
+            {invoiceCount > 0 && (
+              <div className="pt-4">
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={`/dashboard/projects/${projectId}/invoices`}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <ReceiptText className="h-4 w-4" />
+                    View Invoices
+                  </Link>
+                </Button>
+              </div>
+            )}
+
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">
               <div className="text-sm text-gray-500 space-y-1">
@@ -810,6 +848,7 @@ export default function ProjectDetailPage() {
           project={project}
           onInvoiceCreated={invoiceId => {
             setShowInvoiceCreationModal(false);
+            setInvoiceCount(prev => prev + 1);
             if (invoiceId && projectId) {
               router.push(
                 `/dashboard/projects/${projectId}/invoices/${invoiceId}`
