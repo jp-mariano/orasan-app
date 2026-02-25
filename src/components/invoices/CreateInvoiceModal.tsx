@@ -183,14 +183,10 @@ export function CreateInvoiceModal({
 
   // Fetch preview when date range is complete
   useEffect(() => {
-    if (
-      formData.date_range.from &&
-      formData.date_range.to &&
-      open &&
-      !isSubmitting
-    ) {
+    const hasRange = formData.date_range.from && formData.date_range.to;
+    if (hasRange && open && !isSubmitting) {
       fetchTimeEntryPreview();
-    } else {
+    } else if (!hasRange || !open) {
       setTimeEntryPreview([]);
       setTotalDurationSeconds(0);
     }
