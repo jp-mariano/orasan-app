@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ReceiptText } from 'lucide-react';
@@ -136,37 +135,53 @@ export default function ProjectInvoicesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium">
+                      <th className="text-left py-3 px-4 font-medium">
                         Invoice number
                       </th>
-                      <th className="text-left py-2 font-medium">Issue date</th>
-                      <th className="text-left py-2 font-medium">Due date</th>
-                      <th className="text-left py-2 font-medium">Status</th>
-                      <th className="text-right py-2 font-medium">Total</th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Issue date
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Due date
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 font-medium">
+                        Total
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {invoices.map(inv => (
                       <tr
                         key={inv.id}
-                        className="border-b hover:bg-gray-50 transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/projects/${projectId}/invoices/${inv.id}`
+                          )
+                        }
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(
+                              `/dashboard/projects/${projectId}/invoices/${inv.id}`
+                            );
+                          }
+                        }}
+                        className="border-b hover:bg-gray-50 transition-colors cursor-pointer"
                       >
-                        <td className="py-3">
-                          <Link
-                            href={`/dashboard/projects/${projectId}/invoices/${inv.id}`}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {inv.invoice_number}
-                          </Link>
-                        </td>
-                        <td className="py-3 text-muted-foreground">
+                        <td className="py-3 px-4">{inv.invoice_number}</td>
+                        <td className="py-3 px-4">
                           {formatDate(inv.issue_date)}
                         </td>
-                        <td className="py-3 text-muted-foreground">
+                        <td className="py-3 px-4">
                           {inv.due_date ? formatDate(inv.due_date) : '—'}
                         </td>
-                        <td className="py-3 capitalize">{inv.status}</td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 px-4 capitalize">{inv.status}</td>
+                        <td className="py-3 px-4 text-right">
                           {formatPriceWithCurrency(
                             inv.total_amount,
                             inv.currency_code ?? 'USD'
