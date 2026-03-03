@@ -8,6 +8,7 @@ import {
   EXPORT_THROTTLE_CONFIG,
 } from '@/lib/export-throttle';
 import { createClient } from '@/lib/supabase/server';
+import { escapeCsvValue } from '@/lib/utils';
 
 function toCsv(rows: Array<Record<string, unknown>>): string {
   if (!rows || rows.length === 0) {
@@ -24,16 +25,12 @@ function toCsv(rows: Array<Record<string, unknown>>): string {
 
   const escapeCell = (value: unknown): string => {
     if (value === null || value === undefined) return '';
-    if (value instanceof Date) return value.toISOString();
-    if (typeof value === 'object') return JSON.stringify(value);
-    const str = String(value);
-    // Escape double quotes by doubling them, and wrap in quotes
-    return '"' + str.replace(/"/g, '""') + '"';
+    if (value instanceof Date) return escapeCsvValue(value.toISOString());
+    if (typeof value === 'object') return escapeCsvValue(JSON.stringify(value));
+    return escapeCsvValue(value as string | number);
   };
 
-  const headerLine = headerKeys
-    .map(k => '"' + k.replace(/"/g, '""') + '"')
-    .join(',');
+  const headerLine = headerKeys.map(k => escapeCsvValue(k)).join(',');
   const dataLines = rows.map(row =>
     headerKeys
       .map(key => escapeCell((row as Record<string, unknown>)[key]))

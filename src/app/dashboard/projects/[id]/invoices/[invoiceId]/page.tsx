@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Download } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,84 @@ import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
-import { formatDate } from '@/lib/utils';
+import { formatDate, escapeCsvValue } from '@/lib/utils';
 import { InvoiceWithDetails } from '@/types';
+
+function downloadInvoiceCsv(
+  invoice: InvoiceWithDetails,
+  currencyCode: string
+): void {
+  const rows: string[] = [];
+  const project = invoice.project;
+  const clientName = project?.client_name || project?.name || '—';
+
+  rows.push(
+    ['Invoice', escapeCsvValue(invoice.invoice_number ?? '')].join(',')
+  );
+  rows.push(['Issue date', formatDate(invoice.issue_date)].join(','));
+  rows.push(
+    ['Due date', invoice.due_date ? formatDate(invoice.due_date) : ''].join(',')
+  );
+  rows.push(
+    ['Payment terms', escapeCsvValue(invoice.payment_terms ?? '')].join(',')
+  );
+  rows.push('');
+  rows.push(['Bill To', escapeCsvValue(clientName)].join(','));
+  if (project?.client_email)
+    rows.push(['', escapeCsvValue(project.client_email)].join(','));
+  rows.push('');
+  rows.push(['Name', 'Quantity', 'Rate type', 'Unit cost', 'Amount'].join(','));
+  for (const item of invoice.items ?? []) {
+    const rateType = item.rate_type ? String(item.rate_type).toLowerCase() : '';
+    const rateLabel =
+      rateType === 'hourly'
+        ? 'Hourly'
+        : rateType === 'fixed'
+          ? 'Fixed'
+          : rateType === 'monthly'
+            ? 'Monthly'
+            : rateType || '—';
+    rows.push(
+      [
+        escapeCsvValue(item.name),
+        escapeCsvValue(item.quantity),
+        escapeCsvValue(rateLabel),
+        escapeCsvValue(formatPriceWithCurrency(item.unit_cost, currencyCode)),
+        escapeCsvValue(formatPriceWithCurrency(item.total_cost, currencyCode)),
+      ].join(',')
+    );
+  }
+  rows.push('');
+  rows.push(
+    ['Subtotal', formatPriceWithCurrency(invoice.subtotal, currencyCode)].join(
+      ','
+    )
+  );
+  rows.push(
+    [
+      `Tax (${invoice.tax_rate ?? 0}%)`,
+      formatPriceWithCurrency(invoice.tax_amount ?? 0, currencyCode),
+    ].join(',')
+  );
+  rows.push(
+    ['Total', formatPriceWithCurrency(invoice.total_amount, currencyCode)].join(
+      ','
+    )
+  );
+  if (invoice.notes) {
+    rows.push('');
+    rows.push(['Notes', escapeCsvValue(invoice.notes)].join(','));
+  }
+
+  const csv = rows.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `invoice-${(invoice.invoice_number ?? invoice.id).replace(/\s+/g, '-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function formatRateType(rateType: string | null | undefined): string {
   if (!rateType) return '—';
@@ -38,6 +114,8 @@ export default function InvoiceDetailPage() {
   const [projectName, setProjectName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,6 +160,20 @@ export default function InvoiceDetailPage() {
       cancelled = true;
     };
   }, [user, authLoading, router, invoiceId, projectId]);
+
+  // Close options menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowOptionsMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (authLoading || loading) {
     return (
@@ -149,17 +241,40 @@ export default function InvoiceDetailPage() {
               </p>
             )}
           </div>
-          <Button asChild>
-            <a
-              href={`/api/invoices/${invoiceId}/pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2"
+          <div className="relative" ref={optionsMenuRef}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+              className="h-9 w-9"
+              aria-label="Invoice options"
             >
-              <Download className="h-4 w-4" />
-              Download PDF
-            </a>
-          </Button>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+            {showOptionsMenu && (
+              <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] rounded-md border bg-white py-1 shadow-lg">
+                <a
+                  href={`/api/invoices/${invoiceId}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                  onClick={() => setShowOptionsMenu(false)}
+                >
+                  Download PDF
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    downloadInvoiceCsv(invoice, currencyCode);
+                    setShowOptionsMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                >
+                  Download CSV
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">

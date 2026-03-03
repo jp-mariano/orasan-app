@@ -24,6 +24,22 @@ export function formatDate(dateString: string | Date): string {
 }
 
 /**
+ * Escapes a value for use in a CSV cell (quotes and escapes internal quotes when needed).
+ */
+export function escapeCsvValue(value: string | number): string {
+  const s = String(value);
+  if (
+    s.includes(',') ||
+    s.includes('"') ||
+    s.includes('\n') ||
+    s.includes('\r')
+  ) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+/**
  * Truncates text to a specified length and adds ellipsis
  * @param text - The text to truncate
  * @param maxLength - Maximum number of characters before truncation
