@@ -42,8 +42,38 @@ export interface InvoicePdfData {
 
 const MARGIN = 50;
 const PAGE_WIDTH = 612;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN;
 
+// Equal left and right indentation for the content block (lessen this value for a wider block)
+const CONTENT_LEFT_INSET = 30;
+const CONTENT_RIGHT_INSET = 0;
+const CONTENT_BLOCK_WIDTH =
+  CONTENT_WIDTH - CONTENT_LEFT_INSET - CONTENT_RIGHT_INSET;
+
+// Spacing to align with preview (card gaps ~24px, padding, line height)
+const SECTION_GAP = 28;
+const LINE_HEIGHT = 14;
+const TABLE_ROW_HEIGHT = 26;
+const TOTALS_WIDTH = 200;
+
+// Table column share of content block width (must sum to 1)
+const TABLE_COL_RATIOS = [0.4, 0.12, 0.18, 0.15, 0.15] as const;
+
+// Shared cell/typography helpers for PDF tables
+type PdfAlignRight = { x: 'right' };
+type PdfFont = { family?: string; size?: number };
+
+type BaseCell = {
+  text: string;
+  align?: PdfAlignRight;
+  textColor?: string;
+  font?: PdfFont;
+};
+
+const BODY_FONT_FAMILY = 'Helvetica';
+const BODY_FONT_SIZE = 10;
+const INFO_HEADER_FONT: PdfFont = { family: 'Helvetica-Bold', size: 11 };
+const TABLE_HEADER_FONT: PdfFont = { family: 'Helvetica-Bold', size: 10 };
 function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   try {
@@ -61,8 +91,18 @@ function formatMoney(amount: number, currencyCode: string): string {
   return `${symbol}${formatted}`;
 }
 
+function formatRateType(rt: string | null | undefined): string {
+  if (!rt) return '—';
+  const s = String(rt).toLowerCase();
+  if (s === 'hourly') return 'Hourly';
+  if (s === 'fixed') return 'Fixed';
+  if (s === 'monthly') return 'Monthly';
+  return rt;
+}
+
 /**
  * Generates an invoice PDF as a buffer using PDFKit.
+ * Layout and spacing mirror the invoice detail page preview.
  */
 export async function generateInvoicePdf(
   data: InvoicePdfData
@@ -77,170 +117,197 @@ export async function generateInvoicePdf(
     const { invoice, items, business, client } = data;
     const currencyCode = invoice.currency_code ?? 'USD';
 
-    // ---- Title ----
-    doc.fontSize(22).text('INVOICE', { align: 'left' });
-    doc.moveDown(1.5);
+    const blockLeft = CONTENT_LEFT_INSET;
+    const blockRight = CONTENT_WIDTH - CONTENT_RIGHT_INSET;
 
-    // ---- Two columns: Business (left) and Client (right) ----
-    const colWidth = (CONTENT_WIDTH - 30) / 2;
-    const startY = doc.y;
-
-    // Business information
-    doc.fontSize(10).font('Helvetica-Bold').text('From', 0, startY);
-    doc.font('Helvetica');
-    let y = startY + 16;
-    const businessLines = [
-      business.business_name || '—',
-      business.business_email || '',
-      business.business_address || '',
-      business.business_phone || '',
-      business.tax_id ? `Tax ID: ${business.tax_id}` : '',
-    ].filter(Boolean);
-    businessLines.forEach(line => {
-      doc.fontSize(10).text(line, 0, y, { width: colWidth, continued: false });
-      y += 14;
+    // ---- Header: Invoice title + business (centered block) ----
+    doc.fontSize(22).font('Helvetica-Bold').text('Invoice', blockLeft, doc.y);
+    doc.moveDown(0.6);
+    doc.font('Helvetica').fontSize(11);
+    doc.text(business.business_name || '—', blockLeft, doc.y, {
+      width: CONTENT_BLOCK_WIDTH,
+      continued: false,
     });
+    doc.moveDown(0.25);
+    if (business.business_email) {
+      doc.fontSize(10).text(business.business_email, blockLeft, doc.y, {
+        width: CONTENT_BLOCK_WIDTH,
+        continued: false,
+      });
+      doc.moveDown(0.4);
+    }
+    doc.moveDown(SECTION_GAP / 12);
 
-    // Client information (right column)
-    const clientStartY = startY;
-    doc
-      .fontSize(10)
-      .font('Helvetica-Bold')
-      .text('Bill To', colWidth + 30, clientStartY);
-    doc.font('Helvetica');
-    y = clientStartY + 16;
+    // ---- Two columns: Bill To (left) and Details (right), as a table ----
+    const infoTop = doc.y;
+
     const clientLines = [
       client.client_name || client.name || '—',
       client.client_email || '',
       client.client_address || '',
       client.client_phone || '',
     ].filter(Boolean);
-    clientLines.forEach(line => {
-      doc.fontSize(10).text(line, colWidth + 30, y, {
-        width: colWidth,
-        continued: false,
-      });
-      y += 14;
+
+    const detailLines = [
+      `Invoice number: ${invoice.invoice_number ?? '—'}`,
+      `Issue date: ${formatDate(invoice.issue_date)}`,
+      `Due date: ${formatDate(invoice.due_date ?? null)}`,
+      `Payment terms: ${invoice.payment_terms ?? '—'}`,
+    ];
+
+    const maxInfoRows = Math.max(clientLines.length, detailLines.length);
+    const infoColWidth = CONTENT_BLOCK_WIDTH * 0.5;
+    const infoColumnStyles = [infoColWidth, infoColWidth];
+
+    // Header row: set doc font so table uses it (cell font option not honored by mixin)
+    doc.font('Helvetica-Bold').fontSize(INFO_HEADER_FONT.size ?? 11);
+    doc.table({
+      position: { x: blockLeft, y: infoTop },
+      maxWidth: CONTENT_BLOCK_WIDTH,
+      columnStyles: infoColumnStyles,
+      rowStyles: { border: false as const },
+      data: [['Bill To', 'Details']],
     });
 
-    doc.y = Math.max(doc.y, y) + 20;
-
-    // ---- Details (invoice number, dates, payment terms) ----
-    const headerY = doc.y;
-    doc.fontSize(10).font('Helvetica-Bold').text('Invoice Number', 0, headerY);
-    doc.font('Helvetica').text(invoice.invoice_number ?? '—', 0, headerY + 14);
-    doc.font('Helvetica-Bold').text('Issue Date', 120, headerY);
-    doc
-      .font('Helvetica')
-      .text(formatDate(invoice.issue_date), 120, headerY + 14);
-    doc.font('Helvetica-Bold').text('Due Date', 220, headerY);
-    doc
-      .font('Helvetica')
-      .text(formatDate(invoice.due_date ?? null), 220, headerY + 14);
-    doc.y = headerY + 32;
-    if (invoice.payment_terms) {
-      doc.font('Helvetica-Bold').text('Payment Terms', 320, headerY);
-      doc.font('Helvetica').text(invoice.payment_terms, 320, headerY + 14);
+    // Body rows: regular font
+    const infoBodyData: string[][] = [];
+    for (let i = 0; i < maxInfoRows; i += 1) {
+      infoBodyData.push([clientLines[i] ?? '', detailLines[i] ?? '']);
     }
-    doc.moveDown(2);
+    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+    doc.table({
+      position: { x: blockLeft, y: doc.y },
+      maxWidth: CONTENT_BLOCK_WIDTH,
+      columnStyles: infoColumnStyles,
+      rowStyles: { border: false as const, height: LINE_HEIGHT },
+      data: infoBodyData,
+    });
 
-    // ---- Items table ----
+    doc.moveDown(SECTION_GAP / 10);
+
+    // ---- Items section (card with table + totals) ----
+    const itemsTop = doc.y;
+    doc.fontSize(11).font('Helvetica-Bold').text('Items', blockLeft, itemsTop);
+    doc.font('Helvetica');
+    doc.moveDown(1.2);
+
     const tableTop = doc.y;
-    const colWidths = {
-      name: 180,
-      qty: 55,
-      rateType: 55,
-      unit: 75,
-      amount: 85,
+    const tableWidth = CONTENT_BLOCK_WIDTH;
+    const rightAlign: { align: PdfAlignRight } = { align: { x: 'right' } };
+    type TableCell = string | BaseCell;
+    const itemsColumnStyles = TABLE_COL_RATIOS.map(ratio => tableWidth * ratio);
+
+    // Header row: doc font sets bold (cell font not honored by mixin)
+    const itemsHeaderRow: TableCell[] = [
+      'Name',
+      { text: 'Quantity', ...rightAlign },
+      { text: 'Rate type', ...rightAlign },
+      { text: 'Unit cost', ...rightAlign },
+      { text: 'Amount', ...rightAlign },
+    ];
+    doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
+    doc.table({
+      position: { x: blockLeft, y: tableTop },
+      maxWidth: tableWidth,
+      columnStyles: itemsColumnStyles,
+      rowStyles: {
+        border: [0, 0, 1, 0] as [number, number, number, number],
+        borderColor: '#000000',
+      },
+      data: [itemsHeaderRow],
+    });
+
+    // Body rows: regular font
+    const itemsBodyData: Array<Array<TableCell>> = items.map(item => [
+      item.name,
+      { text: String(item.quantity), ...rightAlign },
+      { text: formatRateType(item.rate_type ?? null), ...rightAlign },
+      { text: formatMoney(item.unit_cost, currencyCode), ...rightAlign },
+      { text: formatMoney(item.total_cost, currencyCode), ...rightAlign },
+    ]);
+    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+    doc.table({
+      position: { x: blockLeft, y: doc.y },
+      maxWidth: tableWidth,
+      columnStyles: itemsColumnStyles,
+      rowStyles: { border: false as const, height: TABLE_ROW_HEIGHT },
+      data: itemsBodyData,
+    });
+
+    doc.moveDown(1.5); // spacing before totals
+
+    // Totals block (right-aligned within centered block, as tables)
+    type TotalsCell = string | BaseCell;
+    const totalsTableWidth = TOTALS_WIDTH;
+    const totalsX = blockRight - totalsTableWidth;
+    const totalsRightAlign: { align: PdfAlignRight } = {
+      align: { x: 'right' },
     };
-    const rowHeight = 20;
-    const tableHeaderY = tableTop;
+    const totalsColumnStyles = [totalsTableWidth - 100, 100];
 
-    doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Name', 0, tableHeaderY);
-    doc.text('Quantity', colWidths.name, tableHeaderY);
-    doc.text('Rate type', colWidths.name + colWidths.qty, tableHeaderY);
-    doc.text(
-      'Unit Cost',
-      colWidths.name + colWidths.qty + colWidths.rateType,
-      tableHeaderY
-    );
-    doc.text(
-      'Amount',
-      colWidths.name + colWidths.qty + colWidths.rateType + colWidths.unit,
-      tableHeaderY
-    );
-    doc.moveDown(0.5);
-    doc.moveTo(0, doc.y).lineTo(CONTENT_WIDTH, doc.y).stroke();
-    doc.moveDown(0.3);
+    // Subtotal + Tax rows: regular font
+    const totalsSubTaxData: TotalsCell[][] = [
+      [
+        { text: 'Subtotal', textColor: '#6b7280' },
+        {
+          text: formatMoney(invoice.subtotal, currencyCode),
+          ...totalsRightAlign,
+        },
+      ],
+      [
+        { text: `Tax (${invoice.tax_rate ?? 0}%)`, textColor: '#6b7280' },
+        {
+          text: formatMoney(invoice.tax_amount, currencyCode),
+          ...totalsRightAlign,
+        },
+      ],
+    ];
+    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+    doc.table({
+      position: { x: totalsX, y: doc.y },
+      maxWidth: totalsTableWidth,
+      columnStyles: totalsColumnStyles,
+      rowStyles: { border: false as const, height: LINE_HEIGHT },
+      data: totalsSubTaxData,
+    });
 
-    function formatRateType(rt: string | null | undefined): string {
-      if (!rt) return '—';
-      const s = String(rt).toLowerCase();
-      if (s === 'hourly') return 'Hourly';
-      if (s === 'fixed') return 'Fixed';
-      if (s === 'monthly') return 'Monthly';
-      return rt;
-    }
+    // Total row: bold (doc font so mixin honors it)
+    const totalsTotalData: TotalsCell[][] = [
+      [
+        'Total',
+        {
+          text: formatMoney(invoice.total_amount, currencyCode),
+          ...totalsRightAlign,
+        },
+      ],
+    ];
+    doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
+    doc.table({
+      position: { x: totalsX, y: doc.y },
+      maxWidth: totalsTableWidth,
+      columnStyles: totalsColumnStyles,
+      rowStyles: {
+        border: [1, 0, 0, 0] as [number, number, number, number],
+        borderColor: '#000000',
+        height: LINE_HEIGHT,
+      },
+      data: totalsTotalData,
+    });
 
-    doc.font('Helvetica');
-    let rowY = doc.y;
-    for (const item of items) {
-      doc.fontSize(9).text(item.name, 0, rowY, { width: colWidths.name - 4 });
-      doc.text(String(item.quantity), colWidths.name, rowY);
-      doc.text(
-        formatRateType(item.rate_type ?? null),
-        colWidths.name + colWidths.qty,
-        rowY
-      );
-      doc.text(
-        formatMoney(item.unit_cost, currencyCode),
-        colWidths.name + colWidths.qty + colWidths.rateType,
-        rowY
-      );
-      doc.text(
-        formatMoney(item.total_cost, currencyCode),
-        colWidths.name + colWidths.qty + colWidths.rateType + colWidths.unit,
-        rowY
-      );
-      rowY += rowHeight + 4;
-    }
+    doc.moveDown(SECTION_GAP / 10);
 
-    doc.y = rowY + 12;
-
-    // ---- Totals section ----
-    const totalsLeft = CONTENT_WIDTH - 180;
-    doc.font('Helvetica');
-    doc.fontSize(10).text('Subtotal:', totalsLeft, doc.y);
-    doc.text(
-      formatMoney(invoice.subtotal, currencyCode),
-      totalsLeft + 90,
-      doc.y
-    );
-    doc.moveDown(0.8);
-    doc.text('Tax:', totalsLeft, doc.y);
-    doc.text(
-      `${invoice.tax_rate ?? 0}% (${formatMoney(invoice.tax_amount, currencyCode)})`,
-      totalsLeft + 90,
-      doc.y
-    );
-    doc.moveDown(0.8);
-    doc.font('Helvetica-Bold').fontSize(11).text('Total:', totalsLeft, doc.y);
-    doc.text(
-      formatMoney(invoice.total_amount, currencyCode),
-      totalsLeft + 90,
-      doc.y
-    );
-    doc.font('Helvetica').fontSize(10);
-    doc.moveDown(2);
-
-    // ---- Invoice notes ----
-    if (invoice.notes) {
-      doc.font('Helvetica-Bold').text('Notes', 0, doc.y);
-      doc.font('Helvetica').text(invoice.notes, 0, doc.y + 14, {
-        width: CONTENT_WIDTH,
+    // ---- Notes (separate card when present) ----
+    if (invoice.notes && String(invoice.notes).trim()) {
+      doc.moveDown(1);
+      doc.fontSize(11).font('Helvetica-Bold').text('Notes', blockLeft, doc.y);
+      doc.moveDown(0.5);
+      doc.font('Helvetica').fontSize(10);
+      doc.text(String(invoice.notes).trim(), blockLeft, doc.y, {
+        width: CONTENT_BLOCK_WIDTH,
         align: 'left',
+        lineGap: 4,
       });
+      doc.fillColor('#000000');
     }
 
     doc.end();
