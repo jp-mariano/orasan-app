@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { ReceiptText } from 'lucide-react';
+import { MoreVertical, ReceiptText } from 'lucide-react';
 
 import { Breadcrumb } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
@@ -24,6 +25,9 @@ export default function ProjectInvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -72,6 +76,42 @@ export default function ProjectInvoicesPage() {
       cancelled = true;
     };
   }, [user, authLoading, router, projectId]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  async function updateInvoiceStatus(
+    invoiceId: string,
+    status: 'sent' | 'paid'
+  ) {
+    setUpdatingId(invoiceId);
+    setOpenMenuId(null);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update status');
+      }
+      setInvoices(prev =>
+        prev.map(inv => (inv.id === invoiceId ? { ...inv, status } : inv))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -150,6 +190,7 @@ export default function ProjectInvoicesPage() {
                       <th className="text-right py-3 px-4 font-medium">
                         Total
                       </th>
+                      <th className="w-10 py-3 px-4" aria-label="Options" />
                     </tr>
                   </thead>
                   <tbody>
@@ -186,6 +227,67 @@ export default function ProjectInvoicesPage() {
                             inv.total_amount,
                             inv.currency_code ?? 'USD'
                           )}
+                        </td>
+                        <td
+                          className="py-3 px-4 text-right"
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => e.stopPropagation()}
+                        >
+                          <div
+                            ref={openMenuId === inv.id ? menuRef : null}
+                            className="relative inline-block"
+                          >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setOpenMenuId(prev =>
+                                  prev === inv.id ? null : inv.id
+                                )
+                              }
+                              disabled={updatingId === inv.id}
+                              className="h-8 w-8 p-0"
+                              aria-label="Invoice options"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                            {openMenuId === inv.id && (
+                              <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-md border bg-white py-1 shadow-lg">
+                                {inv.status === 'draft' && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateInvoiceStatus(inv.id, 'sent')
+                                    }
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                                  >
+                                    Mark as sent
+                                  </button>
+                                )}
+                                {inv.status !== 'paid' &&
+                                  inv.status !== 'cancelled' && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateInvoiceStatus(inv.id, 'paid')
+                                      }
+                                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                                    >
+                                      Mark as paid
+                                    </button>
+                                  )}
+                                <a
+                                  href={`/api/invoices/${inv.id}/pdf`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                                  onClick={() => setOpenMenuId(null)}
+                                >
+                                  Download PDF
+                                </a>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

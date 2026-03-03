@@ -354,6 +354,89 @@ export async function PUT(
   }
 }
 
+/** Allowed status transitions: draft→sent, draft→paid, sent→paid, overdue→paid */
+const ALLOWED_STATUS_TRANSITIONS: Record<string, string[]> = {
+  draft: ['sent', 'paid'],
+  sent: ['paid'],
+  overdue: ['paid'],
+};
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id: invoiceId } = await params;
+    const body = await request.json();
+    const newStatus = body?.status as string | undefined;
+
+    if (!newStatus || (newStatus !== 'sent' && newStatus !== 'paid')) {
+      return NextResponse.json(
+        { error: 'status must be "sent" or "paid"' },
+        { status: 400 }
+      );
+    }
+
+    const { data: existingInvoice, error: fetchError } = await supabase
+      .from('invoices')
+      .select('id, status')
+      .eq('id', invoiceId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError || !existingInvoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
+    const currentStatus = existingInvoice.status as string;
+    const allowed = ALLOWED_STATUS_TRANSITIONS[currentStatus];
+    if (!allowed || !allowed.includes(newStatus)) {
+      return NextResponse.json(
+        {
+          error: `Cannot change status from "${currentStatus}" to "${newStatus}"`,
+          current_status: currentStatus,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('invoices')
+      .update({ status: newStatus })
+      .eq('id', invoiceId)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating invoice status:', updateError);
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      invoice: updated,
+      message: `Invoice status updated to ${newStatus}`,
+    });
+  } catch (error) {
+    console.error('Error in invoice PATCH API:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
