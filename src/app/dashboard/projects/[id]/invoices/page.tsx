@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical, ReceiptText } from 'lucide-react';
+import { MoreVertical, ReceiptText, Trash2 } from 'lucide-react';
 
+import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +28,8 @@ export default function ProjectInvoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,6 +113,26 @@ export default function ProjectInvoicesPage() {
       setError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleConfirmDeleteInvoice() {
+    if (!invoiceToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to delete invoice');
+      }
+      setInvoices(prev => prev.filter(inv => inv.id !== invoiceToDelete.id));
+      setInvoiceToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete invoice');
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -285,6 +308,17 @@ export default function ProjectInvoicesPage() {
                                 >
                                   Download PDF
                                 </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setInvoiceToDelete(inv);
+                                    setOpenMenuId(null);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </button>
                               </div>
                             )}
                           </div>
@@ -297,6 +331,14 @@ export default function ProjectInvoicesPage() {
             )}
           </CardContent>
         </Card>
+
+        <DeleteInvoiceModal
+          open={!!invoiceToDelete}
+          onOpenChange={open => !open && setInvoiceToDelete(null)}
+          invoice={invoiceToDelete}
+          onConfirmDelete={handleConfirmDeleteInvoice}
+          isDeleting={isDeleting}
+        />
       </div>
     </div>
   );

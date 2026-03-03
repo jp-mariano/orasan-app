@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Edit, MoreVertical } from 'lucide-react';
+import { Edit, MoreVertical, Trash2 } from 'lucide-react';
 
+import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { EditInvoiceModal } from '@/components/invoices/EditInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,8 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +104,26 @@ export default function InvoiceDetailPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  async function handleConfirmDeleteInvoice() {
+    if (!invoice) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to delete invoice');
+      }
+      router.push(`/dashboard/projects/${projectId}/invoices`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete invoice');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -200,6 +223,17 @@ export default function InvoiceDetailPage() {
                 >
                   Download PDF
                 </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                    setShowOptionsMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
               </div>
             )}
           </div>
@@ -345,6 +379,14 @@ export default function InvoiceDetailPage() {
           onOpenChange={setIsEditModalOpen}
           invoice={invoice}
           onSaved={() => setRefreshTrigger(prev => prev + 1)}
+        />
+
+        <DeleteInvoiceModal
+          open={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          invoice={invoice}
+          onConfirmDelete={handleConfirmDeleteInvoice}
+          isDeleting={isDeleting}
         />
       </div>
     </div>
