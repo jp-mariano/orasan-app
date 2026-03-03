@@ -87,7 +87,7 @@ export async function PUT(
       );
     }
 
-    // First check if the invoice exists, belongs to the user, and is in draft status
+    // First check if the invoice exists and belongs to the user
     const { data: existingInvoice, error: fetchError } = await supabase
       .from('invoices')
       .select('id, status, invoice_number, subtotal, tax_rate, currency_code')
@@ -99,11 +99,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
     }
 
-    // Only allow updates to draft invoices
-    if (existingInvoice.status !== 'draft') {
+    // Block updates when invoice is paid or cancelled (terminal statuses)
+    if (
+      existingInvoice.status === 'paid' ||
+      existingInvoice.status === 'cancelled'
+    ) {
       return NextResponse.json(
         {
-          error: 'Only draft invoices can be updated',
+          error: 'Paid or cancelled invoices cannot be updated',
           current_status: existingInvoice.status,
         },
         { status: 400 }
@@ -295,13 +298,12 @@ export async function PUT(
       }
     }
 
-    // Update the invoice
+    // Update the invoice (do not filter by status so sent/overdue/cancelled can be updated)
     const { data: updatedInvoice, error: updateError } = await supabase
       .from('invoices')
       .update(updatePayload)
       .eq('id', invoiceId)
       .eq('user_id', user.id)
-      .eq('status', 'draft') // Double-check status is still draft
       .select()
       .single();
 
@@ -354,12 +356,16 @@ export async function PUT(
   }
 }
 
-/** Allowed status transitions: draft→sent, draft→paid, sent→paid, overdue→paid */
+/** Allowed status transitions (paid and cancelled are terminal) */
 const ALLOWED_STATUS_TRANSITIONS: Record<string, string[]> = {
-  draft: ['sent', 'paid'],
-  sent: ['paid'],
-  overdue: ['paid'],
+  draft: ['sent', 'paid', 'overdue', 'cancelled'],
+  sent: ['paid', 'overdue', 'cancelled'],
+  overdue: ['paid', 'cancelled'],
+  cancelled: [],
+  paid: [],
 };
+
+const PATCH_ALLOWED_STATUSES = ['sent', 'paid', 'overdue', 'cancelled'];
 
 export async function PATCH(
   request: NextRequest,
@@ -381,9 +387,11 @@ export async function PATCH(
     const body = await request.json();
     const newStatus = body?.status as string | undefined;
 
-    if (!newStatus || (newStatus !== 'sent' && newStatus !== 'paid')) {
+    if (!newStatus || !PATCH_ALLOWED_STATUSES.includes(newStatus)) {
       return NextResponse.json(
-        { error: 'status must be "sent" or "paid"' },
+        {
+          error: `status must be one of: ${PATCH_ALLOWED_STATUSES.join(', ')}`,
+        },
         { status: 400 }
       );
     }

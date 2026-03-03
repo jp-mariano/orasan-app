@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical } from 'lucide-react';
+import { Edit, MoreVertical } from 'lucide-react';
 
+import { EditInvoiceModal } from '@/components/invoices/EditInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +40,8 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,7 +86,7 @@ export default function InvoiceDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, authLoading, router, invoiceId, projectId]);
+  }, [user, authLoading, router, invoiceId, projectId, refreshTrigger]);
 
   // Close options menu when clicking outside
   useEffect(() => {
@@ -177,6 +180,17 @@ export default function InvoiceDetailPage() {
             </Button>
             {showOptionsMenu && (
               <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] rounded-md border bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(true);
+                    setShowOptionsMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </button>
                 <a
                   href={`/api/invoices/${invoiceId}/pdf`}
                   target="_blank"
@@ -325,6 +339,13 @@ export default function InvoiceDetailPage() {
             </CardContent>
           </Card>
         )}
+
+        <EditInvoiceModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          invoice={invoice}
+          onSaved={() => setRefreshTrigger(prev => prev + 1)}
+        />
       </div>
     </div>
   );
