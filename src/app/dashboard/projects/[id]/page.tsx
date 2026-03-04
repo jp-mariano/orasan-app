@@ -472,14 +472,18 @@ export default function ProjectDetailPage() {
                       >
                         <span>Create Invoice</span>
                       </button>
-                      <button className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100">
-                        <Link
-                          href={`/dashboard/projects/${projectId}/invoices`}
-                          className="inline-flex items-center gap-2"
+                      <Link href={`/dashboard/projects/${projectId}/invoices`}>
+                        <button
+                          onClick={() => {
+                            router.push(
+                              `/dashboard/projects/${projectId}/invoices`
+                            );
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                         >
                           View Invoices
-                        </Link>
-                      </button>
+                        </button>
+                      </Link>
                       <button
                         onClick={() => {
                           setIsDeleteModalOpen(true);
