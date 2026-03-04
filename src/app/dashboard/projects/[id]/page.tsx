@@ -55,7 +55,6 @@ export default function ProjectDetailPage() {
   const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] =
     useState(false);
-  const [invoiceCount, setInvoiceCount] = useState<number>(0);
 
   // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
@@ -123,28 +122,6 @@ export default function ProjectDetailPage() {
     };
 
     fetchProject();
-  }, [projectId]);
-
-  // Fetch invoice count for this project (to show "View Invoices" when applicable)
-  useEffect(() => {
-    if (!projectId) return;
-    let cancelled = false;
-    async function fetchInvoiceCount() {
-      try {
-        const res = await fetch(`/api/invoices?project_id=${projectId}`);
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        if (!cancelled && Array.isArray(data.invoices)) {
-          setInvoiceCount(data.invoices.length);
-        }
-      } catch {
-        // ignore
-      }
-    }
-    fetchInvoiceCount();
-    return () => {
-      cancelled = true;
-    };
   }, [projectId]);
 
   // Page Visibility API - refresh project when user returns to tab
@@ -495,16 +472,14 @@ export default function ProjectDetailPage() {
                       >
                         <span>Create Invoice</span>
                       </button>
-                      {invoiceCount > 0 && (
-                        <button className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100">
-                          <Link
-                            href={`/dashboard/projects/${projectId}/invoices`}
-                            className="inline-flex items-center gap-2"
-                          >
-                            View Invoices
-                          </Link>
-                        </button>
-                      )}
+                      <button className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100">
+                        <Link
+                          href={`/dashboard/projects/${projectId}/invoices`}
+                          className="inline-flex items-center gap-2"
+                        >
+                          View Invoices
+                        </Link>
+                      </button>
                       <button
                         onClick={() => {
                           setIsDeleteModalOpen(true);
@@ -842,7 +817,6 @@ export default function ProjectDetailPage() {
           project={project}
           onInvoiceCreated={invoiceId => {
             setShowInvoiceCreationModal(false);
-            setInvoiceCount(prev => prev + 1);
             if (invoiceId && projectId) {
               router.push(
                 `/dashboard/projects/${projectId}/invoices/${invoiceId}`
