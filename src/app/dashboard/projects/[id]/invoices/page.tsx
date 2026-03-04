@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 import { MoreVertical, Trash2 } from 'lucide-react';
 
+import { CreateInvoiceModal } from '@/components/invoices/CreateInvoiceModal';
 import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
 import { formatPriceWithCurrency } from '@/lib/currencies';
 import { formatDate } from '@/lib/utils';
-import { Invoice } from '@/types';
+import { Invoice, Project } from '@/types';
 
 export default function ProjectInvoicesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -22,7 +23,7 @@ export default function ProjectInvoicesPage() {
   const router = useRouter();
   const projectId = params.id as string;
 
-  const [projectName, setProjectName] = useState<string>('');
+  const [project, setProject] = useState<Project | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function ProjectInvoicesPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,8 +58,8 @@ export default function ProjectInvoicesPage() {
           return;
         }
         const projectData = await projectRes.json();
-        if (projectData.project?.name) {
-          setProjectName(projectData.project.name);
+        if (projectData.project) {
+          setProject(projectData.project);
         }
 
         if (!invoicesRes.ok) {
@@ -166,7 +168,7 @@ export default function ProjectInvoicesPage() {
           items={[
             { label: 'Dashboard', href: '/dashboard' },
             {
-              label: projectName || 'Project',
+              label: project?.name || 'Project',
               href: `/dashboard/projects/${projectId}`,
             },
             {
@@ -179,16 +181,29 @@ export default function ProjectInvoicesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">Invoices</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Invoices for this project. Click an invoice to view details.
-            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  Invoices
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Invoices for this project. Click an invoice to view details.
+                </p>
+              </div>
+              {project && (
+                <Button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="shrink-0"
+                >
+                  Create invoice
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {invoices.length === 0 ? (
               <p className="text-muted-foreground py-6">
-                No invoices yet. Create an invoice from the project page using
-                the Invoice action in the menu.
+                No invoices yet. Create an invoice using the button above.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -336,6 +351,22 @@ export default function ProjectInvoicesPage() {
           onConfirmDelete={handleConfirmDeleteInvoice}
           isDeleting={isDeleting}
         />
+
+        {project && (
+          <CreateInvoiceModal
+            open={isCreateModalOpen}
+            onOpenChange={setIsCreateModalOpen}
+            project={project}
+            onInvoiceCreated={invoiceId => {
+              setIsCreateModalOpen(false);
+              if (invoiceId && projectId) {
+                router.push(
+                  `/dashboard/projects/${projectId}/invoices/${invoiceId}`
+                );
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
