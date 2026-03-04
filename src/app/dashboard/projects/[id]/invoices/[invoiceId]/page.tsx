@@ -182,13 +182,9 @@ export default function InvoiceDetailPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Invoice</h1>
-            <p className="text-muted-foreground">
-              {profile?.business_name || '—'}
-            </p>
+            <p>{profile?.business_name || '—'}</p>
             {profile?.business_email && (
-              <p className="text-sm text-muted-foreground">
-                {profile.business_email}
-              </p>
+              <p className="text-sm">{profile.business_email}</p>
             )}
           </div>
           <div className="relative" ref={optionsMenuRef}>
@@ -244,18 +240,10 @@ export default function InvoiceDetailPage() {
               <CardTitle className="text-base">Bill To</CardTitle>
             </CardHeader>
             <CardContent className="text-sm">
-              <p className="font-medium">{clientName}</p>
-              {clientEmail && (
-                <p className="text-muted-foreground">{clientEmail}</p>
-              )}
-              {clientAddress && (
-                <p className="text-muted-foreground whitespace-pre-line">
-                  {clientAddress}
-                </p>
-              )}
-              {clientPhone && (
-                <p className="text-muted-foreground">{clientPhone}</p>
-              )}
+              <p>{clientName}</p>
+              {clientEmail && <p>{clientEmail}</p>}
+              {clientAddress && <p>{clientAddress}</p>}
+              {clientPhone && <p>{clientPhone}</p>}
             </CardContent>
           </Card>
 
@@ -264,22 +252,13 @@ export default function InvoiceDetailPage() {
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-1">
+              <p>Invoice number: {invoice.invoice_number}</p>
+              <p>Issue date: {formatDate(invoice.issue_date)}</p>
               <p>
-                <span className="text-muted-foreground">Invoice number:</span>{' '}
-                {invoice.invoice_number}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Issue date:</span>{' '}
-                {formatDate(invoice.issue_date)}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Due date:</span>{' '}
+                Due date:{' '}
                 {invoice.due_date ? formatDate(invoice.due_date) : '—'}
               </p>
-              <p>
-                <span className="text-muted-foreground">Payment terms:</span>{' '}
-                {invoice.payment_terms ?? '—'}
-              </p>
+              <p>Payment terms: {invoice.payment_terms ?? '—'}</p>
             </CardContent>
           </Card>
         </div>
@@ -330,15 +309,13 @@ export default function InvoiceDetailPage() {
             <div className="mt-6 flex justify-end">
               <dl className="w-full max-w-[240px] space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Subtotal</dt>
+                  <dt>Subtotal</dt>
                   <dd>
                     {formatPriceWithCurrency(invoice.subtotal, currencyCode)}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">
-                    Tax ({invoice.tax_rate ?? 0}%)
-                  </dt>
+                  <dt>Tax ({invoice.tax_rate ?? 0}%)</dt>
                   <dd>
                     {formatPriceWithCurrency(
                       invoice.tax_amount ?? 0,
@@ -366,9 +343,7 @@ export default function InvoiceDetailPage() {
               <CardTitle className="text-base">Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm whitespace-pre-line text-muted-foreground">
-                {invoice.notes}
-              </p>
+              <p className="text-sm">{invoice.notes}</p>
             </CardContent>
           </Card>
         )}
