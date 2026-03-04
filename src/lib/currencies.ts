@@ -65,13 +65,18 @@ function formatAmount(amount: number, decimals = 2): string {
 }
 
 // Format price with currency code and 2 decimals (e.g. "USD 99.50")
+// Format price with optional currency code (e.g. "USD 99.50" or "99.50")
 export function formatPriceWithCurrency(
   price: number,
-  currencyCode: string
+  currencyCode: string,
+  includeCurrencyCode = true
 ): string {
   const currency = getCurrencyByCode(currencyCode);
-  if (!currency) return formatAmount(price);
-  return `${currency.code} ${formatAmount(price, currency.digits)}`;
+  const formatted = currency
+    ? formatAmount(price, currency.digits)
+    : formatAmount(price);
+  if (!includeCurrencyCode || !currency) return formatted;
+  return `${currency.code} ${formatted}`;
 }
 
 // Format price with optional rate type for display (e.g. "USD 100.00/hr")

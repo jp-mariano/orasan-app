@@ -283,7 +283,9 @@ export default function InvoiceDetailPage() {
                     <th className="text-right py-2 font-medium">Quantity</th>
                     <th className="text-right py-2 font-medium">Rate type</th>
                     <th className="text-right py-2 font-medium">Unit cost</th>
-                    <th className="text-right py-2 font-medium">Amount</th>
+                    <th className="text-right py-2 font-medium">
+                      Amount ({currencyCode})
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -295,10 +297,18 @@ export default function InvoiceDetailPage() {
                         {formatRateType(item.rate_type ?? null)}
                       </td>
                       <td className="py-2 text-right">
-                        {formatPriceWithCurrency(item.unit_cost, currencyCode)}
+                        {formatPriceWithCurrency(
+                          item.unit_cost,
+                          currencyCode,
+                          false
+                        )}
                       </td>
                       <td className="py-2 text-right">
-                        {formatPriceWithCurrency(item.total_cost, currencyCode)}
+                        {formatPriceWithCurrency(
+                          item.total_cost,
+                          currencyCode,
+                          false
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -311,7 +321,11 @@ export default function InvoiceDetailPage() {
                 <div className="flex justify-between">
                   <dt>Subtotal</dt>
                   <dd>
-                    {formatPriceWithCurrency(invoice.subtotal, currencyCode)}
+                    {formatPriceWithCurrency(
+                      invoice.subtotal,
+                      currencyCode,
+                      false
+                    )}
                   </dd>
                 </div>
                 <div className="flex justify-between">
@@ -319,7 +333,8 @@ export default function InvoiceDetailPage() {
                   <dd>
                     {formatPriceWithCurrency(
                       invoice.tax_amount ?? 0,
-                      currencyCode
+                      currencyCode,
+                      false
                     )}
                   </dd>
                 </div>
