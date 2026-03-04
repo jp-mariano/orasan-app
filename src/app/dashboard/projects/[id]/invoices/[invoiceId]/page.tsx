@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 
 import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { EditInvoiceModal } from '@/components/invoices/EditInvoiceModal';
@@ -202,7 +202,7 @@ export default function InvoiceDetailPage() {
               <MoreVertical className="h-4 w-4" />
             </Button>
             {showOptionsMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 min-w-[160px] rounded-md border bg-white py-1 shadow-lg">
+              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
                 <button
                   type="button"
                   onClick={() => {
@@ -211,7 +211,6 @@ export default function InvoiceDetailPage() {
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
                 >
-                  <Edit className="h-4 w-4" />
                   Edit
                 </button>
                 <a

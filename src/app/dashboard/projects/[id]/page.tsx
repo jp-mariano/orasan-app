@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Edit, MoreVertical, Plus, ReceiptText, Trash2 } from 'lucide-react';
+import { MoreVertical, Plus, Trash2 } from 'lucide-react';
 
 import { CreateInvoiceModal } from '@/components/invoices/CreateInvoiceModal';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
@@ -476,7 +476,7 @@ export default function ProjectDetailPage() {
                   </Button>
 
                   {showActions && (
-                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[130px]">
                       <button
                         onClick={() => {
                           setIsEditModalOpen(true);
@@ -484,8 +484,7 @@ export default function ProjectDetailPage() {
                         }}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                        <span>Edit Project</span>
                       </button>
                       <button
                         onClick={() => {
@@ -494,15 +493,24 @@ export default function ProjectDetailPage() {
                         }}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <ReceiptText className="h-4 w-4" />
-                        <span>Invoice</span>
+                        <span>Create Invoice</span>
                       </button>
+                      {invoiceCount > 0 && (
+                        <button className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100">
+                          <Link
+                            href={`/dashboard/projects/${projectId}/invoices`}
+                            className="inline-flex items-center gap-2"
+                          >
+                            View Invoices
+                          </Link>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setIsDeleteModalOpen(true);
                           setShowActions(false);
                         }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
                         <span>Delete</span>
@@ -701,20 +709,6 @@ export default function ProjectDetailPage() {
                 className="text-base"
               />
             </div>
-
-            {invoiceCount > 0 && (
-              <div className="pt-4">
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    href={`/dashboard/projects/${projectId}/invoices`}
-                    className="inline-flex items-center gap-2"
-                  >
-                    <ReceiptText className="h-4 w-4" />
-                    View Invoices
-                  </Link>
-                </Button>
-              </div>
-            )}
 
             {/* Created/Updated Info */}
             <div className="pt-4 border-t">

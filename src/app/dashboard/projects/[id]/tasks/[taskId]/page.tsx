@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { ClipboardClock, Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
 import { ManualTimeEntryModal } from '@/components/tasks/ManualTimeEntryModal';
@@ -294,7 +294,7 @@ export default function TaskDetailPage() {
                   </Button>
 
                   {showActions && (
-                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[120px]">
+                    <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[130px]">
                       <button
                         onClick={() => {
                           setIsEditModalOpen(true);
@@ -302,11 +302,8 @@ export default function TaskDetailPage() {
                         }}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                        <span>Edit Task</span>
                       </button>
-
-                      <div className="border-t my-1"></div>
                       <button
                         onClick={() => {
                           setIsManualTimeModalOpen(true);
@@ -314,17 +311,14 @@ export default function TaskDetailPage() {
                         }}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <ClipboardClock className="h-4 w-4" />
-                        <span>Timer</span>
+                        <span>Edit Timer</span>
                       </button>
-
-                      <div className="border-t my-1"></div>
                       <button
                         onClick={() => {
                           handleDeleteTask();
                           setShowActions(false);
                         }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
                         <span>Delete</span>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { ClipboardClock, MoreVertical, Trash2, User } from 'lucide-react';
+import { MoreVertical, Trash2, User } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -167,7 +167,7 @@ export function TaskCard({
               </Button>
 
               {showActions && (
-                <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[140px]">
+                <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[160px]">
                   {/* Mark as Completed - Only show for non-completed tasks */}
                   {task.status !== 'completed' && (
                     <button
@@ -187,7 +187,6 @@ export function TaskCard({
                   {/* Manual Time Entry - Only show for non-completed tasks */}
                   {task.status !== 'completed' && (
                     <>
-                      <div className="border-t my-1"></div>
                       <button
                         onClick={e => {
                           e.stopPropagation();
@@ -196,21 +195,19 @@ export function TaskCard({
                         }}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
-                        <ClipboardClock className="h-4 w-4" />
-                        <span>Timer</span>
+                        <span>Edit Timer</span>
                       </button>
                     </>
                   )}
 
                   {/* Delete Action */}
-                  <div className="border-t my-1"></div>
                   <button
                     onClick={e => {
                       e.stopPropagation();
                       handleDelete();
                       setShowActions(false);
                     }}
-                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 text-red-600"
+                    className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
                     <span>Delete Task</span>

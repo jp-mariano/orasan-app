@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical, ReceiptText, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 
 import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -179,10 +179,7 @@ export default function ProjectInvoicesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ReceiptText className="h-5 w-5" />
-              Invoices
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2">Invoices</CardTitle>
             <p className="text-sm text-muted-foreground">
               Invoices for this project. Click an invoice to view details.
             </p>
@@ -275,7 +272,7 @@ export default function ProjectInvoicesPage() {
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                             {openMenuId === inv.id && (
-                              <div className="absolute right-0 top-full z-10 mt-1 min-w-[140px] rounded-md border bg-white py-1 shadow-lg">
+                              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
                                 {inv.status === 'draft' && (
                                   <button
                                     type="button"
@@ -284,7 +281,7 @@ export default function ProjectInvoicesPage() {
                                     }
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
                                   >
-                                    Mark as sent
+                                    Mark as Sent
                                   </button>
                                 )}
                                 {inv.status !== 'paid' &&
@@ -296,7 +293,7 @@ export default function ProjectInvoicesPage() {
                                       }
                                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
                                     >
-                                      Mark as paid
+                                      Mark as Paid
                                     </button>
                                   )}
                                 <a
