@@ -50,9 +50,8 @@ const CONTENT_RIGHT_INSET = 0;
 const CONTENT_BLOCK_WIDTH =
   CONTENT_WIDTH - CONTENT_LEFT_INSET - CONTENT_RIGHT_INSET;
 
-// Spacing to align with preview (card gaps ~24px, padding, line height)
+// Spacing to align with preview
 const SECTION_GAP = 28;
-const LINE_HEIGHT = 14;
 const TABLE_ROW_HEIGHT = 26;
 const TOTALS_WIDTH = 200;
 
@@ -60,12 +59,13 @@ const TOTALS_WIDTH = 200;
 const TABLE_COL_RATIOS = [0.4, 0.12, 0.18, 0.15, 0.15] as const;
 
 // Shared cell/typography helpers for PDF tables
-type PdfAlignRight = { x: 'right' };
+type PdfAlignLeft = { x: 'left'; y: 'center' };
+type PdfAlignRight = { x: 'right'; y: 'center' };
 type PdfFont = { family?: string; size?: number };
 
 type BaseCell = {
   text: string;
-  align?: PdfAlignRight;
+  align?: PdfAlignLeft | PdfAlignRight;
   textColor?: string;
   font?: PdfFont;
 };
@@ -172,7 +172,7 @@ export async function generateInvoicePdf(
       position: { x: blockLeft, y: doc.y },
       maxWidth: CONTENT_BLOCK_WIDTH,
       columnStyles: infoColumnStyles,
-      rowStyles: { border: false as const, height: LINE_HEIGHT },
+      rowStyles: { border: false as const },
       data: infoBodyData,
     });
 
@@ -186,17 +186,22 @@ export async function generateInvoicePdf(
 
     const tableTop = doc.y;
     const tableWidth = CONTENT_BLOCK_WIDTH;
-    const rightAlign: { align: PdfAlignRight } = { align: { x: 'right' } };
+    const leftAlign: { align: PdfAlignLeft } = {
+      align: { x: 'left', y: 'center' },
+    };
+    const rightAlign: { align: PdfAlignRight } = {
+      align: { x: 'right', y: 'center' },
+    };
     type TableCell = string | BaseCell;
     const itemsColumnStyles = TABLE_COL_RATIOS.map(ratio => tableWidth * ratio);
 
     // Header row: doc font sets bold (cell font not honored by mixin)
     const itemsHeaderRow: TableCell[] = [
-      'Name',
+      { text: 'Name', ...leftAlign },
       { text: 'Quantity', ...rightAlign },
       { text: 'Rate type', ...rightAlign },
       { text: 'Unit cost', ...rightAlign },
-      { text: 'Amount', ...rightAlign },
+      { text: `Amount (${currencyCode})`, ...rightAlign },
     ];
     doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
     doc.table({
@@ -205,22 +210,22 @@ export async function generateInvoicePdf(
       columnStyles: itemsColumnStyles,
       rowStyles: {
         border: [0, 0, 1, 0] as [number, number, number, number],
-        borderColor: '#000000',
+        borderColor: '#cbd5e1',
       },
       data: [itemsHeaderRow],
     });
 
     // Body rows: regular font
     const itemsBodyData: Array<Array<TableCell>> = items.map(item => [
-      item.name,
+      { text: item.name, ...leftAlign },
       { text: String(item.quantity), ...rightAlign },
       { text: formatRateType(item.rate_type ?? null), ...rightAlign },
       {
-        text: formatPriceWithCurrency(item.unit_cost, currencyCode),
+        text: formatPriceWithCurrency(item.unit_cost, currencyCode, false),
         ...rightAlign,
       },
       {
-        text: formatPriceWithCurrency(item.total_cost, currencyCode),
+        text: formatPriceWithCurrency(item.total_cost, currencyCode, false),
         ...rightAlign,
       },
     ]);
@@ -229,7 +234,11 @@ export async function generateInvoicePdf(
       position: { x: blockLeft, y: doc.y },
       maxWidth: tableWidth,
       columnStyles: itemsColumnStyles,
-      rowStyles: { border: false as const, height: TABLE_ROW_HEIGHT },
+      rowStyles: {
+        border: [0, 0, 1, 0] as [number, number, number, number],
+        borderColor: '#cbd5e1',
+        height: TABLE_ROW_HEIGHT,
+      },
       data: itemsBodyData,
     });
 
@@ -239,24 +248,31 @@ export async function generateInvoicePdf(
     type TotalsCell = string | BaseCell;
     const totalsTableWidth = TOTALS_WIDTH;
     const totalsX = blockRight - totalsTableWidth;
+    const totalsLeftAlign: { align: PdfAlignLeft } = {
+      align: { x: 'left', y: 'center' },
+    };
     const totalsRightAlign: { align: PdfAlignRight } = {
-      align: { x: 'right' },
+      align: { x: 'right', y: 'center' },
     };
     const totalsColumnStyles = [totalsTableWidth - 100, 100];
 
     // Subtotal + Tax rows: regular font
     const totalsSubTaxData: TotalsCell[][] = [
       [
-        { text: 'Subtotal', textColor: '#6b7280' },
+        { text: 'Subtotal', ...totalsLeftAlign },
         {
-          text: formatPriceWithCurrency(invoice.subtotal, currencyCode),
+          text: formatPriceWithCurrency(invoice.subtotal, currencyCode, false),
           ...totalsRightAlign,
         },
       ],
       [
-        { text: `Tax (${invoice.tax_rate ?? 0}%)`, textColor: '#6b7280' },
+        { text: `Tax (${invoice.tax_rate ?? 0}%)`, ...totalsLeftAlign },
         {
-          text: formatPriceWithCurrency(invoice.tax_amount, currencyCode),
+          text: formatPriceWithCurrency(
+            invoice.tax_amount,
+            currencyCode,
+            false
+          ),
           ...totalsRightAlign,
         },
       ],
@@ -266,14 +282,14 @@ export async function generateInvoicePdf(
       position: { x: totalsX, y: doc.y },
       maxWidth: totalsTableWidth,
       columnStyles: totalsColumnStyles,
-      rowStyles: { border: false as const, height: LINE_HEIGHT },
+      rowStyles: { border: false as const },
       data: totalsSubTaxData,
     });
 
     // Total row: bold (doc font so mixin honors it)
     const totalsTotalData: TotalsCell[][] = [
       [
-        'Total',
+        { text: 'Total', ...totalsLeftAlign },
         {
           text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
           ...totalsRightAlign,
@@ -287,8 +303,8 @@ export async function generateInvoicePdf(
       columnStyles: totalsColumnStyles,
       rowStyles: {
         border: [1, 0, 0, 0] as [number, number, number, number],
-        borderColor: '#000000',
-        height: LINE_HEIGHT,
+        borderColor: '#cbd5e1',
+        height: TABLE_ROW_HEIGHT,
       },
       data: totalsTotalData,
     });
