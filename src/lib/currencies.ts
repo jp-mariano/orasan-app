@@ -3,7 +3,6 @@ import currencyCodes from 'currency-codes';
 export interface Currency {
   code: string;
   name: string;
-  symbol: string;
   digits: number;
 }
 
@@ -34,7 +33,7 @@ const allCurrencies = currencyCodes
   .codes()
   .filter(code => !excludedCurrencies.has(code));
 
-// Create a comprehensive currency list with symbols
+// Create a comprehensive currency list
 export const currencies: Currency[] = allCurrencies.map(code => {
   const currencyData = currencyCodes.code(code);
 
@@ -42,83 +41,60 @@ export const currencies: Currency[] = allCurrencies.map(code => {
     return {
       code,
       name: code,
-      symbol: code,
       digits: 2,
     };
   }
 
-  // Get currency symbol based on code
-  const symbol = getCurrencySymbol(code);
-
   return {
     code: currencyData.code,
     name: currencyData.currency,
-    symbol,
     digits: currencyData.digits,
   };
 });
-
-// Currency symbol mapping for major currencies
-function getCurrencySymbol(code: string): string {
-  const symbolMap: Record<string, string> = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    CAD: 'C$',
-    AUD: 'A$',
-    CHF: 'CHF',
-    CNY: '¥',
-    SEK: 'kr',
-    NOK: 'kr',
-    DKK: 'kr',
-    PLN: 'zł',
-    CZK: 'Kč',
-    HUF: 'Ft',
-    RUB: '₽',
-    TRY: '₺',
-    KRW: '₩',
-    SGD: 'S$',
-    HKD: 'HK$',
-    TWD: 'NT$',
-    THB: '฿',
-    MYR: 'RM',
-    IDR: 'Rp',
-    PHP: '₱',
-    INR: '₹',
-    MXN: '$',
-    BRL: 'R$',
-    ARS: '$',
-    CLP: '$',
-    COP: '$',
-    PEN: 'S/',
-    ZAR: 'R',
-    EGP: '£',
-    NGN: '₦',
-    KES: 'KSh',
-    MAD: 'MAD',
-    SAR: 'ر.س',
-    AED: 'د.إ',
-    ILS: '₪',
-    NZD: 'NZ$',
-    FJD: 'FJ$',
-  };
-
-  return symbolMap[code] || code;
-}
 
 // Helper function to get currency by code
 export function getCurrencyByCode(code: string): Currency | undefined {
   return currencies.find(currency => currency.code === code);
 }
 
-// Helper function to format price with currency
+function formatAmount(amount: number, decimals = 2): string {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount);
+}
+
+// Format price with currency code and 2 decimals (e.g. "USD 99.50")
 export function formatPriceWithCurrency(
   price: number,
   currencyCode: string
 ): string {
   const currency = getCurrencyByCode(currencyCode);
-  if (!currency) return `${price}`;
+  if (!currency) return formatAmount(price);
+  return `${currency.code} ${formatAmount(price, currency.digits)}`;
+}
 
-  return `${currency.symbol}${price}`;
+// Format price with optional rate type for display (e.g. "USD 100.00/hr")
+export function formatPrice(
+  price: number | null | undefined,
+  rateType: string | null | undefined,
+  currencyCode: string | null | undefined
+): string | null {
+  if (price === null || price === undefined || !rateType || !currencyCode)
+    return null;
+
+  const currency = getCurrencyByCode(currencyCode);
+  if (!currency) return formatAmount(price);
+
+  const formatted = formatAmount(price, currency.digits);
+  switch (rateType) {
+    case 'hourly':
+      return `${currency.code} ${formatted}/hr`;
+    case 'monthly':
+      return `${currency.code} ${formatted}/mo`;
+    case 'fixed':
+      return `${currency.code} ${formatted}`;
+    default:
+      return `${currency.code} ${formatted}`;
+  }
 }

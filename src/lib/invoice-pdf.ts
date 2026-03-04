@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 
-import { getCurrencyByCode } from '@/lib/currencies';
+import { formatPriceWithCurrency } from '@/lib/currencies';
 
 /** Data shape for PDF generation (matches API/DB snake_case for invoice, user, project) */
 export interface InvoicePdfData {
@@ -82,13 +82,6 @@ function formatDate(value: string | null | undefined): string {
   } catch {
     return '—';
   }
-}
-
-function formatMoney(amount: number, currencyCode: string): string {
-  const currency = getCurrencyByCode(currencyCode);
-  const symbol = currency?.symbol ?? currencyCode + ' ';
-  const formatted = typeof amount === 'number' ? amount.toFixed(2) : '0.00';
-  return `${symbol}${formatted}`;
 }
 
 function formatRateType(rt: string | null | undefined): string {
@@ -222,8 +215,14 @@ export async function generateInvoicePdf(
       item.name,
       { text: String(item.quantity), ...rightAlign },
       { text: formatRateType(item.rate_type ?? null), ...rightAlign },
-      { text: formatMoney(item.unit_cost, currencyCode), ...rightAlign },
-      { text: formatMoney(item.total_cost, currencyCode), ...rightAlign },
+      {
+        text: formatPriceWithCurrency(item.unit_cost, currencyCode),
+        ...rightAlign,
+      },
+      {
+        text: formatPriceWithCurrency(item.total_cost, currencyCode),
+        ...rightAlign,
+      },
     ]);
     doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
     doc.table({
@@ -250,14 +249,14 @@ export async function generateInvoicePdf(
       [
         { text: 'Subtotal', textColor: '#6b7280' },
         {
-          text: formatMoney(invoice.subtotal, currencyCode),
+          text: formatPriceWithCurrency(invoice.subtotal, currencyCode),
           ...totalsRightAlign,
         },
       ],
       [
         { text: `Tax (${invoice.tax_rate ?? 0}%)`, textColor: '#6b7280' },
         {
-          text: formatMoney(invoice.tax_amount, currencyCode),
+          text: formatPriceWithCurrency(invoice.tax_amount, currencyCode),
           ...totalsRightAlign,
         },
       ],
@@ -276,7 +275,7 @@ export async function generateInvoicePdf(
       [
         'Total',
         {
-          text: formatMoney(invoice.total_amount, currencyCode),
+          text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
           ...totalsRightAlign,
         },
       ],

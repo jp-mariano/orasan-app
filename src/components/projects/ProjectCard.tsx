@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getCurrencyByCode } from '@/lib/currencies';
+import { formatPrice } from '@/lib/currencies';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import { formatDate, getProjectColor, truncateTextSmart } from '@/lib/utils';
 import { Project } from '@/types/index';
@@ -72,34 +72,6 @@ export function ProjectCard({
       console.error('Failed to mark project as completed:', error);
     } finally {
       setIsUpdating(false);
-    }
-  };
-
-  const formatPrice = (
-    price: number | null | undefined,
-    rateType: string | null | undefined,
-    currencyCode: string | null | undefined
-  ) => {
-    if (price === null || price === undefined || !rateType || !currencyCode)
-      return null;
-
-    const currency = getCurrencyByCode(currencyCode);
-    if (!currency) return `${price}`;
-
-    const formatted = new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(price);
-
-    switch (rateType) {
-      case 'hourly':
-        return `${currency.code} ${formatted}/hr`;
-      case 'monthly':
-        return `${currency.code} ${formatted}/mo`;
-      case 'fixed':
-        return `${currency.code} ${formatted}`;
-      default:
-        return `${currency.code} ${formatted}`;
     }
   };
 
