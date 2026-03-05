@@ -807,7 +807,7 @@ export default function ProjectDetailPage() {
         open={showStopAllTimersModal}
         onOpenChange={setShowStopAllTimersModal}
         title="Create Invoice"
-        description="This will prepare your project for invoice generation. All active timers (running or paused, if any) within the project will be stopped. New timer entries will be created when you start working on tasks again."
+        description="This will prepare your project for invoice generation. All active timers (running or paused, if any) within the project will be stopped. New timer entries will be created when you start working on tasks again. Only completed tasks are included in the invoice."
         confirmText="Create Invoice"
         onConfirm={handleStopAllForInvoice}
         isLoading={isStoppingAll}
