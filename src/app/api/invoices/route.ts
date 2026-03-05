@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     toDate.setHours(23, 59, 59, 999); // Include the entire end date
 
     // Fetch stopped time entries within date range for this project
-    const { data: timeEntries, error: timeEntriesError } = await supabase
+    const { data: timeEntriesRaw, error: timeEntriesError } = await supabase
       .from('time_entries')
       .select(
         `
@@ -161,7 +161,8 @@ export async function POST(request: NextRequest) {
           description,
           rate_type,
           price,
-          currency_code
+          currency_code,
+          status
         )
       `
       )
@@ -180,9 +181,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!timeEntries || timeEntries.length === 0) {
+    // Only include entries from completed tasks (task is single relation object from Supabase)
+    const timeEntries = (timeEntriesRaw || []).filter(
+      (entry: unknown) =>
+        (entry as { task?: { status?: string } | null }).task?.status ===
+        'completed'
+    );
+
+    if (timeEntries.length === 0) {
       return NextResponse.json(
-        { error: 'No stopped time entries found in the selected date range' },
+        {
+          error:
+            'No stopped time entries from completed tasks in the selected date range',
+        },
         { status: 400 }
       );
     }
@@ -213,6 +224,7 @@ export async function POST(request: NextRequest) {
         rate_type?: string | null;
         price?: number | null;
         currency_code?: string | null;
+        status?: string;
       };
 
       if (!taskGroups.has(entry.task_id)) {

@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
           id,
           name,
           project_id,
+          status,
           project:project_id (
             id,
             name

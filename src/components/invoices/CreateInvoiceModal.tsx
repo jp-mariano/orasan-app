@@ -121,20 +121,24 @@ export function CreateInvoiceModal({
       const data = await response.json();
       const timeEntries = data.time_entries || [];
 
-      // Filter stopped entries within date range
+      // Filter stopped entries within date range and only from completed tasks
       const filteredEntries = timeEntries.filter(
         (entry: {
           timer_status: string;
           end_time?: string;
           task_id: string;
           duration_seconds: number;
-          task: { id: string; name: string } | null;
+          task: { id: string; name: string; status?: string } | null;
         }) => {
           if (entry.timer_status !== 'stopped' || !entry.end_time) {
             return false;
           }
           // Skip entries with null tasks (deleted tasks)
           if (!entry.task) {
+            return false;
+          }
+          // Only include entries from completed tasks
+          if (entry.task.status !== 'completed') {
             return false;
           }
           const endTime = new Date(entry.end_time);
