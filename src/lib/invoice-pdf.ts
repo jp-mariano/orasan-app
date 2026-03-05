@@ -89,7 +89,6 @@ function formatRateType(rt: string | null | undefined): string {
   const s = String(rt).toLowerCase();
   if (s === 'hourly') return 'Hourly';
   if (s === 'fixed') return 'Fixed';
-  if (s === 'monthly') return 'Monthly';
   return rt;
 }
 

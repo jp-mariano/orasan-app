@@ -24,7 +24,6 @@ function formatRateType(rateType: string | null | undefined): string {
   const s = String(rateType).toLowerCase();
   if (s === 'hourly') return 'Hourly';
   if (s === 'fixed') return 'Fixed';
-  if (s === 'monthly') return 'Monthly';
   return rateType;
 }
 

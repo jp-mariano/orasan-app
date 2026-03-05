@@ -3,7 +3,7 @@ export type Status = 'new' | 'on_hold' | 'in_progress' | 'completed';
 export type ProjectStatus = Status;
 export type TaskStatus = Status;
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
-export type RateType = 'hourly' | 'monthly' | 'fixed';
+export type RateType = 'hourly' | 'fixed';
 export type ActivityAction =
   | 'CREATE'
   | 'UPDATE'

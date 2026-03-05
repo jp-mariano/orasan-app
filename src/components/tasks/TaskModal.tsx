@@ -591,7 +591,6 @@ export function TaskModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="fixed">Fixed</SelectItem>
                 </SelectContent>
               </Select>

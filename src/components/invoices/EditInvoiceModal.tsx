@@ -53,7 +53,6 @@ function formatRateType(rateType: string | null | undefined): string {
   const s = String(rateType).toLowerCase();
   if (s === 'hourly') return 'hourly';
   if (s === 'fixed') return 'fixed';
-  if (s === 'monthly') return 'monthly';
   return s;
 }
 
@@ -517,7 +516,6 @@ export function EditInvoiceModal({
                             <SelectItem value="none">—</SelectItem>
                             <SelectItem value="hourly">Hourly</SelectItem>
                             <SelectItem value="fixed">Fixed</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
                       </td>

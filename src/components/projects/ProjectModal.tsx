@@ -529,7 +529,6 @@ export function ProjectModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
                   <SelectItem value="fixed">Fixed Price</SelectItem>
                 </SelectContent>
               </Select>

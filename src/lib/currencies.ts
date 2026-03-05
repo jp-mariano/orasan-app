@@ -95,8 +95,6 @@ export function formatPrice(
   switch (rateType) {
     case 'hourly':
       return `${currency.code} ${formatted}/hr`;
-    case 'monthly':
-      return `${currency.code} ${formatted}/mo`;
     case 'fixed':
       return `${currency.code} ${formatted}`;
     default:
