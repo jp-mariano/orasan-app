@@ -121,13 +121,24 @@ export async function POST(request: NextRequest) {
     // Verify the task exists and belongs to the user
     const { data: task, error: taskError } = await supabase
       .from('tasks')
-      .select('id, project_id')
+      .select('id, project_id, rate_type')
       .eq('id', timeEntryData.task_id)
       .eq('user_id', user.id)
       .single();
 
     if (taskError || !task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Fixed-rate tasks cannot have running timers; time is logged when the task is marked completed
+    if (
+      timeEntryData.timer_status === 'running' &&
+      task.rate_type === 'fixed'
+    ) {
+      return NextResponse.json(
+        { error: 'Timers are not used for fixed-price tasks' },
+        { status: 400 }
+      );
     }
 
     // Check for existing RUNNING timer on the same task (only one running timer per task allowed)

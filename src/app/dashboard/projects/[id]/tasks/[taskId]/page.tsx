@@ -304,15 +304,17 @@ export default function TaskDetailPage() {
                       >
                         <span>Edit Task</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          setIsManualTimeModalOpen(true);
-                          setShowActions(false);
-                        }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                      >
-                        <span>Edit Timer</span>
-                      </button>
+                      {task.rate_type !== 'fixed' && (
+                        <button
+                          onClick={() => {
+                            setIsManualTimeModalOpen(true);
+                            setShowActions(false);
+                          }}
+                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        >
+                          <span>Edit Timer</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           handleDeleteTask();
@@ -331,8 +333,10 @@ export default function TaskDetailPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Timer Display - First component */}
-            {task && <TaskDetailTimer taskId={task.id} projectId={projectId} />}
+            {/* Timer Display - Only for non-fixed-rate tasks */}
+            {task && task.rate_type !== 'fixed' && (
+              <TaskDetailTimer taskId={task.id} projectId={projectId} />
+            )}
 
             {/* Task Name */}
             <div className="space-y-2">
