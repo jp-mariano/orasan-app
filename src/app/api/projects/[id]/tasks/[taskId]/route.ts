@@ -117,7 +117,9 @@ export async function PATCH(
     // Then check if the task exists and belongs to the user and project
     const { data: existingTask, error: fetchError } = await supabase
       .from('tasks')
-      .select('id, name, user_id, project_id, rate_type, price, currency_code')
+      .select(
+        'id, name, user_id, project_id, status, rate_type, price, currency_code'
+      )
       .eq('id', taskId)
       .eq('user_id', user.id)
       .eq('project_id', projectId)
@@ -198,6 +200,46 @@ export async function PATCH(
     if (updateError) {
       console.error('Error updating task:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // When a fixed-rate task is marked completed, create a synthetic time entry
+    // so it can be included in invoice generation (start/end = now, duration 0).
+    const isTransitioningToCompleted =
+      updateData.status === 'completed' && existingTask.status !== 'completed';
+    const isFixedRate = existingTask.rate_type === 'fixed';
+
+    if (isTransitioningToCompleted && isFixedRate) {
+      const { data: existingSynthetic } = await supabase
+        .from('time_entries')
+        .select('id')
+        .eq('task_id', taskId)
+        .eq('timer_status', 'stopped')
+        .eq('duration_seconds', 0)
+        .limit(1)
+        .maybeSingle();
+
+      if (!existingSynthetic) {
+        const now = new Date().toISOString();
+        const { error: insertError } = await supabase
+          .from('time_entries')
+          .insert({
+            task_id: taskId,
+            project_id: existingTask.project_id,
+            user_id: existingTask.user_id,
+            start_time: now,
+            end_time: now,
+            duration_seconds: 0,
+            timer_status: 'stopped',
+          });
+
+        if (insertError) {
+          console.error(
+            'Error creating synthetic time entry for fixed-rate task:',
+            insertError
+          );
+          // Don't fail the PATCH; task was updated successfully
+        }
+      }
     }
 
     return NextResponse.json({
