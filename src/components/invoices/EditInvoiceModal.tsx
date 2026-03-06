@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { CalendarIcon, XIcon } from 'lucide-react';
 
@@ -127,6 +127,35 @@ export function EditInvoiceModal({
       setErrorMessage(null);
     }
   }, [open, invoice]);
+
+  const hasChanges = useMemo(() => {
+    if (!invoice || isLocked) return false;
+    if (invoiceNumber !== (invoice.invoice_number ?? '')) return true;
+    if (issueDate !== (invoice.issue_date ?? '')) return true;
+    if (dueDate !== (invoice.due_date ?? '')) return true;
+    if (paymentTerms !== (invoice.payment_terms ?? 'NET 30')) return true;
+    if (taxRate !== (invoice.tax_rate ?? 0)) return true;
+    if (notes !== (invoice.notes ?? '')) return true;
+    if (status !== (invoice.status ?? 'draft')) return true;
+    const origItems = invoice.items ?? [];
+    if (items.length !== origItems.length) return true;
+    return items.some(
+      (a, i) =>
+        Number(a.quantity) !== Number(origItems[i].quantity) ||
+        Number(a.unit_cost) !== Number(origItems[i].unit_cost)
+    );
+  }, [
+    invoice,
+    isLocked,
+    invoiceNumber,
+    issueDate,
+    dueDate,
+    paymentTerms,
+    taxRate,
+    notes,
+    status,
+    items,
+  ]);
 
   function removeItem(index: number) {
     setItems(prev => prev.filter((_, i) => i !== index));
@@ -483,9 +512,13 @@ export function EditInvoiceModal({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting || isLocked}
+            disabled={isSubmitting || isLocked || !hasChanges}
           >
-            {isSubmitting ? 'Updating...' : 'Update Invoice'}
+            {isSubmitting
+              ? 'Updating...'
+              : hasChanges
+                ? 'Update Invoice'
+                : 'No Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>
