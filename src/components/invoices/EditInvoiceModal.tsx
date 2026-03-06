@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, XIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -127,13 +127,6 @@ export function EditInvoiceModal({
       setErrorMessage(null);
     }
   }, [open, invoice]);
-
-  function addItem() {
-    setItems(prev => [
-      ...prev,
-      { name: '', quantity: 1, unit_cost: 0, rate_type: null },
-    ]);
-  }
 
   function removeItem(index: number) {
     setItems(prev => prev.filter((_, i) => i !== index));
@@ -281,33 +274,21 @@ export function EditInvoiceModal({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Items</Label>
-              {!isLocked && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
-                  className="gap-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add row
-                </Button>
-              )}
-            </div>
+            <Label>Items</Label>
             <div className="overflow-x-auto rounded-md border">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
                     <th className="px-2 py-2 text-left font-medium">Name</th>
-                    <th className="px-2 py-2 text-right font-medium w-20">
+                    <th className="px-2 py-2 text-center font-medium w-28">
                       Quantity
                     </th>
-                    <th className="px-2 py-2 text-right font-medium w-24">
-                      Unit cost
+                    <th className="px-2 py-2 text-center font-medium w-28">
+                      Unit Cost
                     </th>
-                    <th className="px-2 py-2 font-medium w-28">Rate type</th>
+                    <th className="px-2 py-2 text-right font-medium w-24">
+                      Rate Type
+                    </th>
                     {!isLocked && (
                       <th className="w-10 px-2 py-2" aria-label="Remove" />
                     )}
@@ -316,16 +297,8 @@ export function EditInvoiceModal({
                 <tbody>
                   {items.map((row, index) => (
                     <tr key={index} className="border-b">
-                      <td className="px-2 py-1">
-                        <Input
-                          value={row.name}
-                          onChange={e =>
-                            updateItem(index, 'name', e.target.value)
-                          }
-                          disabled={isLocked}
-                          placeholder="Item name"
-                          className="h-8 border-0 bg-transparent focus-visible:ring-1"
-                        />
+                      <td className="px-2 py-1 text-left text-sm">
+                        <div>{row.name || '—'}</div>
                       </td>
                       <td className="px-2 py-1 text-right">
                         <Input
@@ -341,7 +314,7 @@ export function EditInvoiceModal({
                             )
                           }
                           disabled={isLocked}
-                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
+                          className="h-8 w-full border text-right"
                         />
                       </td>
                       <td className="px-2 py-1 text-right">
@@ -358,30 +331,11 @@ export function EditInvoiceModal({
                             )
                           }
                           disabled={isLocked}
-                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
+                          className="h-8 w-full border text-right"
                         />
                       </td>
-                      <td className="px-2 py-1">
-                        <Select
-                          value={formatRateType(row.rate_type) || 'none'}
-                          onValueChange={v =>
-                            updateItem(
-                              index,
-                              'rate_type',
-                              v === 'none' ? null : (v as RateType)
-                            )
-                          }
-                          disabled={isLocked}
-                        >
-                          <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-1">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">—</SelectItem>
-                            <SelectItem value="hourly">Hourly</SelectItem>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <td className="px-2 py-1 text-right text-sm capitalize">
+                        <div>{formatRateType(row.rate_type) || '—'}</div>
                       </td>
                       {!isLocked && (
                         <td className="px-2 py-1">
@@ -393,7 +347,7 @@ export function EditInvoiceModal({
                             onClick={() => removeItem(index)}
                             aria-label="Remove item"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <XIcon className="h-4 w-4" />
                           </Button>
                         </td>
                       )}
