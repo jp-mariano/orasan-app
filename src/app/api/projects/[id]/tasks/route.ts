@@ -106,7 +106,6 @@ export async function POST(
       assignee,
       rate_type,
       price,
-      currency_code,
     } = body;
 
     // Validate required fields
@@ -145,20 +144,18 @@ export async function POST(
     const taskRateType =
       rate_type !== undefined ? rate_type : project.rate_type;
     const taskPrice = price !== undefined ? price : project.price;
-    const taskCurrencyCode =
-      currency_code !== undefined ? currency_code : project.currency_code;
 
     // Validate pricing fields consistency if any pricing field is provided
     const hasAnyPricingField =
       (taskRateType !== null && taskRateType !== undefined) ||
-      (taskPrice !== null && taskPrice !== undefined) ||
-      (taskCurrencyCode !== null && taskCurrencyCode !== undefined);
+      (taskPrice !== null && taskPrice !== undefined);
 
     if (hasAnyPricingField) {
       const pricingValidation = validatePricingConsistency(
         taskRateType,
         taskPrice,
-        taskCurrencyCode
+        // Tasks inherit currency from the project
+        project.currency_code || 'USD'
       );
 
       if (!pricingValidation.isValid) {
@@ -183,7 +180,6 @@ export async function POST(
         status: 'new',
         rate_type: taskRateType,
         price: taskPrice,
-        currency_code: taskCurrencyCode,
       })
       .select(
         `

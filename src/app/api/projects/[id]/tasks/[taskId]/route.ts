@@ -25,7 +25,7 @@ export async function GET(
     // First verify the project exists and belongs to the user
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id')
+      .select('id, currency_code')
       .eq('id', projectId)
       .eq('user_id', user.id)
       .single();
@@ -40,7 +40,7 @@ export async function GET(
       .select(
         `
         *,
-        project:projects(name, client_name, status),
+        project:projects(name, client_name, status, currency_code),
         assignee_user:users!tasks_assignee_fkey(name, email)
       `
       )
@@ -117,9 +117,7 @@ export async function PATCH(
     // Then check if the task exists and belongs to the user and project
     const { data: existingTask, error: fetchError } = await supabase
       .from('tasks')
-      .select(
-        'id, name, user_id, project_id, status, rate_type, price, currency_code'
-      )
+      .select('id, name, user_id, project_id, status, rate_type, price')
       .eq('id', taskId)
       .eq('user_id', user.id)
       .eq('project_id', projectId)
@@ -136,11 +134,14 @@ export async function PATCH(
 
     // Validate pricing fields consistency if any pricing field is being updated
     const hasPricingUpdate =
-      updateData.rate_type !== undefined ||
-      updateData.price !== undefined ||
-      updateData.currency_code !== undefined;
+      updateData.rate_type !== undefined || updateData.price !== undefined;
 
     if (hasPricingUpdate) {
+      const projectCurrencyCode = (
+        project as {
+          currency_code?: string | null;
+        }
+      ).currency_code;
       // Get the final values (existing values for unchanged fields, new values for changed fields)
       const finalRateType =
         updateData.rate_type !== undefined
@@ -148,15 +149,12 @@ export async function PATCH(
           : existingTask.rate_type;
       const finalPrice =
         updateData.price !== undefined ? updateData.price : existingTask.price;
-      const finalCurrencyCode =
-        updateData.currency_code !== undefined
-          ? updateData.currency_code
-          : existingTask.currency_code;
 
       const pricingValidation = validatePricingConsistency(
         finalRateType,
         finalPrice,
-        finalCurrencyCode
+        // Tasks inherit currency from the project
+        projectCurrencyCode || 'USD'
       );
 
       if (!pricingValidation.isValid) {
@@ -170,7 +168,10 @@ export async function PATCH(
     // Prepare update data (only include defined fields)
     const updatePayload = Object.fromEntries(
       Object.entries(updateData)
-        .filter(([, value]) => value !== undefined)
+        // Ignore undefined values and any task-level currency_code
+        .filter(
+          ([key, value]) => value !== undefined && key !== 'currency_code'
+        )
         .map(([key, value]) => [
           key,
           ['name', 'description', 'due_date', 'assignee'].includes(key)

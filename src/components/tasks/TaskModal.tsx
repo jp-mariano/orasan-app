@@ -33,12 +33,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/hooks/useUser';
-import { currencies } from '@/lib/currencies';
 import { getPriorityOptions } from '@/lib/priority';
 import { getStatusOptions } from '@/lib/status';
 import {
   cn,
-  convertCurrencyEmptyToNull,
   convertRateTypeEmptyToNull,
   formatDate,
   getAssigneeDisplayName,
@@ -87,7 +85,6 @@ export function TaskModal({
       assignee: currentUser?.id || undefined,
       rate_type: undefined,
       price: undefined,
-      currency_code: undefined,
     }),
     [project.id, currentUser?.id]
   );
@@ -115,7 +112,6 @@ export function TaskModal({
         assignee: task.assignee || undefined,
         rate_type: task.rate_type || undefined,
         price: task.price,
-        currency_code: task.currency_code || undefined,
       });
       setTaskStatus(task.status);
       setModifiedFields(new Set());
@@ -142,7 +138,6 @@ export function TaskModal({
           assignee: task.assignee || undefined,
           rate_type: task.rate_type || undefined,
           price: task.price,
-          currency_code: task.currency_code || undefined,
         });
         setTaskStatus(task.status);
       } else {
@@ -180,14 +175,14 @@ export function TaskModal({
     // Validate pricing fields consistency only if user has provided any pricing data
     const hasProvidedPricingData =
       formData.rate_type !== undefined ||
-      (formData.price !== undefined && formData.price !== null) ||
-      formData.currency_code !== undefined;
+      (formData.price !== undefined && formData.price !== null);
 
     if (hasProvidedPricingData) {
       const pricingValidation = validatePricingConsistency(
         convertRateTypeEmptyToNull(formData.rate_type),
         formData.price !== undefined ? formData.price : undefined,
-        convertCurrencyEmptyToNull(formData.currency_code)
+        // Tasks inherit currency from the project; use project currency for validation
+        project.currency_code || 'USD'
       );
 
       if (!pricingValidation.isValid) {
@@ -211,7 +206,6 @@ export function TaskModal({
         rate_type: () => convertRateTypeEmptyToNull(formData.rate_type),
         price: () =>
           formData.price !== undefined ? formData.price : undefined,
-        currency_code: () => convertCurrencyEmptyToNull(formData.currency_code),
         status: () => taskStatus,
       } as const;
 
@@ -239,7 +233,7 @@ export function TaskModal({
           .map(([field, getValue]) => [field, getValue()])
       );
     } else {
-      // Create mode - include all required fields
+      // Create mode - include all required fields (currency is inherited from project)
       taskData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || undefined,
@@ -249,7 +243,6 @@ export function TaskModal({
         assignee: formData.assignee === 'none' ? null : formData.assignee,
         rate_type: convertRateTypeEmptyToNull(formData.rate_type),
         price: formData.price !== undefined ? formData.price : undefined,
-        currency_code: convertCurrencyEmptyToNull(formData.currency_code),
       };
     }
 
@@ -305,13 +298,10 @@ export function TaskModal({
       ...prev,
       rate_type: null,
       price: null,
-      currency_code: null,
     }));
 
     // Mark pricing fields as modified so submit button enables
-    setModifiedFields(
-      prev => new Set([...prev, 'rate_type', 'price', 'currency_code'])
-    );
+    setModifiedFields(prev => new Set([...prev, 'rate_type', 'price']));
 
     // Clear pricing validation errors
     setErrorMessage(null);
@@ -319,7 +309,9 @@ export function TaskModal({
 
   // Check if any pricing field has data
   const hasAnyPricingData =
-    formData.rate_type || formData.price != null || formData.currency_code;
+    formData.rate_type !== null && formData.rate_type !== undefined
+      ? true
+      : formData.price != null;
 
   const handleStatusChange = (value: TaskStatus) => {
     setTaskStatus(value);
@@ -526,29 +518,13 @@ export function TaskModal({
 
           <div className="border-t"></div>
 
-          {/* Currency and Price Row */}
+          {/* Currency (project-level, read-only) and Price Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency_code">Currency</Label>
-              <Select
-                value={formData.currency_code ?? ''}
-                onValueChange={value =>
-                  handleInputChange('currency_code', value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map(currency => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{currency.code}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="rounded-md border px-3 py-2 text-sm bg-muted">
+                {project.currency_code || 'USD'}
+              </div>
             </div>
 
             <div className="space-y-2">

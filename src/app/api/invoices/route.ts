@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
           description,
           rate_type,
           price,
-          currency_code,
           status
         )
       `
@@ -208,7 +207,6 @@ export async function POST(request: NextRequest) {
           description?: string;
           rate_type?: string | null;
           price?: number | null;
-          currency_code?: string | null;
         };
         totalDurationSeconds: number;
         timeEntryIds: string[];
@@ -223,7 +221,6 @@ export async function POST(request: NextRequest) {
         description?: string;
         rate_type?: string | null;
         price?: number | null;
-        currency_code?: string | null;
         status?: string;
       };
 

@@ -81,7 +81,6 @@ export interface Task {
   assignee?: string;
   rate_type?: RateType | null;
   price?: number | null;
-  currency_code?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -91,6 +90,7 @@ export interface TaskWithDetails extends Task {
     name: string;
     client_name?: string;
     status?: ProjectStatus;
+    currency_code?: string | null;
   };
   assignee_user?: {
     name?: string;
@@ -170,7 +170,6 @@ export interface CreateTaskRequest {
   assignee?: string | null;
   rate_type?: RateType | null;
   price?: number | null;
-  currency_code?: string | null;
 }
 
 export interface UpdateTaskRequest {
@@ -182,7 +181,6 @@ export interface UpdateTaskRequest {
   assignee?: string | null;
   rate_type?: RateType | null;
   price?: number | null;
-  currency_code?: string | null;
 }
 
 export interface CreateTimeEntryRequest {

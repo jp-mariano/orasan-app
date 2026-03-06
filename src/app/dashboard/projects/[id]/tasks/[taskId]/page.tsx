@@ -438,7 +438,7 @@ export default function TaskDetailPage() {
               </div>
             ) : null}
 
-            {/* Task Rate Type and Price/Currency */}
+            {/* Task Rate Type and Price (uses project currency) */}
             {task.rate_type && task.price !== null ? (
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
@@ -464,16 +464,17 @@ export default function TaskDetailPage() {
                     Price
                   </Label>
                   <InlineEdit
-                    value={`${task.currency_code || 'USD'} ${task.price}`}
+                    value={`${task.project?.currency_code ?? 'USD'} ${
+                      task.price
+                    }`}
                     type="price-currency"
                     onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
-                        const [currency, priceStr] = value.split('|');
+                        const [, priceStr] = value.split('|');
                         const price = parseFloat(priceStr);
                         if (!isNaN(price) && price >= 0) {
-                          // Update both fields
-                          await handleSaveField('currency_code', currency);
+                          // Update price only; currency is inherited from project
                           await handleSaveField('price', price);
                         }
                       }
@@ -486,7 +487,7 @@ export default function TaskDetailPage() {
                     className="text-center"
                     projectData={{
                       price: task.price,
-                      currency_code: task.currency_code,
+                      currency_code: task.project?.currency_code ?? 'USD',
                     }}
                   />
                 </div>
