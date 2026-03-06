@@ -30,7 +30,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { currencies } from '@/lib/currencies';
 import { cn, formatDate } from '@/lib/utils';
 import {
   InvoiceItem,
@@ -96,7 +95,6 @@ export function EditInvoiceModal({
   const [dueDate, setDueDate] = useState('');
   const [paymentTerms, setPaymentTerms] = useState('NET 30');
   const [taxRate, setTaxRate] = useState(0);
-  const [currencyCode, setCurrencyCode] = useState('USD');
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<InvoiceStatus>('draft');
   const [items, setItems] = useState<EditInvoiceFormItem[]>([]);
@@ -115,7 +113,6 @@ export function EditInvoiceModal({
       setDueDate(invoice.due_date ?? '');
       setPaymentTerms(invoice.payment_terms ?? 'NET 30');
       setTaxRate(invoice.tax_rate ?? 0);
-      setCurrencyCode(invoice.currency_code ?? 'USD');
       setNotes(invoice.notes ?? '');
       setStatus(invoice.status ?? 'draft');
       setItems(
@@ -188,7 +185,6 @@ export function EditInvoiceModal({
         due_date: dueDate.trim() || undefined,
         payment_terms: paymentTerms.trim() || undefined,
         tax_rate: taxRate,
-        currency_code: currencyCode || undefined,
         notes: notes.trim() || undefined,
         items: validItems.map(row => {
           const q = Math.round(Number(row.quantity) * 100) / 100;
@@ -507,26 +503,6 @@ export function EditInvoiceModal({
                 disabled={isLocked}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Currency</Label>
-            <Select
-              value={currencyCode}
-              onValueChange={setCurrencyCode}
-              disabled={isLocked}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map(c => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
