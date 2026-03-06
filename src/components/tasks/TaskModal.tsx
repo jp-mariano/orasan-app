@@ -600,10 +600,12 @@ export function TaskModal({
             >
               {isSubmitting
                 ? isEditMode
-                  ? 'Saving...'
+                  ? 'Updating...'
                   : 'Creating...'
                 : isEditMode
-                  ? 'Save Changes'
+                  ? hasChanges
+                    ? 'Update Task'
+                    : 'No Changes'
                   : 'Create Task'}
             </Button>
           </DialogFooter>

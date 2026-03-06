@@ -285,6 +285,130 @@ export function EditInvoiceModal({
           </div>
 
           <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Items</Label>
+              {!isLocked && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addItem}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add row
+                </Button>
+              )}
+            </div>
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-2 py-2 text-left font-medium">Name</th>
+                    <th className="px-2 py-2 text-right font-medium w-20">
+                      Quantity
+                    </th>
+                    <th className="px-2 py-2 text-right font-medium w-24">
+                      Unit cost
+                    </th>
+                    <th className="px-2 py-2 font-medium w-28">Rate type</th>
+                    {!isLocked && (
+                      <th className="w-10 px-2 py-2" aria-label="Remove" />
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((row, index) => (
+                    <tr key={index} className="border-b">
+                      <td className="px-2 py-1">
+                        <Input
+                          value={row.name}
+                          onChange={e =>
+                            updateItem(index, 'name', e.target.value)
+                          }
+                          disabled={isLocked}
+                          placeholder="Item name"
+                          className="h-8 border-0 bg-transparent focus-visible:ring-1"
+                        />
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={row.quantity}
+                          onChange={e =>
+                            updateItem(
+                              index,
+                              'quantity',
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          disabled={isLocked}
+                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
+                        />
+                      </td>
+                      <td className="px-2 py-1 text-right">
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={row.unit_cost}
+                          onChange={e =>
+                            updateItem(
+                              index,
+                              'unit_cost',
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          disabled={isLocked}
+                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
+                        />
+                      </td>
+                      <td className="px-2 py-1">
+                        <Select
+                          value={formatRateType(row.rate_type) || 'none'}
+                          onValueChange={v =>
+                            updateItem(
+                              index,
+                              'rate_type',
+                              v === 'none' ? null : (v as RateType)
+                            )
+                          }
+                          disabled={isLocked}
+                        >
+                          <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-1">
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">—</SelectItem>
+                            <SelectItem value="hourly">Hourly</SelectItem>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      {!isLocked && (
+                        <td className="px-2 py-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => removeItem(index)}
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-invoice-number">Invoice Number</Label>
             <Input
               id="edit-invoice-number"
@@ -415,130 +539,6 @@ export function EditInvoiceModal({
               rows={3}
             />
           </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Items</Label>
-              {!isLocked && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addItem}
-                  className="gap-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add row
-                </Button>
-              )}
-            </div>
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-2 py-2 text-left font-medium">Name</th>
-                    <th className="px-2 py-2 text-right font-medium w-20">
-                      Qty
-                    </th>
-                    <th className="px-2 py-2 text-right font-medium w-24">
-                      Unit cost
-                    </th>
-                    <th className="px-2 py-2 font-medium w-28">Rate type</th>
-                    {!isLocked && (
-                      <th className="w-10 px-2 py-2" aria-label="Remove" />
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((row, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="px-2 py-1">
-                        <Input
-                          value={row.name}
-                          onChange={e =>
-                            updateItem(index, 'name', e.target.value)
-                          }
-                          disabled={isLocked}
-                          placeholder="Item name"
-                          className="h-8 border-0 bg-transparent focus-visible:ring-1"
-                        />
-                      </td>
-                      <td className="px-2 py-1 text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={row.quantity}
-                          onChange={e =>
-                            updateItem(
-                              index,
-                              'quantity',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          disabled={isLocked}
-                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
-                        />
-                      </td>
-                      <td className="px-2 py-1 text-right">
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={row.unit_cost}
-                          onChange={e =>
-                            updateItem(
-                              index,
-                              'unit_cost',
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          disabled={isLocked}
-                          className="h-8 w-full border-0 bg-transparent text-right focus-visible:ring-1"
-                        />
-                      </td>
-                      <td className="px-2 py-1">
-                        <Select
-                          value={formatRateType(row.rate_type) || 'none'}
-                          onValueChange={v =>
-                            updateItem(
-                              index,
-                              'rate_type',
-                              v === 'none' ? null : (v as RateType)
-                            )
-                          }
-                          disabled={isLocked}
-                        >
-                          <SelectTrigger className="h-8 border-0 bg-transparent focus:ring-1">
-                            <SelectValue placeholder="—" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">—</SelectItem>
-                            <SelectItem value="hourly">Hourly</SelectItem>
-                            <SelectItem value="fixed">Fixed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      {!isLocked && (
-                        <td className="px-2 py-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={() => removeItem(index)}
-                            aria-label="Remove item"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         <DialogFooter>
@@ -555,7 +555,7 @@ export function EditInvoiceModal({
             onClick={handleSubmit}
             disabled={isSubmitting || isLocked}
           >
-            {isSubmitting ? 'Saving...' : 'Save changes'}
+            {isSubmitting ? 'Updating...' : 'Update Invoice'}
           </Button>
         </DialogFooter>
       </DialogContent>
