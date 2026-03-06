@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { ClearPricingButton } from '@/components/ui/clear-pricing-button';
 import {
   Dialog,
   DialogContent,
@@ -125,6 +124,16 @@ export function ProjectModal({
     return modifiedFields.size > 0;
   }, [isEditMode, project, modifiedFields]);
 
+  // Pricing is required: all three fields must be set (for create and for form validation)
+  const hasAllPricing = useMemo(() => {
+    const rt = convertRateTypeEmptyToNull(formData.rate_type);
+    const pr = formData.price;
+    const cc = convertCurrencyEmptyToNull(formData.currency_code);
+    return (
+      rt != null && pr != null && pr >= 0 && cc != null && cc.trim() !== ''
+    );
+  }, [formData.rate_type, formData.price, formData.currency_code]);
+
   // Initialize form data when project changes (for edit mode)
   useEffect(() => {
     if (project) {
@@ -176,15 +185,27 @@ export function ProjectModal({
       return;
     }
 
-    // Validate pricing fields consistency
+    // Validate pricing fields consistency and require all pricing fields
+    const rateType = convertRateTypeEmptyToNull(formData.rate_type);
+    const price = formData.price !== undefined ? formData.price : undefined;
+    const currencyCode = convertCurrencyEmptyToNull(formData.currency_code);
     const pricingValidation = validatePricingConsistency(
-      convertRateTypeEmptyToNull(formData.rate_type),
-      formData.price !== undefined ? formData.price : undefined,
-      convertCurrencyEmptyToNull(formData.currency_code)
+      rateType,
+      price,
+      currencyCode
     );
 
     if (!pricingValidation.isValid) {
       setErrorMessage(pricingValidation.error!);
+      return;
+    }
+
+    const hasAllPricing =
+      rateType != null && price != null && price >= 0 && currencyCode?.trim();
+    if (!hasAllPricing) {
+      setErrorMessage(
+        'Rate type, price, and currency are required for every project.'
+      );
       return;
     }
 
@@ -300,27 +321,6 @@ export function ProjectModal({
       setErrorMessage(null);
     }
   };
-
-  const handleClearPricing = () => {
-    setFormData(prev => ({
-      ...prev,
-      rate_type: null,
-      price: null,
-      currency_code: null,
-    }));
-
-    // Mark pricing fields as modified so submit button enables
-    setModifiedFields(
-      prev => new Set([...prev, 'rate_type', 'price', 'currency_code'])
-    );
-
-    // Clear pricing validation errors
-    setErrorMessage(null);
-  };
-
-  // Check if any pricing field has data
-  const hasAnyPricingData =
-    formData.rate_type || formData.price != null || formData.currency_code;
 
   // Show warning modal when project limit is reached (only for create mode)
   if (!isEditMode && !canCreateProject) {
@@ -467,7 +467,9 @@ export function ProjectModal({
           {/* Currency and Price Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="currency_code">Currency</Label>
+              <Label htmlFor="currency_code">
+                Currency <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={formData.currency_code ?? ''}
                 onValueChange={value =>
@@ -490,7 +492,9 @@ export function ProjectModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="price">Rate/Price</Label>
+              <Label htmlFor="price">
+                Rate/Price <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="price"
                 type="number"
@@ -514,32 +518,25 @@ export function ProjectModal({
             </div>
           </div>
 
-          {/* Rate Type and Clear Pricing Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="rate_type">Rate Type</Label>
-              <Select
-                value={formData.rate_type ?? ''}
-                onValueChange={value =>
-                  handleInputChange('rate_type', value as RateType)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select rate type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="fixed">Fixed Price</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-center h-10">
-              <ClearPricingButton
-                onClear={handleClearPricing}
-                hasPricingData={!!hasAnyPricingData}
-              />
-            </div>
+          {/* Rate Type (required) */}
+          <div className="space-y-2">
+            <Label htmlFor="rate_type">
+              Rate Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={formData.rate_type ?? ''}
+              onValueChange={value =>
+                handleInputChange('rate_type', value as RateType)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select rate type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hourly">Hourly</SelectItem>
+                <SelectItem value="fixed">Fixed Price</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter className="flex gap-2">
@@ -556,6 +553,7 @@ export function ProjectModal({
               disabled={
                 isSubmitting ||
                 !formData.name.trim() ||
+                !hasAllPricing ||
                 !hasChanges ||
                 !!nameError ||
                 !!errorMessage

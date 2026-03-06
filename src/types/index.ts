@@ -91,6 +91,8 @@ export interface TaskWithDetails extends Task {
     client_name?: string;
     status?: ProjectStatus;
     currency_code?: string | null;
+    rate_type?: RateType | null;
+    price?: number | null;
   };
   assignee_user?: {
     name?: string;

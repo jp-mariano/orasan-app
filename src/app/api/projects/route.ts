@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       validationErrors.push('Project name must be less than 100 characters');
     }
 
-    // Validate pricing fields consistency
+    // Validate pricing fields consistency and require all pricing fields
     const pricingValidation = validatePricingConsistency(
       projectData.rate_type,
       projectData.price,
@@ -76,6 +76,21 @@ export async function POST(request: NextRequest) {
 
     if (!pricingValidation.isValid) {
       validationErrors.push(pricingValidation.error!);
+    }
+
+    const hasRateType = projectData.rate_type != null;
+    const hasPrice =
+      projectData.price != null &&
+      projectData.price !== undefined &&
+      projectData.price >= 0;
+    const hasCurrency =
+      projectData.currency_code != null &&
+      projectData.currency_code !== undefined &&
+      String(projectData.currency_code).trim() !== '';
+    if (!hasRateType || !hasPrice || !hasCurrency) {
+      validationErrors.push(
+        'Rate type, price, and currency are required for every project.'
+      );
     }
 
     if (validationErrors.length > 0) {

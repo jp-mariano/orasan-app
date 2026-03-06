@@ -40,7 +40,7 @@ export async function GET(
       .select(
         `
         *,
-        project:projects(name, client_name, status, currency_code),
+        project:projects(name, client_name, status, currency_code, rate_type, price),
         assignee_user:users!tasks_assignee_fkey(name, email)
       `
       )
@@ -192,7 +192,7 @@ export async function PATCH(
       .select(
         `
         *,
-        project:projects(name, client_name, status),
+        project:projects(name, client_name, status, currency_code, rate_type, price),
         assignee_user:users!tasks_assignee_fkey(name, email)
       `
       )

@@ -6,7 +6,6 @@ import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { ClearPricingButton } from '@/components/ui/clear-pricing-button';
 import {
   Dialog,
   DialogContent,
@@ -74,7 +73,7 @@ export function TaskModal({
   const { user: userProfile } = useUser();
   const isEditMode = !!task;
 
-  // Default form data for create mode
+  // Default form data for create mode (pricing pre-filled from project)
   const defaultFormData = useMemo<CreateTaskRequest>(
     () => ({
       name: '',
@@ -83,10 +82,10 @@ export function TaskModal({
       priority: 'low',
       due_date: undefined,
       assignee: currentUser?.id || undefined,
-      rate_type: undefined,
-      price: undefined,
+      rate_type: project.rate_type ?? undefined,
+      price: project.price ?? undefined,
     }),
-    [project.id, currentUser?.id]
+    [project.id, project.rate_type, project.price, currentUser?.id]
   );
 
   // Form data state - use union type but handle status separately
@@ -293,25 +292,20 @@ export function TaskModal({
     }
   };
 
-  const handleClearPricing = () => {
+  const handleResetPricingToProject = () => {
     setFormData(prev => ({
       ...prev,
-      rate_type: null,
-      price: null,
+      rate_type: project.rate_type ?? undefined,
+      price: project.price ?? undefined,
     }));
 
-    // Mark pricing fields as modified so submit button enables
     setModifiedFields(prev => new Set([...prev, 'rate_type', 'price']));
-
-    // Clear pricing validation errors
     setErrorMessage(null);
   };
 
-  // Check if any pricing field has data
-  const hasAnyPricingData =
-    formData.rate_type !== null && formData.rate_type !== undefined
-      ? true
-      : formData.price != null;
+  const pricingDiffersFromProject =
+    formData.rate_type !== (project.rate_type ?? undefined) ||
+    formData.price !== (project.price ?? undefined);
 
   const handleStatusChange = (value: TaskStatus) => {
     setTaskStatus(value);
@@ -519,6 +513,18 @@ export function TaskModal({
           <div className="border-t"></div>
 
           {/* Currency (project-level, read-only) and Price Row */}
+          {pricingDiffersFromProject && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleResetPricingToProject}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Reset pricing to project default
+            </Button>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="currency_code">Currency</Label>
@@ -552,7 +558,7 @@ export function TaskModal({
             </div>
           </div>
 
-          {/* Rate Type and Clear Pricing Row */}
+          {/* Rate Type */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="rate_type">Rate Type</Label>
@@ -570,13 +576,6 @@ export function TaskModal({
                   <SelectItem value="fixed">Fixed</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="flex items-center justify-center h-10">
-              <ClearPricingButton
-                onClear={handleClearPricing}
-                hasPricingData={!!hasAnyPricingData}
-              />
             </div>
           </div>
 

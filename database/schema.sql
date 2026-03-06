@@ -36,9 +36,9 @@ CREATE TABLE public.projects (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
-  rate_type rate_type DEFAULT NULL,
-  price DECIMAL(10,2) DEFAULT NULL,
-  currency_code VARCHAR(3) DEFAULT NULL,
+  rate_type rate_type NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  currency_code VARCHAR(3) NOT NULL,
   status project_status DEFAULT 'new',
   user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
   -- Client information for invoicing
@@ -48,13 +48,8 @@ CREATE TABLE public.projects (
   client_phone TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Allow NULL for unpriced projects, or positive prices
-  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0),
-  -- Ensure pricing fields are all populated together or all NULL
-  CONSTRAINT pricing_fields_consistency CHECK (
-    (price IS NULL AND currency_code IS NULL AND rate_type IS NULL) OR
-    (price IS NOT NULL AND currency_code IS NOT NULL AND rate_type IS NOT NULL)
-  )
+  -- Pricing is required for all projects
+  CONSTRAINT price_consistency CHECK (price >= 0)
 );
 
 -- Create tasks table
@@ -68,18 +63,13 @@ CREATE TABLE public.tasks (
   priority priority NOT NULL DEFAULT 'low',
   due_date DATE,
   assignee UUID REFERENCES public.users(id) ON DELETE SET NULL,
-  -- Rate information at task creation time (locked after creation)
-  rate_type rate_type DEFAULT NULL,
-  price DECIMAL(10,2) DEFAULT NULL,
+  -- Rate information: tasks inherit from project but rate_type and price are customizable per task
+  rate_type rate_type NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Allow NULL for unpriced tasks, or positive prices
-  CONSTRAINT price_consistency CHECK (price IS NULL OR price >= 0),
-  -- Ensure pricing fields are all populated together or all NULL
-  CONSTRAINT pricing_fields_consistency CHECK (
-    (price IS NULL AND rate_type IS NULL) OR
-    (price IS NOT NULL AND rate_type IS NOT NULL)
-  ),
+  -- Pricing is required; tasks inherit from project but can customize
+  CONSTRAINT price_consistency CHECK (price >= 0),
   -- Ensure valid priority values
   CONSTRAINT valid_task_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );

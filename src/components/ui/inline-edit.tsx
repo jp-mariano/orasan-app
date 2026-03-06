@@ -104,6 +104,8 @@ interface InlineEditProps {
     price?: number | null;
     currency_code?: string | null;
   };
+  /** When true and type is price-currency, currency is shown read-only (e.g. task uses project currency) */
+  currencyReadOnly?: boolean;
   assigneeData?: {
     users: User[];
     currentUserId?: string;
@@ -122,6 +124,7 @@ export function InlineEdit({
   onError,
   error,
   projectData,
+  currencyReadOnly = false,
   assigneeData,
 }: InlineEditProps) {
   // Consolidated state management
@@ -326,28 +329,34 @@ export function InlineEdit({
       return wrapWithError(
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2 flex-1">
-            <Select
-              value={localCurrency}
-              onValueChange={currency => {
-                updateState({
-                  localCurrency: currency,
-                  editValue: `${currency} ${localPrice}`,
-                });
-              }}
-            >
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map(currency => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{currency.code}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {currencyReadOnly ? (
+              <div className="flex h-9 w-24 items-center rounded-md border border-input bg-muted px-3 py-1 text-sm">
+                {localCurrency}
+              </div>
+            ) : (
+              <Select
+                value={localCurrency}
+                onValueChange={currency => {
+                  updateState({
+                    localCurrency: currency,
+                    editValue: `${currency} ${localPrice}`,
+                  });
+                }}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map(currency => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{currency.code}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Input
               type="number"
               step="0.01"

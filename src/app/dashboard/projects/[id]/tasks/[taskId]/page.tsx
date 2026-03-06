@@ -29,7 +29,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { useUser } from '@/hooks/useUser';
 import { formatDate } from '@/lib/utils';
-import { TaskWithDetails } from '@/types';
+import { ProjectStatus, TaskWithDetails } from '@/types';
 
 // Wrapper component to access timer context
 function ManualTimeEntryModalWrapper({
@@ -468,6 +468,7 @@ export default function TaskDetailPage() {
                       task.price
                     }`}
                     type="price-currency"
+                    currencyReadOnly
                     onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
@@ -551,10 +552,13 @@ export default function TaskDetailPage() {
           project={{
             id: projectId,
             name: task.project?.name || 'Unknown Project',
-            status: 'new',
+            status: (task.project?.status as ProjectStatus) ?? 'new',
             user_id: user?.id || '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            rate_type: task.project?.rate_type ?? undefined,
+            price: task.project?.price ?? undefined,
+            currency_code: task.project?.currency_code ?? undefined,
           }}
           task={task}
           onSubmit={handleUpdateTask}
