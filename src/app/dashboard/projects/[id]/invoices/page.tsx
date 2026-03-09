@@ -273,10 +273,10 @@ export default function ProjectInvoicesPage() {
                       >
                         <td className="py-3 px-4">{inv.invoice_number}</td>
                         <td className="py-3 px-4">
-                          {formatDate(inv.issue_date)}
+                          {formatDate(inv.issue_date, true)}
                         </td>
                         <td className="py-3 px-4">
-                          {inv.due_date ? formatDate(inv.due_date) : '—'}
+                          {inv.due_date ? formatDate(inv.due_date, true) : '—'}
                         </td>
                         <td className="py-3 px-4 capitalize">{inv.status}</td>
                         <td className="py-3 px-4 text-right">

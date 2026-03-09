@@ -235,11 +235,13 @@ export default function InvoiceDetailPage() {
               </tr>
               <tr>
                 <td className="pr-4 text-left">Issue date</td>
-                <td>{formatDate(invoice.issue_date)}</td>
+                <td>{formatDate(invoice.issue_date, true)}</td>
               </tr>
               <tr>
                 <td className="pr-4 text-left">Due date</td>
-                <td>{invoice.due_date ? formatDate(invoice.due_date) : '—'}</td>
+                <td>
+                  {invoice.due_date ? formatDate(invoice.due_date, true) : '—'}
+                </td>
               </tr>
               <tr>
                 <td className="pr-4 text-left">Payment terms</td>

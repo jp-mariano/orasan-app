@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 
 import { formatPriceWithCurrency } from '@/lib/currencies';
+import { formatDate } from '@/lib/utils';
 
 /** Data shape for PDF generation (matches API/DB snake_case for invoice, user, project) */
 export interface InvoicePdfData {
@@ -74,15 +75,6 @@ const BODY_FONT_FAMILY = 'Helvetica';
 const BODY_FONT_SIZE = 10;
 const INFO_HEADER_FONT: PdfFont = { family: 'Helvetica-Bold', size: 11 };
 const TABLE_HEADER_FONT: PdfFont = { family: 'Helvetica-Bold', size: 10 };
-function formatDate(value: string | null | undefined): string {
-  if (!value) return '—';
-  try {
-    const d = new Date(value);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
-  } catch {
-    return '—';
-  }
-}
 
 function formatRateType(rt: string | null | undefined): string {
   if (!rt) return '—';
@@ -142,8 +134,8 @@ export async function generateInvoicePdf(
 
     const detailLines = [
       `Invoice number: ${invoice.invoice_number ?? '—'}`,
-      `Issue date: ${formatDate(invoice.issue_date)}`,
-      `Due date: ${formatDate(invoice.due_date ?? null)}`,
+      `Issue date: ${formatDate(invoice.issue_date, true)}`,
+      `Due date: ${invoice.due_date ? formatDate(invoice.due_date, true) : '—'}`,
       `Payment terms: ${invoice.payment_terms ?? '—'}`,
     ];
 
