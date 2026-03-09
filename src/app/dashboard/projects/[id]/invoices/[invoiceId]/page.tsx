@@ -11,7 +11,6 @@ import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { EditInvoiceModal } from '@/components/invoices/EditInvoiceModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/hooks/useUser';
@@ -178,188 +177,185 @@ export default function InvoiceDetailPage() {
           className="mb-6"
         />
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="relative float-right" ref={optionsMenuRef}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+            className="h-9 w-9"
+            aria-label="Invoice options"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+          {showOptionsMenu && (
+            <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(true);
+                  setShowOptionsMenu(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+              >
+                Edit
+              </button>
+              <a
+                href={`/api/invoices/${invoiceId}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                onClick={() => setShowOptionsMenu(false)}
+              >
+                Download PDF
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(true);
+                  setShowOptionsMenu(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight py-8">
+            Invoice
+          </h1>
+          <table>
+            <tbody>
+              <tr>
+                <td className="pr-4 text-left">Invoice number</td>
+                <td>{invoice.invoice_number ?? '—'}</td>
+              </tr>
+              <tr>
+                <td className="pr-4 text-left">Issue date</td>
+                <td>{formatDate(invoice.issue_date)}</td>
+              </tr>
+              <tr>
+                <td className="pr-4 text-left">Due date</td>
+                <td>{invoice.due_date ? formatDate(invoice.due_date) : '—'}</td>
+              </tr>
+              <tr>
+                <td className="pr-4 text-left">Payment terms</td>
+                <td>{invoice.payment_terms ?? '—'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Invoice</h1>
-            <p>{profile?.business_name || '—'}</p>
-            {profile?.business_email && (
-              <p className="text-sm">{profile.business_email}</p>
-            )}
+            <h2 className="font-semibold">{profile?.business_name || '—'}</h2>
+            {profile?.business_address && <p>{profile.business_address}</p>}
+            {profile?.business_email && <p>{profile.business_email}</p>}
+            {profile?.business_phone && <p>{profile.business_phone}</p>}
+            {profile?.tax_id && <p>Tax ID: {profile.tax_id}</p>}
           </div>
-          <div className="relative" ref={optionsMenuRef}>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-              className="h-9 w-9"
-              aria-label="Invoice options"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-            {showOptionsMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditModalOpen(true);
-                    setShowOptionsMenu(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Edit
-                </button>
-                <a
-                  href={`/api/invoices/${invoiceId}/pdf`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-                  onClick={() => setShowOptionsMenu(false)}
-                >
-                  Download PDF
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteModal(true);
-                    setShowOptionsMenu(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </button>
-              </div>
-            )}
+
+          <div>
+            <h2 className="font-semibold">Bill To</h2>
+            <p>{clientName}</p>
+            {clientAddress && <p>{clientAddress}</p>}
+            {clientEmail && <p>{clientEmail}</p>}
+            {clientPhone && <p>{clientPhone}</p>}
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Bill To</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm">
-              <p>{clientName}</p>
-              {clientEmail && <p>{clientEmail}</p>}
-              {clientAddress && <p>{clientAddress}</p>}
-              {clientPhone && <p>{clientPhone}</p>}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Details</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-1">
-              <p>Invoice number: {invoice.invoice_number}</p>
-              <p>Issue date: {formatDate(invoice.issue_date)}</p>
-              <p>
-                Due date:{' '}
-                {invoice.due_date ? formatDate(invoice.due_date) : '—'}
-              </p>
-              <p>Payment terms: {invoice.payment_terms ?? '—'}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm table-fixed">
-                <colgroup>
-                  <col className="w-[40%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[18%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[15%]" />
-                </colgroup>
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 font-medium">Name</th>
-                    <th className="text-right py-2 font-medium">Quantity</th>
-                    <th className="text-right py-2 font-medium">Rate type</th>
-                    <th className="text-right py-2 font-medium">Unit cost</th>
-                    <th className="text-right py-2 font-medium">
-                      Amount ({currencyCode})
-                    </th>
+        <div className="mb-8">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col className="w-[40%]" />
+                <col className="w-[12%]" />
+                <col className="w-[18%]" />
+                <col className="w-[15%]" />
+                <col className="w-[15%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2 font-semibold">Name</th>
+                  <th className="text-right py-2 font-semibold">Quantity</th>
+                  <th className="text-right py-2 font-semibold">
+                    Unit cost ({currencyCode})
+                  </th>
+                  <th className="text-right py-2 font-semibold">Rate type</th>
+                  <th className="text-right py-2 font-semibold">
+                    Amount ({currencyCode})
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(invoice.items ?? []).map(item => (
+                  <tr key={item.id} className="border-b">
+                    <td className="py-2">{item.name}</td>
+                    <td className="py-2 text-right">{item.quantity}</td>
+                    <td className="py-2 text-right">
+                      {formatPriceWithCurrency(
+                        item.unit_cost,
+                        currencyCode,
+                        false
+                      )}
+                    </td>
+                    <td className="py-2 text-right">
+                      {formatRateType(item.rate_type ?? null)}
+                    </td>
+                    <td className="py-2 text-right">
+                      {formatPriceWithCurrency(
+                        item.total_cost,
+                        currencyCode,
+                        false
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {(invoice.items ?? []).map(item => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-2">{item.name}</td>
-                      <td className="py-2 text-right">{item.quantity}</td>
-                      <td className="py-2 text-right">
-                        {formatRateType(item.rate_type ?? null)}
-                      </td>
-                      <td className="py-2 text-right">
-                        {formatPriceWithCurrency(
-                          item.unit_cost,
-                          currencyCode,
-                          false
-                        )}
-                      </td>
-                      <td className="py-2 text-right">
-                        {formatPriceWithCurrency(
-                          item.total_cost,
-                          currencyCode,
-                          false
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            <div className="mt-6 flex justify-end">
-              <dl className="w-full max-w-[240px] space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <dt>Subtotal</dt>
-                  <dd>
-                    {formatPriceWithCurrency(
-                      invoice.subtotal,
-                      currencyCode,
-                      false
-                    )}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Tax ({invoice.tax_rate ?? 0}%)</dt>
-                  <dd>
-                    {formatPriceWithCurrency(
-                      invoice.tax_amount ?? 0,
-                      currencyCode,
-                      false
-                    )}
-                  </dd>
-                </div>
-                <div className="flex justify-between border-t pt-2 font-medium">
-                  <dt>Total</dt>
-                  <dd>
-                    {formatPriceWithCurrency(
-                      invoice.total_amount,
-                      currencyCode
-                    )}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="mt-6 flex justify-end">
+            <dl className="w-full max-w-[240px] space-y-1 text-sm">
+              <div className="flex justify-between border-t pt-2">
+                <dt>Subtotal</dt>
+                <dd>
+                  {formatPriceWithCurrency(invoice.subtotal, currencyCode)}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <dt>Tax ({invoice.tax_rate ?? 0}%)</dt>
+                <dd>
+                  {formatPriceWithCurrency(
+                    invoice.tax_amount ?? 0,
+                    currencyCode
+                  )}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t pt-2">
+                <dt>Total</dt>
+                <dd>
+                  {formatPriceWithCurrency(invoice.total_amount, currencyCode)}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t pt-2 font-semibold">
+                <dt>Amount due</dt>
+                <dd>
+                  {formatPriceWithCurrency(invoice.total_amount, currencyCode)}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
 
         {invoice.notes && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-base">Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">{invoice.notes}</p>
-            </CardContent>
-          </Card>
+          <div className="mb-8">
+            <h2 className="font-semibold mb-2">Notes</h2>
+            <p>{invoice.notes}</p>
+          </div>
         )}
 
         <EditInvoiceModal
