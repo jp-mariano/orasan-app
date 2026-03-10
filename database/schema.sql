@@ -128,7 +128,6 @@ CREATE TABLE public.invoices (
   status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
   issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
   due_date DATE,
-  payment_terms TEXT DEFAULT 'NET 30',
   subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
   tax_rate DECIMAL(5,2) DEFAULT 0,
   tax_amount DECIMAL(10,2) DEFAULT 0,
