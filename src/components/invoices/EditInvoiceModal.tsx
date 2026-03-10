@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { formatPriceWithCurrency } from '@/lib/currencies';
 import { cn, formatDate } from '@/lib/utils';
 import {
   InvoiceItem,
@@ -256,6 +257,16 @@ export function EditInvoiceModal({
 
   if (!invoice) return null;
 
+  const currencyCode = invoice.currency_code ?? 'USD';
+  const subtotal = items.reduce(
+    (sum, row) =>
+      sum +
+      Math.round(Number(row.quantity) * Number(row.unit_price) * 100) / 100,
+    0
+  );
+  const taxAmount = Math.round(((subtotal * (taxRate ?? 0)) / 100) * 100) / 100;
+  const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -313,6 +324,9 @@ export function EditInvoiceModal({
                     <th className="px-2 py-2 text-right font-medium w-24">
                       Rate Type
                     </th>
+                    <th className="px-2 py-2 text-right font-medium w-24">
+                      Amount
+                    </th>
                     {!isLocked && (
                       <th className="w-10 px-2 py-2" aria-label="Remove" />
                     )}
@@ -361,6 +375,15 @@ export function EditInvoiceModal({
                       <td className="px-2 py-1 text-right text-sm capitalize">
                         <div>{formatRateType(row.rate_type) || '—'}</div>
                       </td>
+                      <td className="px-2 py-1 text-right">
+                        {formatPriceWithCurrency(
+                          Math.round(
+                            Number(row.quantity) * Number(row.unit_price) * 100
+                          ) / 100,
+                          currencyCode,
+                          false
+                        )}
+                      </td>
                       {!isLocked && (
                         <td className="px-2 py-1">
                           <Button
@@ -385,6 +408,26 @@ export function EditInvoiceModal({
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="flex justify-end">
+              <dl className="w-full max-w-[200px] space-y-1 text-sm">
+                <div className="flex justify-between border-t pt-2">
+                  <dt>Subtotal</dt>
+                  <dd>
+                    {formatPriceWithCurrency(subtotal, currencyCode, false)}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <dt>Tax ({taxRate ?? 0}%)</dt>
+                  <dd>
+                    {formatPriceWithCurrency(taxAmount, currencyCode, false)}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-t pt-2 font-medium">
+                  <dt>Total</dt>
+                  <dd>{formatPriceWithCurrency(totalAmount, currencyCode)}</dd>
+                </div>
+              </dl>
             </div>
           </div>
 
