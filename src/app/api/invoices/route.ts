@@ -181,11 +181,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Only include entries from completed tasks (task is single relation object from Supabase)
-    const timeEntries = (timeEntriesRaw || []).filter(
+    let timeEntries = (timeEntriesRaw || []).filter(
       (entry: unknown) =>
         (entry as { task?: { status?: string } | null }).task?.status ===
         'completed'
     );
+
+    // Exclude entries from tasks the user removed from the preview
+    const excludeTaskIds = invoiceData.exclude_task_ids ?? [];
+    if (excludeTaskIds.length > 0) {
+      timeEntries = timeEntries.filter(
+        (entry: { task_id: string }) => !excludeTaskIds.includes(entry.task_id)
+      );
+    }
 
     if (timeEntries.length === 0) {
       return NextResponse.json(
@@ -251,48 +259,64 @@ export async function POST(request: NextRequest) {
     }> = [];
     let subtotal = 0;
 
+    const itemOverrides = invoiceData.item_overrides ?? {};
+
     for (const [, group] of taskGroups) {
       const { task, totalDurationSeconds } = group;
 
-      // Determine rate: task rate → project rate → fallback to 0
-      let rateType: 'hourly' | 'fixed' | null = null;
-      let rate: number = 0;
+      // Use overrides if provided, otherwise compute from time entries
+      const override = itemOverrides[task.id];
+      let q: number;
+      let u: number;
 
-      if (task.rate_type && task.price !== null && task.price !== undefined) {
-        rateType = task.rate_type as 'hourly' | 'fixed';
-        rate = task.price;
-      } else if (
-        project.rate_type &&
-        project.price !== null &&
-        project.price !== undefined
-      ) {
-        rateType = project.rate_type as 'hourly' | 'fixed';
-        rate = project.price;
-      }
-
-      let quantity = 1;
-      let unitCost = 0;
-
-      if (rateType === 'hourly' && rate > 0) {
-        // Calculate hours from seconds
-        const hours = totalDurationSeconds / 3600;
-        quantity = hours;
-        unitCost = rate;
-      } else if (rateType === 'fixed' && rate > 0) {
-        // Fixed price per task
-        quantity = 1;
-        unitCost = rate;
+      if (override) {
+        q = Math.round(override.quantity * 100) / 100;
+        u = Math.round(override.unit_price * 100) / 100;
       } else {
-        // No rate defined - still create item but with 0 cost
-        const hours = totalDurationSeconds / 3600;
-        quantity = hours;
-        unitCost = 0;
+        // Determine rate: task rate → project rate → fallback to 0
+        let rateType: 'hourly' | 'fixed' | null = null;
+        let rate: number = 0;
+
+        if (task.rate_type && task.price !== null && task.price !== undefined) {
+          rateType = task.rate_type as 'hourly' | 'fixed';
+          rate = task.price;
+        } else if (
+          project.rate_type &&
+          project.price !== null &&
+          project.price !== undefined
+        ) {
+          rateType = project.rate_type as 'hourly' | 'fixed';
+          rate = project.price;
+        }
+
+        let quantity = 1;
+        let unitCost = 0;
+
+        if (rateType === 'hourly' && rate > 0) {
+          const hours = totalDurationSeconds / 3600;
+          quantity = hours;
+          unitCost = rate;
+        } else if (rateType === 'fixed' && rate > 0) {
+          quantity = 1;
+          unitCost = rate;
+        } else {
+          const hours = totalDurationSeconds / 3600;
+          quantity = hours;
+          unitCost = 0;
+        }
+
+        q = Math.round(quantity * 100) / 100;
+        u = Math.round(unitCost * 100) / 100;
       }
 
-      // Round to 2 decimals so DB constraint total_cost = quantity * unit_price holds
-      const q = Math.round(quantity * 100) / 100;
-      const u = Math.round(unitCost * 100) / 100;
       const itemTotal = Math.round(q * u * 100) / 100;
+
+      const rateType =
+        task.rate_type && task.price != null
+          ? (task.rate_type as 'hourly' | 'fixed')
+          : project.rate_type && project.price != null
+            ? (project.rate_type as 'hourly' | 'fixed')
+            : null;
 
       invoiceItems.push({
         task_id: task.id,

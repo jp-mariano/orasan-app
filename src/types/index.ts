@@ -260,6 +260,10 @@ export interface CreateInvoiceRequest {
     from: string;
     to: string;
   };
+  /** Task IDs to exclude from the invoice (user removed them from preview) */
+  exclude_task_ids?: string[];
+  /** Override quantity and unit_price per task (for fine-tuning in create flow) */
+  item_overrides?: Record<string, { quantity: number; unit_price: number }>;
 }
 
 export interface UpdateInvoiceRequest {

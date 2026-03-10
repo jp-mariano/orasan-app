@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, XIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useUser } from '@/hooks/useUser';
-import { cn, formatDate, formatDuration } from '@/lib/utils';
+import { formatPriceWithCurrency } from '@/lib/currencies';
+import { cn, formatDate } from '@/lib/utils';
 import { CreateInvoiceRequest, Project } from '@/types';
 
 interface CreateInvoiceModalProps {
@@ -35,11 +36,21 @@ interface CreateInvoiceModalProps {
   onInvoiceCreated?: (invoiceId: string, projectId: string) => void;
 }
 
-interface TimeEntryPreview {
+interface InvoicePreviewItem {
   task_id: string;
-  task_name: string;
-  total_duration_seconds: number;
-  entry_count: number;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  total_cost: number;
+  rate_type: 'hourly' | 'fixed' | null;
+}
+
+function formatRateType(rateType: string | null | undefined): string {
+  if (!rateType) return '—';
+  const s = String(rateType).toLowerCase();
+  if (s === 'hourly') return 'Hourly';
+  if (s === 'fixed') return 'Fixed';
+  return rateType;
 }
 
 export function CreateInvoiceModal({
@@ -66,10 +77,11 @@ export function CreateInvoiceModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [timeEntryPreview, setTimeEntryPreview] = useState<TimeEntryPreview[]>(
-    []
+  const [previewItems, setPreviewItems] = useState<InvoicePreviewItem[]>([]);
+  const [previewCurrency, setPreviewCurrency] = useState('USD');
+  const [excludedTaskIds, setExcludedTaskIds] = useState<Set<string>>(
+    new Set()
   );
-  const [totalDurationSeconds, setTotalDurationSeconds] = useState(0);
 
   // Calendar states
   const [fromDateOpen, setFromDateOpen] = useState(false);
@@ -96,109 +108,109 @@ export function CreateInvoiceModal({
         },
       });
       setErrorMessage(null);
-      setTimeEntryPreview([]);
-      setTotalDurationSeconds(0);
+      setPreviewItems([]);
+      setExcludedTaskIds(new Set());
     }
   }, [open, project, refreshUser]);
 
-  const fetchTimeEntryPreview = useCallback(async () => {
+  const fetchInvoicePreview = useCallback(async () => {
     setIsLoadingPreview(true);
+    setErrorMessage(null);
     try {
-      const fromDate = new Date(formData.date_range.from);
-      const toDate = new Date(formData.date_range.to);
-      toDate.setHours(23, 59, 59, 999);
-
-      const response = await fetch(
-        `/api/time-entries?project_id=${project.id}`
-      );
+      const response = await fetch('/api/invoices/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: project.id,
+          date_range: {
+            from: formData.date_range.from,
+            to: formData.date_range.to,
+          },
+          tax_rate: formData.tax_rate ?? 0,
+          currency_code:
+            formData.currency_code || project.currency_code || 'USD',
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch time entries');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to load preview');
       }
 
       const data = await response.json();
-      const timeEntries = data.time_entries || [];
-
-      // Filter stopped entries within date range and only from completed tasks
-      const filteredEntries = timeEntries.filter(
-        (entry: {
-          timer_status: string;
-          end_time?: string;
-          task_id: string;
-          duration_seconds: number;
-          task: { id: string; name: string; status?: string } | null;
-        }) => {
-          if (entry.timer_status !== 'stopped' || !entry.end_time) {
-            return false;
-          }
-          // Skip entries with null tasks (deleted tasks)
-          if (!entry.task) {
-            return false;
-          }
-          // Only include entries from completed tasks
-          if (entry.task.status !== 'completed') {
-            return false;
-          }
-          const endTime = new Date(entry.end_time);
-          return endTime >= fromDate && endTime <= toDate;
-        }
-      );
-
-      // Group by task
-      const taskGroups = new Map<string, TimeEntryPreview>();
-      let totalSeconds = 0;
-
-      for (const entry of filteredEntries) {
-        const task = entry.task as { id: string; name: string } | null;
-        // Skip entries with null tasks (shouldn't happen after filter, but double-check)
-        if (!task) {
-          continue;
-        }
-        if (!taskGroups.has(entry.task_id)) {
-          taskGroups.set(entry.task_id, {
-            task_id: entry.task_id,
-            task_name: task.name,
-            total_duration_seconds: 0,
-            entry_count: 0,
-          });
-        }
-
-        const group = taskGroups.get(entry.task_id)!;
-        group.total_duration_seconds += entry.duration_seconds;
-        group.entry_count += 1;
-        totalSeconds += entry.duration_seconds;
-      }
-
-      setTimeEntryPreview(Array.from(taskGroups.values()));
-      setTotalDurationSeconds(totalSeconds);
+      setPreviewItems(data.items ?? []);
+      setPreviewCurrency(data.currency_code ?? 'USD');
+      setExcludedTaskIds(new Set());
     } catch (error) {
-      console.error('Error fetching time entry preview:', error);
+      console.error('Error fetching invoice preview:', error);
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Failed to load time entry preview'
+          : 'Failed to load invoice preview'
       );
+      setPreviewItems([]);
     } finally {
       setIsLoadingPreview(false);
     }
-  }, [formData.date_range.from, formData.date_range.to, project.id]);
+    // formData.tax_rate intentionally excluded: including it would trigger refetch on tax
+    // change and reset excludedTaskIds (user's removed items would reappear)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formData.date_range.from,
+    formData.date_range.to,
+    formData.currency_code,
+    project.id,
+    project.currency_code,
+  ]);
 
   // Fetch preview when date range is complete
   useEffect(() => {
     const hasRange = formData.date_range.from && formData.date_range.to;
     if (hasRange && open && !isSubmitting) {
-      fetchTimeEntryPreview();
+      fetchInvoicePreview();
     } else if (!hasRange || !open) {
-      setTimeEntryPreview([]);
-      setTotalDurationSeconds(0);
+      setPreviewItems([]);
+      setExcludedTaskIds(new Set());
     }
   }, [
     formData.date_range.from,
     formData.date_range.to,
     open,
     isSubmitting,
-    fetchTimeEntryPreview,
+    fetchInvoicePreview,
   ]);
+
+  const visibleItems = previewItems.filter(
+    item => !excludedTaskIds.has(item.task_id)
+  );
+  const subtotal = visibleItems.reduce((sum, i) => sum + i.total_cost, 0);
+  const taxRate = formData.tax_rate ?? 0;
+  const taxAmount = Math.round(((subtotal * taxRate) / 100) * 100) / 100;
+  const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
+
+  const removeItem = (taskId: string) => {
+    setExcludedTaskIds(prev => new Set([...prev, taskId]));
+  };
+
+  const updateItem = (
+    taskId: string,
+    field: 'quantity' | 'unit_price',
+    value: number
+  ) => {
+    setPreviewItems(prev =>
+      prev.map(item => {
+        if (item.task_id !== taskId) return item;
+        const q =
+          field === 'quantity' ? value : Math.round(item.quantity * 100) / 100;
+        const u =
+          field === 'unit_price'
+            ? value
+            : Math.round(item.unit_price * 100) / 100;
+        const total_cost = Math.round(q * u * 100) / 100;
+        return { ...item, quantity: q, unit_price: u, total_cost };
+      })
+    );
+  };
 
   const handleInputChange = (
     field: keyof CreateInvoiceRequest,
@@ -245,12 +257,27 @@ export function CreateInvoiceModal({
       return;
     }
 
-    if (timeEntryPreview.length === 0) {
+    if (visibleItems.length === 0) {
       setErrorMessage(
         'No stopped time entries found in the selected date range'
       );
       return;
     }
+
+    const validItems = visibleItems.filter(
+      item => item.quantity > 0 && item.unit_price >= 0
+    );
+    if (validItems.length === 0) {
+      setErrorMessage(
+        'At least one item with quantity > 0 and unit price ≥ 0 is required.'
+      );
+      return;
+    }
+
+    const invalidTaskIds = visibleItems
+      .filter(item => item.quantity <= 0 || item.unit_price < 0)
+      .map(item => item.task_id);
+    const allExcludedTaskIds = new Set([...excludedTaskIds, ...invalidTaskIds]);
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -268,6 +295,19 @@ export function CreateInvoiceModal({
           from: formData.date_range.from,
           to: formData.date_range.to,
         },
+        exclude_task_ids:
+          allExcludedTaskIds.size > 0
+            ? Array.from(allExcludedTaskIds)
+            : undefined,
+        item_overrides: Object.fromEntries(
+          validItems.map(item => [
+            item.task_id,
+            {
+              quantity: Math.round(item.quantity * 100) / 100,
+              unit_price: Math.round(item.unit_price * 100) / 100,
+            },
+          ])
+        ),
       };
 
       const response = await fetch('/api/invoices', {
@@ -456,47 +496,141 @@ export function CreateInvoiceModal({
             </div>
           </div>
 
-          {/* Time Entry Preview */}
+          {/* Items Preview */}
           {isLoadingPreview && (
-            <div className="text-sm text-gray-500">Loading preview...</div>
+            <div className="text-sm text-muted-foreground">
+              Loading preview...
+            </div>
           )}
           {!isLoadingPreview &&
             formData.date_range.from &&
             formData.date_range.to &&
-            timeEntryPreview.length > 0 && (
-              <div className="space-y-2 border rounded-lg p-4 bg-gray-50">
-                <Label className="text-sm font-medium">
-                  Preview ({timeEntryPreview.length} task
-                  {timeEntryPreview.length !== 1 ? 's' : ''})
-                </Label>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {timeEntryPreview.map(preview => (
-                    <div
-                      key={preview.task_id}
-                      className="text-sm flex justify-between"
-                    >
-                      <span className="text-gray-700">{preview.task_name}</span>
-                      <span className="text-gray-600">
-                        {formatDuration(preview.total_duration_seconds)} (
-                        {preview.entry_count} entr
-                        {preview.entry_count !== 1 ? 'ies' : 'y'})
-                      </span>
-                    </div>
-                  ))}
+            (previewItems.length > 0 ? (
+              <div className="space-y-2">
+                <Label>Items</Label>
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="px-2 py-2 text-left font-medium">
+                          Name
+                        </th>
+                        <th className="px-2 py-2 text-right font-medium w-28">
+                          Quantity
+                        </th>
+                        <th className="px-2 py-2 text-right font-medium w-28">
+                          Unit Price
+                        </th>
+                        <th className="px-2 py-2 text-right font-medium w-24">
+                          Rate Type
+                        </th>
+                        <th className="px-2 py-2 text-right font-medium w-24">
+                          Amount
+                        </th>
+                        <th className="w-10 px-2 py-2" aria-label="Remove" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleItems.map(item => (
+                        <tr key={item.task_id} className="border-b">
+                          <td className="px-2 py-1 text-left text-sm">
+                            <div>{item.name || '—'}</div>
+                          </td>
+                          <td className="px-2 py-1 text-right">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.quantity}
+                              onChange={e =>
+                                updateItem(
+                                  item.task_id,
+                                  'quantity',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="h-8 w-full border text-right"
+                            />
+                          </td>
+                          <td className="px-2 py-1 text-right">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.01}
+                              value={item.unit_price}
+                              onChange={e =>
+                                updateItem(
+                                  item.task_id,
+                                  'unit_price',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              className="h-8 w-full border text-right"
+                            />
+                          </td>
+                          <td className="px-2 py-1 text-right text-sm capitalize">
+                            <div>{formatRateType(item.rate_type) || '—'}</div>
+                          </td>
+                          <td className="px-2 py-1 text-right">
+                            {formatPriceWithCurrency(
+                              item.total_cost,
+                              previewCurrency,
+                              false
+                            )}
+                          </td>
+                          <td className="px-2 py-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => removeItem(item.task_id)}
+                              aria-label="Remove item"
+                            >
+                              <XIcon className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <div className="pt-2 border-t text-sm font-medium">
-                  Total: {formatDuration(totalDurationSeconds)}
+                <div className="flex justify-end">
+                  <dl className="w-full max-w-[200px] space-y-1 text-sm">
+                    <div className="flex justify-between border-t pt-2">
+                      <dt>Subtotal</dt>
+                      <dd>
+                        {formatPriceWithCurrency(
+                          subtotal,
+                          previewCurrency,
+                          false
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <dt>Tax ({taxRate}%)</dt>
+                      <dd>
+                        {formatPriceWithCurrency(
+                          taxAmount,
+                          previewCurrency,
+                          false
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 font-medium">
+                      <dt>Total</dt>
+                      <dd>
+                        {formatPriceWithCurrency(totalAmount, previewCurrency)}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </div>
-            )}
-          {!isLoadingPreview &&
-            formData.date_range.from &&
-            formData.date_range.to &&
-            timeEntryPreview.length === 0 && (
+            ) : (
               <div className="text-sm text-amber-600 border border-amber-200 rounded-lg p-3 bg-amber-50">
                 No stopped time entries found in the selected date range
               </div>
-            )}
+            ))}
 
           {/* Invoice Number */}
           <div className="space-y-2">
@@ -642,7 +776,7 @@ export function CreateInvoiceModal({
               !formData.date_range.from ||
               !formData.date_range.to ||
               !formData.issue_date ||
-              timeEntryPreview.length === 0
+              visibleItems.length === 0
             }
           >
             {isSubmitting ? 'Creating...' : 'Create Invoice'}
