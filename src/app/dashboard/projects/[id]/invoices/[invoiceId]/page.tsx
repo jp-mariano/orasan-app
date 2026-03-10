@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreVertical, Trash2 } from 'lucide-react';
 
 import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
 import { EditInvoiceModal } from '@/components/invoices/EditInvoiceModal';
@@ -15,6 +15,7 @@ import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
+import { INVOICE_ITEMS_PER_PAGE } from '@/lib/invoice-utils';
 import { formatDate } from '@/lib/utils';
 import { InvoiceWithDetails } from '@/types';
 
@@ -43,6 +44,7 @@ export default function InvoiceDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,6 +90,11 @@ export default function InvoiceDetailPage() {
       cancelled = true;
     };
   }, [user, authLoading, router, invoiceId, projectId, refreshTrigger]);
+
+  // Reset to page 1 when invoice changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [invoiceId, refreshTrigger]);
 
   // Close options menu when clicking outside
   useEffect(() => {
@@ -157,111 +164,128 @@ export default function InvoiceDetailPage() {
   const clientAddress = project?.client_address ?? '';
   const clientPhone = project?.client_phone ?? '';
 
+  const items = invoice.items ?? [];
+  const totalPages = Math.max(
+    1,
+    Math.ceil(items.length / INVOICE_ITEMS_PER_PAGE)
+  );
+  const startIdx = (currentPage - 1) * INVOICE_ITEMS_PER_PAGE;
+  const pageItems = items.slice(startIdx, startIdx + INVOICE_ITEMS_PER_PAGE);
+  const isLastPage = currentPage === totalPages;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <Breadcrumb
-          items={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: projectName, href: `/dashboard/projects/${projectId}` },
-            {
-              label: 'Invoices',
-              href: `/dashboard/projects/${projectId}/invoices`,
-            },
-            {
-              label: `Invoice ${invoice.invoice_number}`,
-              href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
-            },
-          ]}
-          className="mb-6"
-        />
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: projectName, href: `/dashboard/projects/${projectId}` },
+              {
+                label: 'Invoices',
+                href: `/dashboard/projects/${projectId}/invoices`,
+              },
+              {
+                label: `Invoice ${invoice.invoice_number}`,
+                href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
+              },
+            ]}
+          />
+          <div className="relative shrink-0" ref={optionsMenuRef}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+              className="h-9 w-9"
+              aria-label="Invoice options"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+            {showOptionsMenu && (
+              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(true);
+                    setShowOptionsMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                >
+                  Edit
+                </button>
+                <a
+                  href={`/api/invoices/${invoiceId}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                  onClick={() => setShowOptionsMenu(false)}
+                >
+                  Download PDF
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                    setShowOptionsMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
-        <div className="relative float-right" ref={optionsMenuRef}>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-            className="h-9 w-9"
-            aria-label="Invoice options"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-          {showOptionsMenu && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditModalOpen(true);
-                  setShowOptionsMenu(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
-              >
-                Edit
-              </button>
-              <a
-                href={`/api/invoices/${invoiceId}/pdf`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-                onClick={() => setShowOptionsMenu(false)}
-              >
-                Download PDF
-              </a>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDeleteModal(true);
-                  setShowOptionsMenu(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </button>
+        {currentPage === 1 && (
+          <>
+            <div className="mb-8">
+              <h1 className="text-2xl font-semibold tracking-tight py-8">
+                Invoice
+              </h1>
+              <table>
+                <tbody>
+                  <tr>
+                    <td className="pr-4 text-left">Invoice number</td>
+                    <td>{invoice.invoice_number ?? '—'}</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-4 text-left">Issue date</td>
+                    <td>{formatDate(invoice.issue_date)}</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-4 text-left">Due date</td>
+                    <td>
+                      {invoice.due_date ? formatDate(invoice.due_date) : '—'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight py-8">
-            Invoice
-          </h1>
-          <table>
-            <tbody>
-              <tr>
-                <td className="pr-4 text-left">Invoice number</td>
-                <td>{invoice.invoice_number ?? '—'}</td>
-              </tr>
-              <tr>
-                <td className="pr-4 text-left">Issue date</td>
-                <td>{formatDate(invoice.issue_date)}</td>
-              </tr>
-              <tr>
-                <td className="pr-4 text-left">Due date</td>
-                <td>{invoice.due_date ? formatDate(invoice.due_date) : '—'}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            <div className="grid gap-6 md:grid-cols-2 mb-8">
+              <div>
+                <h2 className="font-semibold">
+                  {profile?.business_name || '—'}
+                </h2>
+                {profile?.business_address && <p>{profile.business_address}</p>}
+                {profile?.business_email && <p>{profile.business_email}</p>}
+                {profile?.business_phone && <p>{profile.business_phone}</p>}
+                {profile?.tax_id && <p>Tax ID: {profile.tax_id}</p>}
+              </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <div>
-            <h2 className="font-semibold">{profile?.business_name || '—'}</h2>
-            {profile?.business_address && <p>{profile.business_address}</p>}
-            {profile?.business_email && <p>{profile.business_email}</p>}
-            {profile?.business_phone && <p>{profile.business_phone}</p>}
-            {profile?.tax_id && <p>Tax ID: {profile.tax_id}</p>}
-          </div>
-
-          <div>
-            <h2 className="font-semibold">Bill To</h2>
-            <p>{clientName}</p>
-            {clientAddress && <p>{clientAddress}</p>}
-            {clientEmail && <p>{clientEmail}</p>}
-            {clientPhone && <p>{clientPhone}</p>}
-          </div>
-        </div>
+              <div>
+                <h2 className="font-semibold">Bill To</h2>
+                <p>{clientName}</p>
+                {clientAddress && <p>{clientAddress}</p>}
+                {clientEmail && <p>{clientEmail}</p>}
+                {clientPhone && <p>{clientPhone}</p>}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="mb-8">
           <div className="overflow-x-auto">
@@ -287,7 +311,7 @@ export default function InvoiceDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {(invoice.items ?? []).map(item => (
+                {pageItems.map(item => (
                   <tr key={item.id} className="border-b">
                     <td className="py-2">{item.name}</td>
                     <td className="py-2 text-right">{item.quantity}</td>
@@ -314,43 +338,79 @@ export default function InvoiceDetailPage() {
             </table>
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <dl className="w-full max-w-[240px] space-y-1 text-sm">
-              <div className="flex justify-between border-t pt-2">
-                <dt>Subtotal</dt>
-                <dd>
-                  {formatPriceWithCurrency(invoice.subtotal, currencyCode)}
-                </dd>
+          {isLastPage && (
+            <>
+              <div className="mt-6 flex justify-end">
+                <dl className="w-full max-w-[240px] space-y-1 text-sm">
+                  <div className="flex justify-between border-t pt-2">
+                    <dt>Subtotal</dt>
+                    <dd>
+                      {formatPriceWithCurrency(invoice.subtotal, currencyCode)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <dt>Tax ({invoice.tax_rate ?? 0}%)</dt>
+                    <dd>
+                      {formatPriceWithCurrency(
+                        invoice.tax_amount ?? 0,
+                        currencyCode
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <dt>Total</dt>
+                    <dd>
+                      {formatPriceWithCurrency(
+                        invoice.total_amount,
+                        currencyCode
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t pt-2 font-semibold">
+                    <dt>Amount due</dt>
+                    <dd>
+                      {formatPriceWithCurrency(
+                        invoice.total_amount,
+                        currencyCode
+                      )}
+                    </dd>
+                  </div>
+                </dl>
               </div>
-              <div className="flex justify-between border-t pt-2">
-                <dt>Tax ({invoice.tax_rate ?? 0}%)</dt>
-                <dd>
-                  {formatPriceWithCurrency(
-                    invoice.tax_amount ?? 0,
-                    currencyCode
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between border-t pt-2">
-                <dt>Total</dt>
-                <dd>
-                  {formatPriceWithCurrency(invoice.total_amount, currencyCode)}
-                </dd>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-semibold">
-                <dt>Amount due</dt>
-                <dd>
-                  {formatPriceWithCurrency(invoice.total_amount, currencyCode)}
-                </dd>
-              </div>
-            </dl>
-          </div>
+            </>
+          )}
         </div>
 
-        {invoice.notes && (
+        {isLastPage && invoice.notes && (
           <div className="mb-8">
             <h2 className="font-semibold mb-2">Notes</h2>
             <p>{invoice.notes}</p>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         )}
 

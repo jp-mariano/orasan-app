@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 
 import { formatPriceWithCurrency } from '@/lib/currencies';
+import { INVOICE_ITEMS_PER_PAGE } from '@/lib/invoice-utils';
 import { formatDate } from '@/lib/utils';
 
 /** Data shape for PDF generation (matches API/DB snake_case for invoice, user, project) */
@@ -42,6 +43,7 @@ export interface InvoicePdfData {
 
 const MARGIN = 50;
 const PAGE_WIDTH = 612;
+const PAGE_HEIGHT = 842; // A4
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN;
 
 // Equal left and right indentation for the content block (lessen this value for a wider block)
@@ -91,7 +93,11 @@ export async function generateInvoicePdf(
   data: InvoicePdfData
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: MARGIN, size: 'A4' });
+    const doc = new PDFDocument({
+      margin: MARGIN,
+      size: 'A4',
+      bufferPages: true,
+    });
     const chunks: Buffer[] = [];
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -175,8 +181,7 @@ export async function generateInvoicePdf(
 
     doc.moveDown(SECTION_GAP + 0.75);
 
-    // ---- Items table (matches preview: Name, Quantity, Unit price, Rate type, Amount) ----
-    const tableTop = doc.y;
+    // ---- Items table with pagination (10 items per page, header repeated) ----
     const tableWidth = CONTENT_BLOCK_WIDTH;
     const leftAlign: { align: PdfAlignLeft } = {
       align: { x: 'left', y: 'center' },
@@ -186,8 +191,6 @@ export async function generateInvoicePdf(
     };
     type TableCell = string | BaseCell;
     const itemsColumnStyles = TABLE_COL_RATIOS.map(ratio => tableWidth * ratio);
-
-    // Header row: doc font sets bold (cell font not honored by mixin)
     const itemsHeaderRow: TableCell[] = [
       { text: 'Name', ...leftAlign },
       { text: 'Quantity', ...rightAlign },
@@ -195,133 +198,166 @@ export async function generateInvoicePdf(
       { text: 'Rate type', ...rightAlign },
       { text: `Amount (${currencyCode})`, ...rightAlign },
     ];
-    doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
-    doc.table({
-      position: { x: blockLeft, y: tableTop },
-      maxWidth: tableWidth,
-      columnStyles: itemsColumnStyles,
-      rowStyles: {
-        border: [0, 0, 1, 0] as [number, number, number, number],
-        borderColor: '#cbd5e1',
-      },
-      data: [itemsHeaderRow],
-    });
 
-    // Body rows: regular font
-    const itemsBodyData: Array<Array<TableCell>> = items.map(item => [
-      { text: item.name, ...leftAlign },
-      { text: String(item.quantity), ...rightAlign },
-      {
-        text: formatPriceWithCurrency(item.unit_price, currencyCode, false),
-        ...rightAlign,
-      },
-      { text: formatRateType(item.rate_type ?? null), ...rightAlign },
-      {
-        text: formatPriceWithCurrency(item.total_cost, currencyCode, false),
-        ...rightAlign,
-      },
-    ]);
-    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
-    doc.table({
-      position: { x: blockLeft, y: doc.y },
-      maxWidth: tableWidth,
-      columnStyles: itemsColumnStyles,
-      rowStyles: {
-        border: [0, 0, 1, 0] as [number, number, number, number],
-        borderColor: '#cbd5e1',
-        height: TABLE_ROW_HEIGHT,
-      },
-      data: itemsBodyData,
-    });
+    const totalItemPages = Math.max(
+      1,
+      Math.ceil(items.length / INVOICE_ITEMS_PER_PAGE)
+    );
 
-    doc.moveDown(1.5); // spacing before totals
+    for (let pageIndex = 0; pageIndex < totalItemPages; pageIndex += 1) {
+      if (pageIndex > 0) {
+        doc.addPage();
+      }
 
-    // Totals block (right-aligned within centered block, as tables)
-    type TotalsCell = string | BaseCell;
-    const totalsTableWidth = TOTALS_WIDTH;
-    const totalsX = blockRight - totalsTableWidth;
-    const totalsLeftAlign: { align: PdfAlignLeft } = {
-      align: { x: 'left', y: 'center' },
-    };
-    const totalsRightAlign: { align: PdfAlignRight } = {
-      align: { x: 'right', y: 'center' },
-    };
-    const totalsColumnStyles = [totalsTableWidth - 100, 100];
+      const startIdx = pageIndex * INVOICE_ITEMS_PER_PAGE;
+      const pageItems = items.slice(
+        startIdx,
+        startIdx + INVOICE_ITEMS_PER_PAGE
+      );
+      const isLastPage = pageIndex === totalItemPages - 1;
 
-    // Subtotal + Tax + Total rows: regular font
-    const totalsSubTaxData: TotalsCell[][] = [
-      [
-        { text: 'Subtotal', ...totalsLeftAlign },
-        {
-          text: formatPriceWithCurrency(invoice.subtotal, currencyCode),
-          ...totalsRightAlign,
+      // Table header (repeated on each page)
+      const tableTop = doc.y;
+      doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
+      doc.table({
+        position: { x: blockLeft, y: tableTop },
+        maxWidth: tableWidth,
+        columnStyles: itemsColumnStyles,
+        rowStyles: {
+          border: [0, 0, 1, 0] as [number, number, number, number],
+          borderColor: '#cbd5e1',
         },
-      ],
-      [
-        { text: `Tax (${invoice.tax_rate ?? 0}%)`, ...totalsLeftAlign },
-        {
-          text: formatPriceWithCurrency(invoice.tax_amount, currencyCode),
-          ...totalsRightAlign,
-        },
-      ],
-      [
-        { text: 'Total', ...totalsLeftAlign },
-        {
-          text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
-          ...totalsRightAlign,
-        },
-      ],
-    ];
-    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
-    doc.table({
-      position: { x: totalsX, y: doc.y },
-      maxWidth: totalsTableWidth,
-      columnStyles: totalsColumnStyles,
-      rowStyles: {
-        border: [1, 0, 0, 0] as [number, number, number, number],
-        borderColor: '#cbd5e1',
-        height: TABLE_ROW_HEIGHT,
-      },
-      data: totalsSubTaxData,
-    });
-
-    // Amount due row (matches preview, same value as Total)
-    const totalsDueData: TotalsCell[][] = [
-      [
-        { text: 'Amount due', ...totalsLeftAlign },
-        {
-          text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
-          ...totalsRightAlign,
-        },
-      ],
-    ];
-    doc.font('Helvetica-Bold').fontSize(BODY_FONT_SIZE);
-    doc.table({
-      position: { x: totalsX, y: doc.y },
-      maxWidth: totalsTableWidth,
-      columnStyles: totalsColumnStyles,
-      rowStyles: {
-        border: [1, 0, 0, 0] as [number, number, number, number],
-        borderColor: '#cbd5e1',
-        height: TABLE_ROW_HEIGHT,
-      },
-      data: totalsDueData,
-    });
-
-    doc.moveDown(SECTION_GAP + 0.75);
-
-    // ---- Notes (separate card when present) ----
-    if (invoice.notes && String(invoice.notes).trim()) {
-      doc.moveDown(1);
-      doc.fontSize(11).font('Helvetica-Bold').text('Notes', blockLeft, doc.y);
-      doc.moveDown(0.5);
-      doc.font('Helvetica').fontSize(10);
-      doc.text(String(invoice.notes).trim(), blockLeft, doc.y, {
-        width: CONTENT_BLOCK_WIDTH,
-        align: 'left',
-        lineGap: 4,
+        data: [itemsHeaderRow],
       });
-      doc.fillColor('#000000');
+
+      // Body rows for this page
+      const itemsBodyData: Array<Array<TableCell>> = pageItems.map(item => [
+        { text: item.name, ...leftAlign },
+        { text: String(item.quantity), ...rightAlign },
+        {
+          text: formatPriceWithCurrency(item.unit_price, currencyCode, false),
+          ...rightAlign,
+        },
+        { text: formatRateType(item.rate_type ?? null), ...rightAlign },
+        {
+          text: formatPriceWithCurrency(item.total_cost, currencyCode, false),
+          ...rightAlign,
+        },
+      ]);
+      doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+      doc.table({
+        position: { x: blockLeft, y: doc.y },
+        maxWidth: tableWidth,
+        columnStyles: itemsColumnStyles,
+        rowStyles: {
+          border: [0, 0, 1, 0] as [number, number, number, number],
+          borderColor: '#cbd5e1',
+          height: TABLE_ROW_HEIGHT,
+        },
+        data: itemsBodyData,
+      });
+
+      if (isLastPage) {
+        doc.moveDown(1.5);
+
+        // Totals and notes on last page only
+        type TotalsCell = string | BaseCell;
+        const totalsTableWidth = TOTALS_WIDTH;
+        const totalsX = blockRight - totalsTableWidth;
+        const totalsLeftAlign: { align: PdfAlignLeft } = {
+          align: { x: 'left', y: 'center' },
+        };
+        const totalsRightAlign: { align: PdfAlignRight } = {
+          align: { x: 'right', y: 'center' },
+        };
+        const totalsColumnStyles = [totalsTableWidth - 100, 100];
+
+        const totalsSubTaxData: TotalsCell[][] = [
+          [
+            { text: 'Subtotal', ...totalsLeftAlign },
+            {
+              text: formatPriceWithCurrency(invoice.subtotal, currencyCode),
+              ...totalsRightAlign,
+            },
+          ],
+          [
+            { text: `Tax (${invoice.tax_rate ?? 0}%)`, ...totalsLeftAlign },
+            {
+              text: formatPriceWithCurrency(invoice.tax_amount, currencyCode),
+              ...totalsRightAlign,
+            },
+          ],
+          [
+            { text: 'Total', ...totalsLeftAlign },
+            {
+              text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
+              ...totalsRightAlign,
+            },
+          ],
+        ];
+        doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+        doc.table({
+          position: { x: totalsX, y: doc.y },
+          maxWidth: totalsTableWidth,
+          columnStyles: totalsColumnStyles,
+          rowStyles: {
+            border: [1, 0, 0, 0] as [number, number, number, number],
+            borderColor: '#cbd5e1',
+            height: TABLE_ROW_HEIGHT,
+          },
+          data: totalsSubTaxData,
+        });
+
+        const totalsDueData: TotalsCell[][] = [
+          [
+            { text: 'Amount due', ...totalsLeftAlign },
+            {
+              text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
+              ...totalsRightAlign,
+            },
+          ],
+        ];
+        doc.font('Helvetica-Bold').fontSize(BODY_FONT_SIZE);
+        doc.table({
+          position: { x: totalsX, y: doc.y },
+          maxWidth: totalsTableWidth,
+          columnStyles: totalsColumnStyles,
+          rowStyles: {
+            border: [1, 0, 0, 0] as [number, number, number, number],
+            borderColor: '#cbd5e1',
+            height: TABLE_ROW_HEIGHT,
+          },
+          data: totalsDueData,
+        });
+
+        if (invoice.notes && String(invoice.notes).trim()) {
+          doc.moveDown(SECTION_GAP + 0.75);
+          doc
+            .fontSize(11)
+            .font('Helvetica-Bold')
+            .text('Notes', blockLeft, doc.y);
+          doc.moveDown(0.5);
+          doc.font('Helvetica').fontSize(10);
+          doc.text(String(invoice.notes).trim(), blockLeft, doc.y, {
+            width: CONTENT_BLOCK_WIDTH,
+            align: 'left',
+            lineGap: 4,
+          });
+          doc.fillColor('#000000');
+        }
+      }
+    }
+
+    // Add "Page X of Y" footer to each page (lower right)
+    const pages = doc.bufferedPageRange();
+    const footerY = PAGE_HEIGHT - MARGIN - 15;
+    doc.font(BODY_FONT_FAMILY).fontSize(9);
+    for (let i = 0; i < pages.count; i += 1) {
+      doc.switchToPage(i);
+      doc.text(`Page ${i + 1} of ${pages.count}`, blockLeft, footerY, {
+        width: CONTENT_BLOCK_WIDTH,
+        align: 'right',
+      });
     }
 
     doc.end();

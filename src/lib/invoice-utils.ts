@@ -1,6 +1,12 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
+ * Items per page for invoice preview UI and PDF pagination.
+ * Totals and notes are always on the last page.
+ */
+export const INVOICE_ITEMS_PER_PAGE = 10;
+
+/**
  * Generates the next invoice number for a user
  * If a custom invoice number is provided, validates it's unique
  * Otherwise, auto-generates by finding the highest numeric invoice number and incrementing
