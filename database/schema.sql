@@ -154,17 +154,17 @@ CREATE TABLE public.invoice_items (
   name TEXT NOT NULL,
   description TEXT,
   quantity DECIMAL(10,2) NOT NULL DEFAULT 1,
-  unit_cost DECIMAL(10,2) NOT NULL,
+  unit_price DECIMAL(10,2) NOT NULL,
   total_cost DECIMAL(10,2) NOT NULL,
   rate_type rate_type DEFAULT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   -- Ensure positive amounts
   CONSTRAINT check_invoice_item_amounts_positive CHECK (
-    quantity > 0 AND unit_cost >= 0 AND total_cost >= 0
+    quantity > 0 AND unit_price >= 0 AND total_cost >= 0
   ),
-  -- Ensure total matches quantity * unit_cost
+  -- Ensure total matches quantity * unit_price
   CONSTRAINT check_invoice_item_total_calculation CHECK (
-    total_cost = quantity * unit_cost
+    total_cost = quantity * unit_price
   )
 );
 
