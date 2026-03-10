@@ -8,14 +8,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a date string to YYYY-MM-DD format
+ * Formats a date string
  * @param dateString - ISO date string or Date object
- * @returns Formatted date string (e.g., "2025-09-15" or "September 15,2025")
+ * @returns Formatted date string (e.g., "September 15, 2025")
  */
-export function formatDate(
-  dateString: string | Date,
-  invoiceDate?: boolean
-): string {
+export function formatDate(dateString: string | Date): string {
   if (!dateString) return '';
 
   const date =
@@ -23,14 +20,11 @@ export function formatDate(
 
   if (isNaN(date.getTime())) return '';
 
-  if (invoiceDate)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }); // returns September 15, 2025
-
-  return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }); // returns September 15, 2025
 }
 
 /**

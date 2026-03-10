@@ -133,8 +133,8 @@ export async function generateInvoicePdf(
 
     const detailLines = [
       `Invoice number: ${invoice.invoice_number ?? '—'}`,
-      `Issue date: ${formatDate(invoice.issue_date, true)}`,
-      `Due date: ${invoice.due_date ? formatDate(invoice.due_date, true) : '—'}`,
+      `Issue date: ${formatDate(invoice.issue_date)}`,
+      `Due date: ${invoice.due_date ? formatDate(invoice.due_date) : '—'}`,
     ];
 
     const maxInfoRows = Math.max(clientLines.length, detailLines.length);
