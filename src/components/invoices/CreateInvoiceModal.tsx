@@ -755,7 +755,11 @@ export function CreateInvoiceModal({
               onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Additional notes for the invoice"
               rows={3}
+              maxLength={300}
             />
+            <p className="text-xs text-muted-foreground">
+              {(formData.notes || '').length}/300
+            </p>
           </div>
         </div>
 

@@ -529,7 +529,9 @@ export function EditInvoiceModal({
               onChange={e => setNotes(e.target.value)}
               disabled={isLocked}
               rows={3}
+              maxLength={300}
             />
+            <p className="text-xs text-muted-foreground">{notes.length}/300</p>
           </div>
         </div>
 
