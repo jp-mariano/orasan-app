@@ -329,7 +329,6 @@ export async function POST(request: NextRequest) {
         status: 'draft',
         issue_date: invoiceData.issue_date,
         due_date: invoiceData.due_date || null,
-        payment_terms: invoiceData.payment_terms || 'NET 30',
         subtotal: Math.round(subtotal * 100) / 100,
         tax_rate: taxRate,
         tax_amount: taxAmount,

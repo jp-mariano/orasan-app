@@ -15,7 +15,6 @@ export interface InvoicePdfData {
     tax_amount: number;
     total_amount: number;
     currency_code: string;
-    payment_terms?: string | null;
     notes?: string | null;
   };
   items: Array<{
@@ -136,7 +135,6 @@ export async function generateInvoicePdf(
       `Invoice number: ${invoice.invoice_number ?? '—'}`,
       `Issue date: ${formatDate(invoice.issue_date, true)}`,
       `Due date: ${invoice.due_date ? formatDate(invoice.due_date, true) : '—'}`,
-      `Payment terms: ${invoice.payment_terms ?? '—'}`,
     ];
 
     const maxInfoRows = Math.max(clientLines.length, detailLines.length);

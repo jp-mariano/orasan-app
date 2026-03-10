@@ -93,7 +93,6 @@ export function EditInvoiceModal({
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState('NET 30');
   const [taxRate, setTaxRate] = useState(0);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<InvoiceStatus>('draft');
@@ -111,7 +110,6 @@ export function EditInvoiceModal({
       setInvoiceNumber(invoice.invoice_number ?? '');
       setIssueDate(invoice.issue_date ?? '');
       setDueDate(invoice.due_date ?? '');
-      setPaymentTerms(invoice.payment_terms ?? 'NET 30');
       setTaxRate(invoice.tax_rate ?? 0);
       setNotes(invoice.notes ?? '');
       setStatus(invoice.status ?? 'draft');
@@ -133,7 +131,6 @@ export function EditInvoiceModal({
     if (invoiceNumber !== (invoice.invoice_number ?? '')) return true;
     if (issueDate !== (invoice.issue_date ?? '')) return true;
     if (dueDate !== (invoice.due_date ?? '')) return true;
-    if (paymentTerms !== (invoice.payment_terms ?? 'NET 30')) return true;
     if (taxRate !== (invoice.tax_rate ?? 0)) return true;
     if (notes !== (invoice.notes ?? '')) return true;
     if (status !== (invoice.status ?? 'draft')) return true;
@@ -150,7 +147,6 @@ export function EditInvoiceModal({
     invoiceNumber,
     issueDate,
     dueDate,
-    paymentTerms,
     taxRate,
     notes,
     status,
@@ -205,7 +201,6 @@ export function EditInvoiceModal({
         invoice_number: invoiceNumber.trim() || undefined,
         issue_date: issueDate,
         due_date: dueDate.trim() || undefined,
-        payment_terms: paymentTerms.trim() || undefined,
         tax_rate: taxRate,
         notes: notes.trim() || undefined,
         items: validItems.map(row => {
@@ -463,29 +458,18 @@ export function EditInvoiceModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-payment-terms">Payment Terms</Label>
-              <Input
-                id="edit-payment-terms"
-                value={paymentTerms}
-                onChange={e => setPaymentTerms(e.target.value)}
-                disabled={isLocked}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-tax-rate">Tax Rate (%)</Label>
-              <Input
-                id="edit-tax-rate"
-                type="number"
-                min={0}
-                max={100}
-                step={0.01}
-                value={taxRate}
-                onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
-                disabled={isLocked}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-tax-rate">Tax Rate (%)</Label>
+            <Input
+              id="edit-tax-rate"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              value={taxRate}
+              onChange={e => setTaxRate(parseFloat(e.target.value) || 0)}
+              disabled={isLocked}
+            />
           </div>
 
           <div className="space-y-2">

@@ -94,7 +94,6 @@ export async function GET(
         tax_amount: Number(invoiceRow.tax_amount ?? 0),
         total_amount: Number(invoiceRow.total_amount),
         currency_code: invoiceRow.currency_code ?? 'USD',
-        payment_terms: invoiceRow.payment_terms ?? null,
         notes: invoiceRow.notes ?? null,
       },
       items: items.map(

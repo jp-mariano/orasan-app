@@ -54,7 +54,6 @@ export function CreateInvoiceModal({
     invoice_number: '',
     issue_date: formatDate(new Date()),
     due_date: undefined,
-    payment_terms: 'NET 30',
     tax_rate: 0,
     currency_code: project.currency_code || 'USD',
     notes: '',
@@ -88,7 +87,6 @@ export function CreateInvoiceModal({
         invoice_number: '',
         issue_date: formatDate(new Date()),
         due_date: undefined,
-        payment_terms: 'NET 30',
         tax_rate: 0,
         currency_code: project.currency_code || 'USD',
         notes: '',
@@ -263,7 +261,6 @@ export function CreateInvoiceModal({
         invoice_number: formData.invoice_number?.trim() || undefined,
         issue_date: formData.issue_date,
         due_date: formData.due_date || undefined,
-        payment_terms: formData.payment_terms || 'NET 30',
         tax_rate: formData.tax_rate || 0,
         currency_code: formData.currency_code || project.currency_code || 'USD',
         notes: formData.notes?.trim() || undefined,
@@ -599,35 +596,20 @@ export function CreateInvoiceModal({
             </div>
           </div>
 
-          {/* Payment Terms and Tax Rate */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="payment-terms">Payment Terms</Label>
-              <Input
-                id="payment-terms"
-                value={formData.payment_terms || 'NET 30'}
-                onChange={e =>
-                  handleInputChange('payment_terms', e.target.value)
-                }
-                placeholder="NET 30"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tax-rate">Tax Rate (%)</Label>
-              <Input
-                id="tax-rate"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={formData.tax_rate || 0}
-                onChange={e =>
-                  handleInputChange('tax_rate', parseFloat(e.target.value) || 0)
-                }
-                placeholder="0"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="tax-rate">Tax Rate (%)</Label>
+            <Input
+              id="tax-rate"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={formData.tax_rate || 0}
+              onChange={e =>
+                handleInputChange('tax_rate', parseFloat(e.target.value) || 0)
+              }
+              placeholder="0"
+            />
           </div>
 
           {/* Notes */}

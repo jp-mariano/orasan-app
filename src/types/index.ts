@@ -220,7 +220,6 @@ export interface Invoice {
   status: InvoiceStatus;
   issue_date: string;
   due_date?: string;
-  payment_terms: string;
   subtotal: number;
   tax_rate: number;
   tax_amount: number;
@@ -254,7 +253,6 @@ export interface CreateInvoiceRequest {
   project_id: string;
   issue_date: string;
   due_date?: string;
-  payment_terms?: string;
   tax_rate?: number;
   currency_code?: string;
   notes?: string;
@@ -269,7 +267,6 @@ export interface UpdateInvoiceRequest {
   status?: InvoiceStatus;
   issue_date?: string;
   due_date?: string;
-  payment_terms?: string;
   tax_rate?: number;
   currency_code?: string;
   notes?: string;

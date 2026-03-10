@@ -243,10 +243,6 @@ export default function InvoiceDetailPage() {
                   {invoice.due_date ? formatDate(invoice.due_date, true) : '—'}
                 </td>
               </tr>
-              <tr>
-                <td className="pr-4 text-left">Payment terms</td>
-                <td>{invoice.payment_terms ?? '—'}</td>
-              </tr>
             </tbody>
           </table>
         </div>
