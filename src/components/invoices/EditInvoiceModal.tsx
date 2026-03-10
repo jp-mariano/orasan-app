@@ -369,7 +369,13 @@ export function EditInvoiceModal({
                             size="sm"
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             onClick={() => removeItem(index)}
+                            disabled={items.length === 1}
                             aria-label="Remove item"
+                            title={
+                              items.length === 1
+                                ? 'Invoice must have at least one item'
+                                : 'Remove item'
+                            }
                           >
                             <XIcon className="h-4 w-4" />
                           </Button>
