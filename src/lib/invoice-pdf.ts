@@ -51,7 +51,7 @@ const CONTENT_BLOCK_WIDTH =
   CONTENT_WIDTH - CONTENT_LEFT_INSET - CONTENT_RIGHT_INSET;
 
 // Spacing to align with preview
-const SECTION_GAP = 28;
+const SECTION_GAP = 0.5;
 const TABLE_ROW_HEIGHT = 26;
 const TOTALS_WIDTH = 200;
 
@@ -98,65 +98,73 @@ export async function generateInvoicePdf(
     doc.on('error', reject);
 
     const { invoice, items, business, client } = data;
-    const currencyCode = invoice.currency_code ?? 'USD';
+    const currencyCode = invoice.currency_code;
 
     const blockLeft = CONTENT_LEFT_INSET;
     const blockRight = CONTENT_WIDTH - CONTENT_RIGHT_INSET;
 
-    // ---- Header: Invoice title + business (centered block) ----
+    // ---- Invoice title (matches preview page) ----
     doc.fontSize(22).font('Helvetica-Bold').text('Invoice', blockLeft, doc.y);
-    doc.moveDown(0.6);
-    doc.font('Helvetica').fontSize(11);
-    doc.text(business.business_name || '—', blockLeft, doc.y, {
-      width: CONTENT_BLOCK_WIDTH,
-      continued: false,
-    });
-    doc.moveDown(0.25);
-    if (business.business_email) {
-      doc.fontSize(10).text(business.business_email, blockLeft, doc.y, {
-        width: CONTENT_BLOCK_WIDTH,
-        continued: false,
-      });
-      doc.moveDown(0.4);
-    }
-    doc.moveDown(SECTION_GAP / 12);
+    doc.moveDown(SECTION_GAP);
 
-    // ---- Two columns: Bill To (left) and Details (right), as a table ----
-    const infoTop = doc.y;
-
-    const clientLines = [
-      client.client_name || client.name || '—',
-      client.client_email || '',
-      client.client_address || '',
-      client.client_phone || '',
-    ].filter(Boolean);
-
-    const detailLines = [
-      `Invoice number: ${invoice.invoice_number ?? '—'}`,
-      `Issue date: ${formatDate(invoice.issue_date)}`,
-      `Due date: ${invoice.due_date ? formatDate(invoice.due_date) : '—'}`,
+    // ---- Metadata: Invoice number, Issue date, Due date ----
+    const metaTop = doc.y;
+    const metaColWidth = CONTENT_BLOCK_WIDTH * 0.15;
+    const metaLabels = ['Invoice number', 'Issue date', 'Due date'];
+    const metaValues = [
+      invoice.invoice_number ?? '—',
+      formatDate(invoice.issue_date),
+      invoice.due_date ? formatDate(invoice.due_date) : '—',
     ];
+    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
+    const metaData: string[][] = metaLabels.map((label, i) => [
+      label,
+      metaValues[i] ?? '—',
+    ]);
+    doc.table({
+      position: { x: blockLeft, y: metaTop },
+      maxWidth: CONTENT_BLOCK_WIDTH,
+      columnStyles: [metaColWidth, metaColWidth],
+      rowStyles: { border: false as const },
+      data: metaData,
+    });
 
-    const maxInfoRows = Math.max(clientLines.length, detailLines.length);
+    doc.moveDown(SECTION_GAP + 0.75);
+
+    // ---- Two columns: Business (left) and Bill To (right) ----
+    const infoTop = doc.y;
     const infoColWidth = CONTENT_BLOCK_WIDTH * 0.5;
     const infoColumnStyles = [infoColWidth, infoColWidth];
 
-    // Header row: set doc font so table uses it (cell font option not honored by mixin)
+    const businessLines = [
+      business.business_address ?? '',
+      business.business_email ?? '',
+      business.business_phone ?? '',
+      business.tax_id ? `Tax ID: ${business.tax_id}` : '',
+    ].filter(Boolean);
+
+    const clientLines = [
+      client.client_name || client.name || '—',
+      client.client_email ?? '',
+      client.client_address ?? '',
+      client.client_phone ?? '',
+    ].filter(Boolean);
+
+    const maxInfoRows = Math.max(businessLines.length, clientLines.length);
+
     doc.font('Helvetica-Bold').fontSize(INFO_HEADER_FONT.size ?? 11);
     doc.table({
       position: { x: blockLeft, y: infoTop },
       maxWidth: CONTENT_BLOCK_WIDTH,
       columnStyles: infoColumnStyles,
       rowStyles: { border: false as const },
-      data: [['Bill To', 'Details']],
+      data: [[business.business_name || '—', 'Bill To']],
     });
-
-    // Body rows: regular font
+    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
     const infoBodyData: string[][] = [];
     for (let i = 0; i < maxInfoRows; i += 1) {
-      infoBodyData.push([clientLines[i] ?? '', detailLines[i] ?? '']);
+      infoBodyData.push([businessLines[i] ?? '', clientLines[i] ?? '']);
     }
-    doc.font(BODY_FONT_FAMILY).fontSize(BODY_FONT_SIZE);
     doc.table({
       position: { x: blockLeft, y: doc.y },
       maxWidth: CONTENT_BLOCK_WIDTH,
@@ -165,14 +173,9 @@ export async function generateInvoicePdf(
       data: infoBodyData,
     });
 
-    doc.moveDown(SECTION_GAP / 10);
+    doc.moveDown(SECTION_GAP + 0.75);
 
-    // ---- Items section (card with table + totals) ----
-    const itemsTop = doc.y;
-    doc.fontSize(11).font('Helvetica-Bold').text('Items', blockLeft, itemsTop);
-    doc.font('Helvetica');
-    doc.moveDown(1.2);
-
+    // ---- Items table (matches preview: Name, Quantity, Unit price, Rate type, Amount) ----
     const tableTop = doc.y;
     const tableWidth = CONTENT_BLOCK_WIDTH;
     const leftAlign: { align: PdfAlignLeft } = {
@@ -188,8 +191,8 @@ export async function generateInvoicePdf(
     const itemsHeaderRow: TableCell[] = [
       { text: 'Name', ...leftAlign },
       { text: 'Quantity', ...rightAlign },
+      { text: `Unit price (${currencyCode})`, ...rightAlign },
       { text: 'Rate type', ...rightAlign },
-      { text: 'Unit price', ...rightAlign },
       { text: `Amount (${currencyCode})`, ...rightAlign },
     ];
     doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
@@ -208,11 +211,11 @@ export async function generateInvoicePdf(
     const itemsBodyData: Array<Array<TableCell>> = items.map(item => [
       { text: item.name, ...leftAlign },
       { text: String(item.quantity), ...rightAlign },
-      { text: formatRateType(item.rate_type ?? null), ...rightAlign },
       {
         text: formatPriceWithCurrency(item.unit_price, currencyCode, false),
         ...rightAlign,
       },
+      { text: formatRateType(item.rate_type ?? null), ...rightAlign },
       {
         text: formatPriceWithCurrency(item.total_cost, currencyCode, false),
         ...rightAlign,
@@ -245,23 +248,26 @@ export async function generateInvoicePdf(
     };
     const totalsColumnStyles = [totalsTableWidth - 100, 100];
 
-    // Subtotal + Tax rows: regular font
+    // Subtotal + Tax + Total rows: regular font
     const totalsSubTaxData: TotalsCell[][] = [
       [
         { text: 'Subtotal', ...totalsLeftAlign },
         {
-          text: formatPriceWithCurrency(invoice.subtotal, currencyCode, false),
+          text: formatPriceWithCurrency(invoice.subtotal, currencyCode),
           ...totalsRightAlign,
         },
       ],
       [
         { text: `Tax (${invoice.tax_rate ?? 0}%)`, ...totalsLeftAlign },
         {
-          text: formatPriceWithCurrency(
-            invoice.tax_amount,
-            currencyCode,
-            false
-          ),
+          text: formatPriceWithCurrency(invoice.tax_amount, currencyCode),
+          ...totalsRightAlign,
+        },
+      ],
+      [
+        { text: 'Total', ...totalsLeftAlign },
+        {
+          text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
           ...totalsRightAlign,
         },
       ],
@@ -271,21 +277,25 @@ export async function generateInvoicePdf(
       position: { x: totalsX, y: doc.y },
       maxWidth: totalsTableWidth,
       columnStyles: totalsColumnStyles,
-      rowStyles: { border: false as const },
+      rowStyles: {
+        border: [1, 0, 0, 0] as [number, number, number, number],
+        borderColor: '#cbd5e1',
+        height: TABLE_ROW_HEIGHT,
+      },
       data: totalsSubTaxData,
     });
 
-    // Total row: bold (doc font so mixin honors it)
-    const totalsTotalData: TotalsCell[][] = [
+    // Amount due row (matches preview, same value as Total)
+    const totalsDueData: TotalsCell[][] = [
       [
-        { text: 'Total', ...totalsLeftAlign },
+        { text: 'Amount due', ...totalsLeftAlign },
         {
           text: formatPriceWithCurrency(invoice.total_amount, currencyCode),
           ...totalsRightAlign,
         },
       ],
     ];
-    doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
+    doc.font('Helvetica-Bold').fontSize(BODY_FONT_SIZE);
     doc.table({
       position: { x: totalsX, y: doc.y },
       maxWidth: totalsTableWidth,
@@ -295,10 +305,10 @@ export async function generateInvoicePdf(
         borderColor: '#cbd5e1',
         height: TABLE_ROW_HEIGHT,
       },
-      data: totalsTotalData,
+      data: totalsDueData,
     });
 
-    doc.moveDown(SECTION_GAP / 10);
+    doc.moveDown(SECTION_GAP + 0.75);
 
     // ---- Notes (separate card when present) ----
     if (invoice.notes && String(invoice.notes).trim()) {
