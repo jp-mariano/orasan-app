@@ -280,7 +280,7 @@ export default function InvoiceDetailPage() {
                   <th className="text-left py-2 font-semibold">Name</th>
                   <th className="text-right py-2 font-semibold">Quantity</th>
                   <th className="text-right py-2 font-semibold">
-                    Unit cost ({currencyCode})
+                    Unit price ({currencyCode})
                   </th>
                   <th className="text-right py-2 font-semibold">Rate type</th>
                   <th className="text-right py-2 font-semibold">
@@ -295,7 +295,7 @@ export default function InvoiceDetailPage() {
                     <td className="py-2 text-right">{item.quantity}</td>
                     <td className="py-2 text-right">
                       {formatPriceWithCurrency(
-                        item.unit_cost,
+                        item.unit_price,
                         currencyCode,
                         false
                       )}

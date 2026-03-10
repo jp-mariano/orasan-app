@@ -21,7 +21,7 @@ export interface InvoicePdfData {
     name: string;
     quantity: number;
     rate_type?: string | null;
-    unit_cost: number;
+    unit_price: number;
     total_cost: number;
   }>;
   business: {
@@ -189,7 +189,7 @@ export async function generateInvoicePdf(
       { text: 'Name', ...leftAlign },
       { text: 'Quantity', ...rightAlign },
       { text: 'Rate type', ...rightAlign },
-      { text: 'Unit cost', ...rightAlign },
+      { text: 'Unit price', ...rightAlign },
       { text: `Amount (${currencyCode})`, ...rightAlign },
     ];
     doc.font('Helvetica-Bold').fontSize(TABLE_HEADER_FONT.size ?? 10);
@@ -210,7 +210,7 @@ export async function generateInvoicePdf(
       { text: String(item.quantity), ...rightAlign },
       { text: formatRateType(item.rate_type ?? null), ...rightAlign },
       {
-        text: formatPriceWithCurrency(item.unit_cost, currencyCode, false),
+        text: formatPriceWithCurrency(item.unit_price, currencyCode, false),
         ...rightAlign,
       },
       {

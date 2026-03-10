@@ -43,7 +43,7 @@ type EditInvoiceFormItem = {
   id?: string;
   name: string;
   quantity: number;
-  unit_cost: number;
+  unit_price: number;
   rate_type?: RateType | null;
 };
 
@@ -118,7 +118,7 @@ export function EditInvoiceModal({
           id: item.id,
           name: item.name,
           quantity: item.quantity,
-          unit_cost: item.unit_cost,
+          unit_price: item.unit_price,
           rate_type: item.rate_type ?? null,
         }))
       );
@@ -139,7 +139,7 @@ export function EditInvoiceModal({
     return items.some(
       (a, i) =>
         Number(a.quantity) !== Number(origItems[i].quantity) ||
-        Number(a.unit_cost) !== Number(origItems[i].unit_cost)
+        Number(a.unit_price) !== Number(origItems[i].unit_price)
     );
   }, [
     invoice,
@@ -179,11 +179,11 @@ export function EditInvoiceModal({
       return;
     }
     const validItems = items.filter(
-      row => row.name.trim() !== '' && row.quantity > 0 && row.unit_cost >= 0
+      row => row.name.trim() !== '' && row.quantity > 0 && row.unit_price >= 0
     );
     if (validItems.length === 0) {
       setErrorMessage(
-        'At least one item with name, quantity, and unit cost is required.'
+        'At least one item with name, quantity, and unit price is required.'
       );
       return;
     }
@@ -205,12 +205,12 @@ export function EditInvoiceModal({
         notes: notes.trim() || undefined,
         items: validItems.map(row => {
           const q = Math.round(Number(row.quantity) * 100) / 100;
-          const u = Math.round(Number(row.unit_cost) * 100) / 100;
+          const u = Math.round(Number(row.unit_price) * 100) / 100;
           const total_cost = Math.round(q * u * 100) / 100;
           return {
             name: row.name.trim(),
             quantity: q,
-            unit_cost: u,
+            unit_price: u,
             total_cost,
             rate_type: row.rate_type ?? null,
           };
@@ -308,7 +308,7 @@ export function EditInvoiceModal({
                       Quantity
                     </th>
                     <th className="px-2 py-2 text-center font-medium w-28">
-                      Unit Cost
+                      Unit Price
                     </th>
                     <th className="px-2 py-2 text-right font-medium w-24">
                       Rate Type
@@ -346,11 +346,11 @@ export function EditInvoiceModal({
                           type="number"
                           min={0}
                           step={0.01}
-                          value={row.unit_cost}
+                          value={row.unit_price}
                           onChange={e =>
                             updateItem(
                               index,
-                              'unit_cost',
+                              'unit_price',
                               parseFloat(e.target.value) || 0
                             )
                           }

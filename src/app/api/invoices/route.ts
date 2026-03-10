@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
       name: string;
       description?: string;
       quantity: number;
-      unit_cost: number;
+      unit_price: number;
       total_cost: number;
       rate_type: 'hourly' | 'fixed' | null;
     }> = [];
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
         unitCost = 0;
       }
 
-      // Round to 2 decimals so DB constraint total_cost = quantity * unit_cost holds
+      // Round to 2 decimals so DB constraint total_cost = quantity * unit_price holds
       const q = Math.round(quantity * 100) / 100;
       const u = Math.round(unitCost * 100) / 100;
       const itemTotal = Math.round(q * u * 100) / 100;
@@ -299,7 +299,7 @@ export async function POST(request: NextRequest) {
         name: task.name,
         description: task.description || undefined,
         quantity: q,
-        unit_cost: u,
+        unit_price: u,
         total_cost: itemTotal,
         rate_type: rateType ?? null,
       });
@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
       name: item.name,
       description: item.description || null,
       quantity: item.quantity,
-      unit_cost: item.unit_cost,
+      unit_price: item.unit_price,
       total_cost: item.total_cost,
       rate_type: item.rate_type ?? null,
     }));

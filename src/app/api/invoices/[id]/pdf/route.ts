@@ -39,7 +39,7 @@ export async function GET(
           name,
           quantity,
           rate_type,
-          unit_cost,
+          unit_price,
           total_cost
         )
       `
@@ -79,7 +79,7 @@ export async function GET(
       name: string;
       quantity: number;
       rate_type?: string | null;
-      unit_cost: number;
+      unit_price: number;
       total_cost: number;
     }>;
 
@@ -97,11 +97,11 @@ export async function GET(
         notes: invoiceRow.notes ?? null,
       },
       items: items.map(
-        ({ name, quantity, rate_type, unit_cost, total_cost }) => ({
+        ({ name, quantity, rate_type, unit_price, total_cost }) => ({
           name,
           quantity,
           rate_type: rate_type ?? null,
-          unit_cost,
+          unit_price,
           total_cost,
         })
       ),

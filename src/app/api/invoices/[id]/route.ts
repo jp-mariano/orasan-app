@@ -187,35 +187,35 @@ export async function PUT(
             { status: 400 }
           );
         }
-        if (item.unit_cost < 0) {
+        if (item.unit_price < 0) {
           return NextResponse.json(
-            { error: 'Unit cost cannot be negative' },
+            { error: 'Unit price cannot be negative' },
             { status: 400 }
           );
         }
-        // Validate total_cost matches quantity * unit_cost (with rounding)
+        // Validate total_cost matches quantity * unit_price (with rounding)
         const expectedTotal =
-          Math.round(item.quantity * item.unit_cost * 100) / 100;
+          Math.round(item.quantity * item.unit_price * 100) / 100;
         const actualTotal = Math.round(item.total_cost * 100) / 100;
         if (Math.abs(expectedTotal - actualTotal) > 0.01) {
           return NextResponse.json(
             {
-              error: `Item "${item.name}": total_cost must equal quantity × unit_cost`,
+              error: `Item "${item.name}": total_cost must equal quantity × unit_price`,
             },
             { status: 400 }
           );
         }
       }
 
-      // Normalize items so total_cost = quantity × unit_cost (for DB constraint)
+      // Normalize items so total_cost = quantity × unit_price (for DB constraint)
       const normalizedItems = updateData.items.map(item => {
         const q = Math.round(item.quantity * 100) / 100;
-        const u = Math.round(item.unit_cost * 100) / 100;
+        const u = Math.round(item.unit_price * 100) / 100;
         const total = Math.round(q * u * 100) / 100;
         return {
           ...item,
           quantity: q,
-          unit_cost: u,
+          unit_price: u,
           total_cost: total,
           rate_type: item.rate_type ?? null,
         };
@@ -273,14 +273,14 @@ export async function PUT(
         );
       }
 
-      // Insert new items (already normalized above: total_cost = quantity × unit_cost)
+      // Insert new items (already normalized above: total_cost = quantity × unit_price)
       const itemsToInsert = updateData.items.map(item => ({
         invoice_id: invoiceId,
         task_id: item.task_id || null,
         name: item.name.trim(),
         description: item.description?.trim() || null,
         quantity: item.quantity,
-        unit_cost: item.unit_cost,
+        unit_price: item.unit_price,
         total_cost: item.total_cost,
         rate_type: item.rate_type ?? null,
       }));
