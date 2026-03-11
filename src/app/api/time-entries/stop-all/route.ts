@@ -29,19 +29,10 @@ export async function POST(request: NextRequest) {
     // Extract timer IDs from updates
     const timerIds = updates.map(update => update.id);
 
-    // Step 1: Validate timers exist, are active (running or paused), belong to the user, and are not fixed-rate tasks
+    // Step 1: Validate timers exist, are active (running or paused), and belong to the user
     const { data: validTimersRaw, error: validationError } = await supabase
       .from('time_entries')
-      .select(
-        `
-        id,
-        user_id,
-        timer_status,
-        task_id,
-        project_id,
-        task:task_id (rate_type)
-      `
-      )
+      .select('id, user_id, timer_status, task_id, project_id')
       .in('id', timerIds)
       .eq('user_id', user.id)
       .in('timer_status', ['running', 'paused']);
@@ -54,18 +45,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Exclude fixed-rate task timers; only stop hourly (and other non-fixed) task timers
-    const taskObj = (t: (typeof validTimersRaw)[0]) =>
-      (t as { task?: { rate_type?: string } | null }).task;
-    const validTimers = (validTimersRaw || []).filter(
-      t => taskObj(t)?.rate_type !== 'fixed'
-    );
+    const validTimers = validTimersRaw || [];
 
     if (validTimers.length === 0) {
       return NextResponse.json({
         success: true,
         stoppedCount: 0,
-        message: 'No timers to stop (fixed-price task timers are excluded)',
+        message: 'No timers to stop',
       });
     }
 
@@ -78,7 +64,7 @@ export async function POST(request: NextRequest) {
       validTimers.map(timer => [timer.id, timer.project_id])
     );
 
-    // Step 2: Use upsert for batch update (only non-fixed-rate timers)
+    // Step 2: Use upsert for batch update
     const updatesToApply = updates.filter(update => validIds.has(update.id));
     const { data: updatedTimers, error: updateError } = await supabase
       .from('time_entries')

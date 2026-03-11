@@ -19,7 +19,6 @@ interface TaskListProps {
     taskId: string,
     updates: Partial<TaskWithDetails>
   ) => Promise<void>;
-  onOpenManualTime?: (task: TaskWithDetails, currentDuration: number) => void;
 }
 
 export function TaskList({
@@ -27,7 +26,6 @@ export function TaskList({
   loading = false,
   onDelete,
   onUpdate,
-  onOpenManualTime,
 }: TaskListProps) {
   const [expandedPriorities, setExpandedPriorities] = useState<Set<string>>(
     new Set(['urgent'])
@@ -174,7 +172,6 @@ export function TaskList({
                     task={task}
                     onDelete={onDelete}
                     onUpdate={onUpdate}
-                    onOpenManualTime={onOpenManualTime}
                   />
                 ))}
               </div>
@@ -234,7 +231,6 @@ export function TaskList({
                     task={task}
                     onDelete={onDelete}
                     onUpdate={onUpdate}
-                    onOpenManualTime={onOpenManualTime}
                   />
                 ))}
               </div>

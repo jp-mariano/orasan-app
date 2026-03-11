@@ -1,14 +1,21 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical, Trash2 } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 
+import { CreateTimeEntryModal } from '@/components/tasks/CreateTimeEntryModal';
 import { DeleteTaskModal } from '@/components/tasks/DeleteTaskModal';
-import { ManualTimeEntryModal } from '@/components/tasks/ManualTimeEntryModal';
-import { TaskDetailTimer } from '@/components/tasks/TaskDetailTimer';
+import { DeleteTimeEntryModal } from '@/components/tasks/DeleteTimeEntryModal';
+import { EditTimeEntryModal } from '@/components/tasks/EditTimeEntryModal';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
@@ -23,45 +30,17 @@ import { ErrorDisplay } from '@/components/ui/error-display';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Label } from '@/components/ui/label';
+import { TimerDisplay } from '@/components/ui/timer-display';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { useUser } from '@/hooks/useUser';
-import { formatDate } from '@/lib/utils';
-import { ProjectStatus, TaskWithDetails } from '@/types';
+import { getTimerStatusColorClass, getTimerStatusText } from '@/lib/timer-ui';
+import { formatDate, formatDuration } from '@/lib/utils';
+import { ProjectStatus, TaskWithDetails, TimeEntry } from '@/types';
 
-// Wrapper component to access timer context
-function ManualTimeEntryModalWrapper({
-  open,
-  onOpenChange,
-  taskId,
-  projectId,
-  taskName,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  taskId: string;
-  projectId: string;
-  taskName: string;
-}) {
-  const timerActions = useTimerActions(taskId, projectId);
-
-  return (
-    <ManualTimeEntryModal
-      open={open}
-      onOpenChange={onOpenChange}
-      taskId={taskId}
-      projectId={projectId}
-      taskName={taskName}
-      currentDuration={timerActions.duration}
-      onTimeEntryUpdated={() => {
-        // Refresh the timer display
-        // This will be handled by the timer context automatically
-      }}
-    />
-  );
-}
+const TIME_ENTRIES_PER_PAGE = 10;
 
 export default function TaskDetailPage() {
   const { user, loading } = useAuth();
@@ -81,14 +60,30 @@ export default function TaskDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showActions, setShowActions] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isManualTimeModalOpen, setIsManualTimeModalOpen] = useState(false);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [loadingTimeEntries, setLoadingTimeEntries] = useState(false);
+  const [timeEntryToDelete, setTimeEntryToDelete] = useState<TimeEntry | null>(
+    null
+  );
+  const [isDeletingTimeEntry, setIsDeletingTimeEntry] = useState(false);
+  const [timeEntriesPage, setTimeEntriesPage] = useState(1);
+  const [openTimeEntryMenuId, setOpenTimeEntryMenuId] = useState<string | null>(
+    null
+  );
+  const [timeEntryToEdit, setTimeEntryToEdit] = useState<TimeEntry | null>(
+    null
+  );
+  const [showCreateEntryModal, setShowCreateEntryModal] = useState(false);
+  const [showEditEntryModal, setShowEditEntryModal] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
+  const rowMenuRef = useRef<HTMLDivElement>(null);
 
   const projectId = params.id as string;
   const taskId = params.taskId as string;
 
   // Task management
   const { updateTask, deleteTask } = useTasks({ projectId });
+  const timerActions = useTimerActions(taskId, projectId);
 
   // Fetch task data - same pattern as Project page
   useEffect(() => {
@@ -120,6 +115,38 @@ export default function TaskDetailPage() {
     fetchTask();
   }, [projectId, taskId]);
 
+  // Fetch time entries for this task (latest first)
+  const fetchTimeEntries = useCallback(async () => {
+    if (!taskId) return;
+    setLoadingTimeEntries(true);
+    try {
+      const res = await fetch(`/api/time-entries?task_id=${taskId}`);
+      if (!res.ok) throw new Error('Failed to fetch time entries');
+      const data = await res.json();
+      const entries: TimeEntry[] = data.time_entries ?? [];
+      const sorted = [...entries].sort((a, b) => {
+        const dateA = new Date(
+          a.end_time ?? a.start_time ?? a.created_at
+        ).getTime();
+        const dateB = new Date(
+          b.end_time ?? b.start_time ?? b.created_at
+        ).getTime();
+        return dateB - dateA;
+      });
+      setTimeEntries(sorted);
+      setTimeEntriesPage(1);
+    } catch {
+      setTimeEntries([]);
+    } finally {
+      setLoadingTimeEntries(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (!taskId) return;
+    fetchTimeEntries();
+  }, [taskId, fetchTimeEntries]);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !user) {
@@ -127,14 +154,15 @@ export default function TaskDetailPage() {
     }
   }, [user, loading, router]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        actionsRef.current &&
-        !actionsRef.current.contains(event.target as Node)
-      ) {
+      const target = event.target as Node;
+      if (actionsRef.current && !actionsRef.current.contains(target)) {
         setShowActions(false);
+      }
+      if (rowMenuRef.current && !rowMenuRef.current.contains(target)) {
+        setOpenTimeEntryMenuId(null);
       }
     }
 
@@ -211,6 +239,30 @@ export default function TaskDetailPage() {
     }
   };
 
+  const handleConfirmDeleteTimeEntry = async () => {
+    if (!timeEntryToDelete) return;
+    setIsDeletingTimeEntry(true);
+    try {
+      const res = await fetch(`/api/time-entries/${timeEntryToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete time entry');
+      setTimeEntries(prev => {
+        const next = prev.filter(e => e.id !== timeEntryToDelete.id);
+        const maxPage = Math.ceil(next.length / TIME_ENTRIES_PER_PAGE) || 1;
+        setTimeEntriesPage(p => Math.min(p, maxPage));
+        return next;
+      });
+      setTimeEntryToDelete(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to delete time entry'
+      );
+    } finally {
+      setIsDeletingTimeEntry(false);
+    }
+  };
+
   if (loading || loadingTask) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -245,6 +297,15 @@ export default function TaskDetailPage() {
     );
   }
 
+  const isTaskCompleted = task.status === 'completed';
+  const totalTaskSeconds = timeEntries.reduce((sum, entry) => {
+    const isActiveEntry = timerActions.timer?.id === entry.id;
+    const seconds = isActiveEntry
+      ? timerActions.duration
+      : (entry.duration_seconds ?? 0);
+    return sum + Number(seconds || 0);
+  }, 0);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -277,9 +338,9 @@ export default function TaskDetailPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Task Details</CardTitle>
+                <CardTitle>Task Information</CardTitle>
                 <CardDescription>
-                  Manage task information and settings
+                  Manage task details and settings
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-2">
@@ -304,17 +365,6 @@ export default function TaskDetailPage() {
                       >
                         <span>Edit Task</span>
                       </button>
-                      {task.rate_type !== 'fixed' && (
-                        <button
-                          onClick={() => {
-                            setIsManualTimeModalOpen(true);
-                            setShowActions(false);
-                          }}
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                        >
-                          <span>Edit Timer</span>
-                        </button>
-                      )}
                       <button
                         onClick={() => {
                           handleDeleteTask();
@@ -333,11 +383,6 @@ export default function TaskDetailPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Timer Display - Only for non-fixed-rate tasks */}
-            {task && task.rate_type !== 'fixed' && (
-              <TaskDetailTimer taskId={task.id} projectId={projectId} />
-            )}
-
             {/* Task Name */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-500">
@@ -542,6 +587,252 @@ export default function TaskDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Time entries list */}
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle>Time Entries</CardTitle>
+                <CardDescription>
+                  Logged time for this task, latest first. Start the timer to
+                  add more. Time tracking for fixed-rate tasks is for internal
+                  use only and is not used in invoicing.
+                </CardDescription>
+              </div>
+              <div className="shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => setShowCreateEntryModal(true)}
+                  disabled={isTaskCompleted}
+                  title={
+                    isTaskCompleted
+                      ? 'Time entries are locked for completed tasks'
+                      : 'Add time entry'
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Time Entry
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingTimeEntries ? (
+              <p className="text-sm text-muted-foreground py-6">
+                Loading time entries…
+              </p>
+            ) : timeEntries.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6">
+                No time entries yet. Start the timer to log time.
+              </p>
+            ) : (
+              <>
+                <div className="mb-4 rounded-md border bg-white px-4 py-3">
+                  <div className="text-sm text-muted-foreground">
+                    Total accumulated time
+                  </div>
+                  <div className="mt-1 font-mono text-lg font-semibold">
+                    {formatDuration(totalTaskSeconds)}
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">
+                          Date-Time
+                        </th>
+                        <th className="py-3 px-4 font-medium">Timer</th>
+                        <th className="w-10 py-3 px-4" aria-label="Actions" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeEntries
+                        .slice(
+                          (timeEntriesPage - 1) * TIME_ENTRIES_PER_PAGE,
+                          timeEntriesPage * TIME_ENTRIES_PER_PAGE
+                        )
+                        .map(entry => {
+                          const isActiveTimer =
+                            timerActions.timer?.id === entry.id;
+                          return (
+                            <tr
+                              key={entry.id}
+                              className="border-b hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                {new Date(entry.created_at).toLocaleString(
+                                  'en-US',
+                                  {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  }
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {isActiveTimer ? (
+                                  <TimerDisplay
+                                    duration={timerActions.duration}
+                                    isRunning={
+                                      timerActions.timer?.isRunning ?? false
+                                    }
+                                    isPaused={
+                                      timerActions.timer?.isPaused ?? false
+                                    }
+                                    canStart={
+                                      !isTaskCompleted && timerActions.canStart
+                                    }
+                                    canResume={
+                                      !isTaskCompleted && timerActions.canResume
+                                    }
+                                    canPause={
+                                      !isTaskCompleted && timerActions.canPause
+                                    }
+                                    canStop={
+                                      !isTaskCompleted && timerActions.canStop
+                                    }
+                                    onStart={timerActions.startTimer}
+                                    onPause={async () => {
+                                      await timerActions.pauseTimer();
+                                      fetchTimeEntries();
+                                    }}
+                                    onResume={timerActions.resumeTimer}
+                                    onStop={async () => {
+                                      await timerActions.stopTimer();
+                                      fetchTimeEntries();
+                                    }}
+                                    hasTimer={!!timerActions.timer}
+                                    compact
+                                  />
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`font-mono font-semibold ${getTimerStatusColorClass(
+                                        entry.timer_status
+                                      )} text-sm`}
+                                    >
+                                      {formatDuration(entry.duration_seconds)}
+                                    </span>
+                                    <span
+                                      className={`text-xs ${getTimerStatusColorClass(
+                                        entry.timer_status
+                                      )}`}
+                                    >
+                                      {getTimerStatusText(entry.timer_status)}
+                                    </span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div
+                                  className="relative inline-block"
+                                  ref={
+                                    openTimeEntryMenuId === entry.id
+                                      ? rowMenuRef
+                                      : null
+                                  }
+                                >
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() =>
+                                      setOpenTimeEntryMenuId(prev =>
+                                        prev === entry.id ? null : entry.id
+                                      )
+                                    }
+                                    disabled={isTaskCompleted}
+                                    aria-label="Time entry options"
+                                    title={
+                                      isTaskCompleted
+                                        ? 'Time entries are locked for completed tasks'
+                                        : 'Time entry options'
+                                    }
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                  {openTimeEntryMenuId === entry.id && (
+                                    <div className="absolute right-0 top-full z-10 mt-1 min-w-[170px] rounded-md border bg-white py-1 shadow-lg">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setOpenTimeEntryMenuId(null);
+                                          setTimeEntryToEdit(entry);
+                                          setShowEditEntryModal(true);
+                                        }}
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                                      >
+                                        Edit Timer
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTimeEntryToDelete(entry);
+                                          setOpenTimeEntryMenuId(null);
+                                        }}
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete Time Entry
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+                {timeEntries.length > TIME_ENTRIES_PER_PAGE && (
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setTimeEntriesPage(p => Math.max(1, p - 1))
+                      }
+                      disabled={timeEntriesPage === 1}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {timeEntriesPage} of{' '}
+                      {Math.ceil(timeEntries.length / TIME_ENTRIES_PER_PAGE)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        setTimeEntriesPage(p =>
+                          Math.min(
+                            Math.ceil(
+                              timeEntries.length / TIME_ENTRIES_PER_PAGE
+                            ),
+                            p + 1
+                          )
+                        )
+                      }
+                      disabled={
+                        timeEntriesPage >=
+                        Math.ceil(timeEntries.length / TIME_ENTRIES_PER_PAGE)
+                      }
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Edit Task Modal */}
@@ -574,14 +865,34 @@ export default function TaskDetailPage() {
         isDeleting={isDeleting}
       />
 
-      {/* Manual Time Entry Modal */}
-      {task && (
-        <ManualTimeEntryModalWrapper
-          open={isManualTimeModalOpen}
-          onOpenChange={setIsManualTimeModalOpen}
+      <DeleteTimeEntryModal
+        open={!!timeEntryToDelete}
+        onOpenChange={open => !open && setTimeEntryToDelete(null)}
+        timeEntry={timeEntryToDelete}
+        onConfirmDelete={handleConfirmDeleteTimeEntry}
+        isDeleting={isDeletingTimeEntry}
+      />
+
+      {!isTaskCompleted && (
+        <EditTimeEntryModal
+          open={showEditEntryModal}
+          onOpenChange={open => {
+            setShowEditEntryModal(open);
+            if (!open) setTimeEntryToEdit(null);
+          }}
+          timeEntry={timeEntryToEdit}
+          onSaved={fetchTimeEntries}
+        />
+      )}
+
+      {!isTaskCompleted && task && (
+        <CreateTimeEntryModal
+          open={showCreateEntryModal}
+          onOpenChange={setShowCreateEntryModal}
           taskId={task.id}
           projectId={projectId}
           taskName={task.name}
+          onCreated={fetchTimeEntries}
         />
       )}
     </div>

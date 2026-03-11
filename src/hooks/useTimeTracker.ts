@@ -414,7 +414,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   // Refresh timer for specific task
   const refreshTimerForTask = useCallback(async (taskId: string) => {
     try {
-      // Fetch the latest time entry for this task
+      // Fetch time entries for this task
       const response = await fetch(`/api/time-entries?task_id=${taskId}`);
       if (!response.ok) {
         const handled = await checkAndHandleUnauthorized(response);
@@ -427,8 +427,31 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       const data = await response.json();
       const timeEntries = data.time_entries || [];
 
-      if (timeEntries.length > 0) {
-        const timeEntry = timeEntries[0];
+      // Pick the most relevant timer entry for UI:
+      // - Ignore stopped entries (preserved for invoices but not active timers)
+      // - Prefer running over paused
+      // - Prefer newest by created_at
+      const candidates = (timeEntries as TimeEntry[]).filter(
+        entry =>
+          entry.timer_status === 'running' || entry.timer_status === 'paused'
+      );
+
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => {
+          const statusPriority = (s: TimeEntry['timer_status']): number => {
+            if (s === 'running') return 2;
+            if (s === 'paused') return 1;
+            return 0;
+          };
+          const aP = statusPriority(a.timer_status);
+          const bP = statusPriority(b.timer_status);
+          if (aP !== bP) return bP - aP;
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        });
+
+        const timeEntry = candidates[0];
 
         // Update the timer in local state
         setTimers(prevTimers => {
@@ -451,7 +474,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
           return [...updatedTimers, updatedTimer];
         });
       } else {
-        // No time entry exists, remove from local state
+        // No running/paused entry exists, remove from local state
         setTimers(prevTimers =>
           prevTimers.filter(timer => timer.taskId !== taskId)
         );

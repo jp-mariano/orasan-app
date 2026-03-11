@@ -113,22 +113,6 @@ export async function PATCH(
       );
     }
 
-    // If starting/resuming a timer, reject for fixed-rate tasks
-    if (updateData.timer_status === 'running') {
-      const { data: task } = await supabase
-        .from('tasks')
-        .select('rate_type')
-        .eq('id', existingTimeEntry.task_id)
-        .single();
-
-      if (task?.rate_type === 'fixed') {
-        return NextResponse.json(
-          { error: 'Timers are not used for fixed-price tasks' },
-          { status: 400 }
-        );
-      }
-    }
-
     // If starting a timer, check for running timers on the same task
     if (updateData.timer_status === 'running') {
       const { data: runningTimer } = await supabase

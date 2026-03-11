@@ -1,5 +1,6 @@
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 
+import { getTimerStatusColorClass, getTimerStatusText } from '@/lib/timer-ui';
 import { formatDuration } from '@/lib/utils';
 
 import { Button } from './button';
@@ -37,17 +38,9 @@ export function TimerDisplay({
   hasTimer = false,
   compact = false,
 }: TimerDisplayProps) {
-  const getStatusColor = (): string => {
-    if (isRunning) return 'text-green-600';
-    if (isPaused) return 'text-yellow-600';
-    return 'text-gray-600';
-  };
-
-  const getStatusText = (): string => {
-    if (isRunning) return 'Running';
-    if (isPaused) return 'Paused';
-    return 'Stopped';
-  };
+  const status = isRunning ? 'running' : isPaused ? 'paused' : 'stopped';
+  const statusColor = getTimerStatusColorClass(status);
+  const statusText = getTimerStatusText(status);
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
@@ -55,15 +48,13 @@ export function TimerDisplay({
       {hasTimer && (
         <div className="flex items-center gap-2">
           <span
-            className={`font-mono font-semibold ${getStatusColor()} ${
+            className={`font-mono font-semibold ${statusColor} ${
               compact ? 'text-sm' : 'text-lg'
             }`}
           >
             {formatDuration(duration)}
           </span>
-          <span className={`text-xs ${getStatusColor()}`}>
-            {getStatusText()}
-          </span>
+          <span className={`text-xs ${statusColor}`}>{statusText}</span>
         </div>
       )}
 

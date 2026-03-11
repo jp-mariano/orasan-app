@@ -24,15 +24,9 @@ interface TaskCardProps {
     taskId: string,
     updates: Partial<TaskWithDetails>
   ) => Promise<void>;
-  onOpenManualTime?: (task: TaskWithDetails, currentDuration: number) => void;
 }
 
-export function TaskCard({
-  task,
-  onDelete,
-  onUpdate,
-  onOpenManualTime,
-}: TaskCardProps) {
+export function TaskCard({ task, onDelete, onUpdate }: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -67,10 +61,6 @@ export function TaskCard({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  const handleManualTimeEntry = () => {
-    onOpenManualTime?.(task, duration);
-  };
 
   const handleDelete = () => {
     onDelete?.(task);
@@ -108,8 +98,8 @@ export function TaskCard({
               </h3>
             </div>
 
-            {/* Timer Display - Only show for non-completed, non-fixed-rate tasks */}
-            {task.status !== 'completed' && task.rate_type !== 'fixed' && (
+            {/* Timer Display - Show for all non-completed tasks (fixed-rate is internal tracking only) */}
+            {task.status !== 'completed' && (
               <div className="mt-2">
                 <label className="text-xs text-gray-500">Timer</label>
                 <TimerDisplay
@@ -183,23 +173,6 @@ export function TaskCard({
                       </span>
                     </button>
                   )}
-
-                  {/* Manual Time Entry - Only show for non-completed, non-fixed-rate tasks */}
-                  {task.status !== 'completed' &&
-                    task.rate_type !== 'fixed' && (
-                      <>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleManualTimeEntry();
-                            setShowActions(false);
-                          }}
-                          className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
-                        >
-                          <span>Edit Timer</span>
-                        </button>
-                      </>
-                    )}
 
                   {/* Delete Action */}
                   <button
