@@ -499,13 +499,13 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
 
-      // Check project timer limit (max 10 active timers per project)
+      // Check project timer limit (max 10 running timers per project)
       const activeProjectTimers = timers.filter(
         t => t.projectId === projectId && t.isRunning
       );
 
       if (activeProjectTimers.length >= 10) {
-        setErrorWithTimeout('Maximum 10 active timers per project allowed');
+        setErrorWithTimeout('Maximum 10 running timers per project allowed');
         return false;
       }
 
@@ -787,13 +787,13 @@ export function useTimeTracker(): UseTimeTrackerReturn {
       const timer = getTimerForTask(taskId);
       if (!timer) return false;
 
-      // Check project timer limit (max 10 active timers per project)
+      // Check project timer limit (max 10 running timers per project)
       const activeProjectTimers = timers.filter(
         t => t.projectId === timer.projectId && t.isRunning
       );
 
       if (activeProjectTimers.length >= 10) {
-        setErrorWithTimeout('Maximum 10 active timers per project allowed');
+        setErrorWithTimeout('Maximum 10 running timers per project allowed');
         return false;
       }
 
