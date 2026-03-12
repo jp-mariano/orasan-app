@@ -27,24 +27,13 @@ interface UseProjectsReturn {
 
 const MAX_FREE_PROJECTS = 2;
 
-// Status priority for sorting (lower number = higher priority)
-const STATUS_PRIORITY = {
-  in_progress: 1,
-  on_hold: 2,
-  new: 3,
-  completed: 4,
-} as const;
-
-// Sort projects by status, then by creation date within each status
-function sortProjectsByStatus(projects: Project[]): Project[] {
-  return [...projects].sort((a, b) => {
-    // First sort by status priority
-    const statusDiff = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
-    if (statusDiff !== 0) return statusDiff;
-
-    // Then sort by creation date (newest first) within each status
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+// Sort projects by name (case-insensitive)
+function sortProjectsByName(projects: Project[]): Project[] {
+  return [...projects].sort((a, b) =>
+    (a.name ?? '').localeCompare(b.name ?? '', undefined, {
+      sensitivity: 'base',
+    })
+  );
 }
 
 export function useProjects(): UseProjectsReturn {
@@ -72,7 +61,7 @@ export function useProjects(): UseProjectsReturn {
       }
 
       const projects = data.projects || [];
-      setProjects(sortProjectsByStatus(projects));
+      setProjects(sortProjectsByName(projects));
     } catch (err) {
       console.error('Error fetching projects:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch projects');
@@ -106,7 +95,7 @@ export function useProjects(): UseProjectsReturn {
         }
 
         // Add new project to local state and maintain sorting
-        setProjects(prev => sortProjectsByStatus([result.project, ...prev]));
+        setProjects(prev => sortProjectsByName([result.project, ...prev]));
         return { success: true };
       } catch (err) {
         console.error('Error creating project:', err);
@@ -147,7 +136,7 @@ export function useProjects(): UseProjectsReturn {
 
         // Update local state and maintain sorting
         setProjects(prev =>
-          sortProjectsByStatus(
+          sortProjectsByName(
             prev.map(project => (project.id === id ? updatedProject : project))
           )
         );
@@ -228,7 +217,7 @@ export function useProjects(): UseProjectsReturn {
       }
 
       const projects = data.projects || [];
-      setProjects(sortProjectsByStatus(projects));
+      setProjects(sortProjectsByName(projects));
     } catch (err) {
       console.error('Error refreshing projects:', err);
       setError(
