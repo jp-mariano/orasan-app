@@ -348,7 +348,7 @@ export function CreateInvoiceModal({
           <DialogTitle>Create Invoice</DialogTitle>
           <DialogDescription>
             Generate an invoice for &quot;{project.name}&quot; based on stopped
-            time entries
+            time entries. Only completed tasks are included in the invoice.
           </DialogDescription>
         </DialogHeader>
 
