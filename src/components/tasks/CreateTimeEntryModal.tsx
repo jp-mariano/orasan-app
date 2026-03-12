@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { AlertTriangle } from 'lucide-react';
 
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ModalError } from '@/components/ui/modal-error';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { formatDuration } from '@/lib/utils';
 
 interface CreateTimeEntryModalProps {
   open: boolean;
@@ -50,6 +51,14 @@ export function CreateTimeEntryModal({
   const hasActiveTimer = !!activeTimer;
   const isDefaultValue = durationInput.trim() === '';
   const canSubmit = !isSubmitting && (!isDefaultValue || hasActiveTimer);
+
+  const parsedDuration = useMemo(() => {
+    const raw = durationInput.trim();
+    if (raw === '') return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
+    return Math.floor(n);
+  }, [durationInput]);
 
   useEffect(() => {
     if (open) {
@@ -140,10 +149,16 @@ export function CreateTimeEntryModal({
             onChange={e => setDurationInput(e.target.value)}
             disabled={isSubmitting}
           />
-          <p className="text-xs text-muted-foreground">
-            Use 0 to start with no time logged; you can start the timer or edit
-            later.
-          </p>
+          {parsedDuration !== null && parsedDuration > 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Result: {formatDuration(parsedDuration)}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Use 0 to start with no time logged; you can start the timer or
+              edit later.
+            </p>
+          )}
         </div>
 
         <ModalError
