@@ -86,8 +86,16 @@ export default function ProjectDetailPage() {
   const { updateProject, deleteProject } = useProjects();
 
   // Time tracking
-  const { activeTimers, pauseAllTimers, stopAllTimers } =
+  const { activeTimers, pausedTimers, pauseAllTimers, stopAllTimers } =
     useTimeTrackingContext();
+
+  const [showCompleteProjectModal, setShowCompleteProjectModal] =
+    useState(false);
+  const [isCompletingProject, setIsCompletingProject] = useState(false);
+  const completeProjectDeferredRef = useRef<{
+    resolve: () => void;
+    reject: (error: Error) => void;
+  } | null>(null);
 
   // Fetch project data
   useEffect(() => {
@@ -287,6 +295,27 @@ export default function ProjectDetailPage() {
   ) => {
     if (!project) return;
 
+    // When marking project as completed, show warning if there are active timers
+    if (field === 'status' && value === 'completed') {
+      const hasActiveTimers =
+        activeTimers.some(t => t.projectId === project.id) ||
+        pausedTimers.some(t => t.projectId === project.id);
+      if (hasActiveTimers) {
+        setShowCompleteProjectModal(true);
+
+        // InlineEdit only exits edit mode when onSave resolves successfully.
+        // We await the user's confirmation here so the original "Save" click can complete.
+        await new Promise<void>((resolve, reject) => {
+          completeProjectDeferredRef.current = {
+            resolve,
+            reject: (error: Error) => reject(error),
+          };
+        });
+
+        return;
+      }
+    }
+
     // Validate email if it's the client_email field
     if (field === 'client_email' && typeof value === 'string') {
       const emailError = validateEmail(value);
@@ -363,6 +392,34 @@ export default function ProjectDetailPage() {
       console.error('Error stopping all timers:', error);
     } finally {
       setIsStoppingAll(false);
+    }
+  };
+
+  // Handle mark project as completed (stop active timers first)
+  const handleConfirmCompleteProject = async () => {
+    if (!project) return;
+    setIsCompletingProject(true);
+    try {
+      const stopped = await stopAllTimers(project.id);
+      if (stopped) {
+        const updated = await updateProject(project.id, {
+          status: 'completed',
+        });
+        if (updated) {
+          setProject(updated);
+          completeProjectDeferredRef.current?.resolve();
+          completeProjectDeferredRef.current = null;
+          setShowCompleteProjectModal(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error completing project:', error);
+      completeProjectDeferredRef.current?.reject(
+        error instanceof Error ? error : new Error('Failed to complete project')
+      );
+      completeProjectDeferredRef.current = null;
+    } finally {
+      setIsCompletingProject(false);
     }
   };
 
@@ -782,6 +839,27 @@ export default function ProjectDetailPage() {
         confirmText="Create Invoice"
         onConfirm={handleStopAllForInvoice}
         isLoading={isStoppingAll}
+      />
+      <PauseTimersModal
+        open={showCompleteProjectModal}
+        onOpenChange={open => {
+          setShowCompleteProjectModal(open);
+          if (!open) {
+            // Only treat closing as "cancel" when the user dismisses the dialog.
+            // When we close after a successful confirm, we're mid-operation and should not reject.
+            if (!isCompletingProject) {
+              completeProjectDeferredRef.current?.reject(
+                new Error('Cancelled')
+              );
+              completeProjectDeferredRef.current = null;
+            }
+          }
+        }}
+        title="Mark project as completed?"
+        description="This will stop all active timers (running or paused) in this project. New timer entries can be created when you start working on tasks again."
+        confirmText="Mark as completed"
+        onConfirm={handleConfirmCompleteProject}
+        isLoading={isCompletingProject}
       />
 
       {/* Invoice Creation Modal */}

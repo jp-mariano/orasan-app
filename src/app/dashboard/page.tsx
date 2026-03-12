@@ -21,7 +21,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
+import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types/index';
@@ -33,6 +35,12 @@ export default function DashboardPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [projectToComplete, setProjectToComplete] = useState<Project | null>(
+    null
+  );
+  const [showCompleteProjectModal, setShowCompleteProjectModal] =
+    useState(false);
+  const [isCompletingProject, setIsCompletingProject] = useState(false);
 
   // Project management
   const {
@@ -45,6 +53,9 @@ export default function DashboardPage() {
     updateProject,
     deleteProject,
   } = useProjects();
+
+  const { activeTimers, pausedTimers, stopAllTimers } =
+    useTimeTrackingContext();
 
   const handleCreateProject = () => {
     setIsCreateModalOpen(true);
@@ -75,6 +86,18 @@ export default function DashboardPage() {
     projectId: string,
     updates: Partial<Project>
   ) => {
+    if (updates.status === 'completed') {
+      const project = projects.find(p => p.id === projectId);
+      const hasActiveTimers =
+        project &&
+        (activeTimers.some(t => t.projectId === projectId) ||
+          pausedTimers.some(t => t.projectId === projectId));
+      if (hasActiveTimers && project) {
+        setProjectToComplete(project);
+        setShowCompleteProjectModal(true);
+        return;
+      }
+    }
     try {
       const updatedProject = await updateProject(projectId, updates);
       if (!updatedProject) {
@@ -83,6 +106,27 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error updating project:', error);
       throw error;
+    }
+  };
+
+  const handleConfirmCompleteProject = async () => {
+    if (!projectToComplete) return;
+    setIsCompletingProject(true);
+    try {
+      const stopped = await stopAllTimers(projectToComplete.id);
+      if (stopped) {
+        const updated = await updateProject(projectToComplete.id, {
+          status: 'completed',
+        });
+        if (updated) {
+          setShowCompleteProjectModal(false);
+          setProjectToComplete(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error completing project:', error);
+    } finally {
+      setIsCompletingProject(false);
     }
   };
 
@@ -234,6 +278,20 @@ export default function DashboardPage() {
           project={projectToDelete}
           onConfirmDelete={handleConfirmDelete}
           isDeleting={isDeleting}
+        />
+
+        {/* Mark project completed – stop active timers first */}
+        <PauseTimersModal
+          open={showCompleteProjectModal}
+          onOpenChange={open => {
+            setShowCompleteProjectModal(open);
+            if (!open) setProjectToComplete(null);
+          }}
+          title="Mark project as completed?"
+          description="This will stop all active timers (running or paused) in this project. New timer entries can be created when you start working on tasks again."
+          confirmText="Mark as completed"
+          onConfirm={handleConfirmCompleteProject}
+          isLoading={isCompletingProject}
         />
       </main>
     </div>
