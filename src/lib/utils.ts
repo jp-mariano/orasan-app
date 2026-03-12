@@ -160,58 +160,6 @@ export function formatDuration(seconds: number): string {
   return `${secs}s`;
 }
 
-const PROJECT_COLORS = [
-  'oklch(0.6 0.2 240)', // Blue
-  'oklch(0.7 0.15 160)', // Emerald
-  'oklch(0.75 0.15 80)', // Amber
-  'oklch(0.65 0.2 20)', // Red
-  'oklch(0.65 0.2 300)', // Violet
-  'oklch(0.7 0.15 200)', // Cyan
-  'oklch(0.75 0.15 120)', // Lime
-  'oklch(0.7 0.15 340)', // Pink
-  'oklch(0.7 0.15 40)', // Orange
-  'oklch(0.38 0.15 29)', // Maroon
-];
-
-/** Generate a distinct oklch color for index >= PROJECT_COLORS.length so no project shares a color. */
-function projectColorForIndex(index: number): string {
-  if (index < PROJECT_COLORS.length) {
-    return PROJECT_COLORS[index];
-  }
-  // Spread hue across 360° so each index gets a unique color
-  const hue = (index * 37) % 360;
-  return `oklch(0.65 0.18 ${hue})`;
-}
-
-/**
- * Returns a consistent color for a project. When allProjectIds is provided,
- * assigns colors by index in the sorted list so no two projects share a color.
- * Beyond the base palette, distinct colors are generated for each index.
- */
-export function getProjectColor(
-  projectId: string,
-  allProjectIds?: string[]
-): string {
-  if (
-    allProjectIds &&
-    allProjectIds.length > 0 &&
-    allProjectIds.includes(projectId)
-  ) {
-    const sorted = [...allProjectIds].sort();
-    const index = sorted.indexOf(projectId);
-    return projectColorForIndex(index);
-  }
-
-  // Fallback: hash of projectId when list not provided or project not in list
-  let hash = 0;
-  for (let i = 0; i < projectId.length; i++) {
-    const char = projectId.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return projectColorForIndex(Math.abs(hash) % 360);
-}
-
 /**
  * Gets the display name for an assignee user
  * @param assigneeUser - The assignee user object with name and email

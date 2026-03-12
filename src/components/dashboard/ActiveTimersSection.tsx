@@ -16,7 +16,6 @@ import {
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { LocalTimer } from '@/hooks/useTimeTracker';
-import { getProjectColor } from '@/lib/utils';
 import { Project, Task } from '@/types';
 
 import { ActiveTimerTableRow } from './ActiveTimerTableRow';
@@ -26,16 +25,9 @@ interface ProjectTaskData {
   tasks: Task[];
 }
 
-interface ActiveTimersSectionProps {
-  /** Full list of project IDs for consistent color assignment (e.g. from dashboard projects). When provided, project colors match project cards. */
-  allProjectIds?: string[];
-}
-
 const TIMERS_PER_PAGE = 10;
 
-export function ActiveTimersSection({
-  allProjectIds,
-}: ActiveTimersSectionProps = {}) {
+export function ActiveTimersSection() {
   const { activeTimers, pausedTimers, pauseAllTimers } =
     useTimeTrackingContext();
   const allActiveTimers = useMemo(
@@ -276,13 +268,7 @@ export function ActiveTimersSection({
               return (
                 <div
                   key={projectId}
-                  className="pl-3 border-l-4"
-                  style={{
-                    borderLeftColor: getProjectColor(
-                      projectId,
-                      allProjectIds ?? projectsWithTimers.map(p => p.projectId)
-                    ),
-                  }}
+                  className="pl-3 border-l-4 border-gray-200"
                 >
                   <div
                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"

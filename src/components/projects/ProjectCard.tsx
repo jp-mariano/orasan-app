@@ -16,13 +16,11 @@ import {
 } from '@/components/ui/card';
 import { formatPrice } from '@/lib/currencies';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
-import { formatDate, getProjectColor, truncateTextSmart } from '@/lib/utils';
+import { formatDate, truncateTextSmart } from '@/lib/utils';
 import { Project } from '@/types/index';
 
 interface ProjectCardProps {
   project: Project;
-  /** All project IDs in the current list; used to assign unique colors when possible */
-  allProjectIds?: string[];
   onEdit?: (project: Project) => void;
   onDelete?: (project: Project) => void;
   onNavigate?: (project: Project) => void;
@@ -31,7 +29,6 @@ interface ProjectCardProps {
 
 export function ProjectCard({
   project,
-  allProjectIds,
   onDelete,
   onNavigate,
   onUpdate,
@@ -78,18 +75,11 @@ export function ProjectCard({
     }
   };
 
-  const projectColor = getProjectColor(project.id, allProjectIds);
-
   return (
     <Card
-      className="relative overflow-hidden hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"
+      className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"
       onClick={handleCardClick}
     >
-      {/* Project Color Indicator */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1"
-        style={{ backgroundColor: projectColor }}
-      />
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
