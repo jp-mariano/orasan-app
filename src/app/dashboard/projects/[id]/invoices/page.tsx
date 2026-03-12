@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { useParams, useRouter } from 'next/navigation';
 
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreVertical, Trash2 } from 'lucide-react';
 
 import { CreateInvoiceModal } from '@/components/invoices/CreateInvoiceModal';
 import { DeleteInvoiceModal } from '@/components/invoices/DeleteInvoiceModal';
@@ -18,6 +18,8 @@ import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { formatPriceWithCurrency } from '@/lib/currencies';
 import { formatDate } from '@/lib/utils';
 import { Invoice, Project } from '@/types';
+
+const INVOICES_PER_PAGE = 10;
 
 export default function ProjectInvoicesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -37,6 +39,7 @@ export default function ProjectInvoicesPage() {
     useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isStoppingAll, setIsStoppingAll] = useState(false);
+  const [invoicesPage, setInvoicesPage] = useState(1);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { stopAllTimers } = useTimeTrackingContext();
@@ -88,6 +91,10 @@ export default function ProjectInvoicesPage() {
       cancelled = true;
     };
   }, [user, authLoading, router, projectId]);
+
+  useEffect(() => {
+    setInvoicesPage(1);
+  }, [projectId, invoices.length]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -171,6 +178,15 @@ export default function ProjectInvoicesPage() {
     );
   }
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(invoices.length / INVOICES_PER_PAGE)
+  );
+  const pageInvoices = invoices.slice(
+    (invoicesPage - 1) * INVOICES_PER_PAGE,
+    invoicesPage * INVOICES_PER_PAGE
+  );
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -251,7 +267,7 @@ export default function ProjectInvoicesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {invoices.map(inv => (
+                    {pageInvoices.map(inv => (
                       <tr
                         key={inv.id}
                         role="button"
@@ -361,6 +377,33 @@ export default function ProjectInvoicesPage() {
                     ))}
                   </tbody>
                 </table>
+                {invoices.length > INVOICES_PER_PAGE && (
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInvoicesPage(p => Math.max(1, p - 1))}
+                      disabled={invoicesPage === 1}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {invoicesPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setInvoicesPage(p => Math.min(totalPages, p + 1))
+                      }
+                      disabled={invoicesPage === totalPages}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
