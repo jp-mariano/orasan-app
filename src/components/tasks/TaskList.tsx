@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { getPriorityBorderColor, getPriorityGroups } from '@/lib/priority';
 import { TaskWithDetails } from '@/types';
 
-import { TaskCard } from './TaskCard';
+import { TaskTableRow } from './TaskTableRow';
+
+const TASKS_PER_PAGE = 10;
 
 interface TaskListProps {
   tasks: TaskWithDetails[];
@@ -27,10 +30,12 @@ export function TaskList({
   onDelete,
   onUpdate,
 }: TaskListProps) {
+  const { getTimerForTask } = useTimeTrackingContext();
   const [expandedPriorities, setExpandedPriorities] = useState<Set<string>>(
     new Set(['urgent'])
   );
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [groupPage, setGroupPage] = useState<Record<string, number>>({});
 
   // Get priority groups from our source of truth
   const priorityGroups = getPriorityGroups().map(group => ({
@@ -55,21 +60,32 @@ export function TaskList({
       task => task.priority === priority && task.status !== 'completed'
     );
 
-    // Sort by status: In Progress → On Hold → New
+    // Sort: tasks with active timer first, then by status (In Progress → On Hold → New)
+    const statusOrder: Record<string, number> = {
+      in_progress: 1,
+      on_hold: 2,
+      new: 3,
+    };
     return priorityTasks.sort((a, b) => {
-      const statusOrder: Record<string, number> = {
-        in_progress: 1,
-        on_hold: 2,
-        new: 3,
-      };
+      const aActive = !!getTimerForTask(a.id);
+      const bActive = !!getTimerForTask(b.id);
+      if (aActive !== bActive) return aActive ? -1 : 1;
       const aOrder = statusOrder[a.status] || 4;
       const bOrder = statusOrder[b.status] || 4;
       return aOrder - bOrder;
     });
   };
 
-  const getTotalTasksByPriority = (priority: string) => {
-    return getTasksByPriority(priority).length;
+  const getCompletedTasks = () => {
+    const completed = tasks.filter(task => task.status === 'completed');
+    return completed.sort((a, b) => {
+      const aActive = !!getTimerForTask(a.id);
+      const bActive = !!getTimerForTask(b.id);
+      if (aActive !== bActive) return aActive ? -1 : 1;
+      return (
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
   };
 
   if (loading) {
@@ -125,8 +141,15 @@ export function TaskList({
     <div className="space-y-3">
       {priorityGroups.map(group => {
         const priorityTasks = getTasksByPriority(group.priority);
-        const taskCount = getTotalTasksByPriority(group.priority);
+        const taskCount = priorityTasks.length;
         const isExpanded = expandedPriorities.has(group.priority);
+        const totalPages = Math.max(1, Math.ceil(taskCount / TASKS_PER_PAGE));
+        const rawPage = groupPage[group.priority] ?? 1;
+        const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+        const pageTasks = priorityTasks.slice(
+          (currentPage - 1) * TASKS_PER_PAGE,
+          currentPage * TASKS_PER_PAGE
+        );
 
         if (taskCount === 0) return null;
 
@@ -165,15 +188,97 @@ export function TaskList({
 
             {/* Tasks */}
             {isExpanded && (
-              <div className="space-y-0.5 ml-6">
-                {priorityTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onDelete={onDelete}
-                    onUpdate={onUpdate}
-                  />
-                ))}
+              <div className="ml-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium">Name</th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Due date
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Assignee
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">Timer</th>
+                      <th className="w-10 py-3 px-4" aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageTasks.map(task => (
+                      <TaskTableRow
+                        key={task.id}
+                        task={task}
+                        onDelete={onDelete}
+                        onUpdate={onUpdate}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-end gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setGroupPage(prev => ({
+                          ...prev,
+                          [group.priority]: Math.max(
+                            1,
+                            (prev[group.priority] ?? 1) - 1
+                          ),
+                        }));
+                      }}
+                      disabled={currentPage === 1}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      p => (
+                        <Button
+                          key={p}
+                          variant={currentPage === p ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 min-w-8 p-0"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setGroupPage(prev => ({
+                              ...prev,
+                              [group.priority]: p,
+                            }));
+                          }}
+                          aria-label={`Page ${p}`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setGroupPage(prev => ({
+                          ...prev,
+                          [group.priority]: Math.min(
+                            totalPages,
+                            (prev[group.priority] ?? 1) + 1
+                          ),
+                        }));
+                      }}
+                      disabled={currentPage === totalPages}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -182,14 +287,18 @@ export function TaskList({
 
       {/* Completed Tasks Section */}
       {(() => {
-        const completedTasks = tasks
-          .filter(task => task.status === 'completed')
-          .sort(
-            (a, b) =>
-              new Date(b.updated_at).getTime() -
-              new Date(a.updated_at).getTime()
-          );
+        const completedTasks = getCompletedTasks();
         const completedCount = completedTasks.length;
+        const totalPages = Math.max(
+          1,
+          Math.ceil(completedCount / TASKS_PER_PAGE)
+        );
+        const rawPage = groupPage['completed'] ?? 1;
+        const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+        const pageTasks = completedTasks.slice(
+          (currentPage - 1) * TASKS_PER_PAGE,
+          currentPage * TASKS_PER_PAGE
+        );
 
         if (completedCount === 0) return null;
 
@@ -224,15 +333,91 @@ export function TaskList({
 
             {/* Completed Tasks */}
             {isCompletedExpanded && (
-              <div className="space-y-0.5 ml-6">
-                {completedTasks.map(task => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onDelete={onDelete}
-                    onUpdate={onUpdate}
-                  />
-                ))}
+              <div className="ml-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium">Name</th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Due date
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Assignee
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">Timer</th>
+                      <th className="w-10 py-3 px-4" aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageTasks.map(task => (
+                      <TaskTableRow
+                        key={task.id}
+                        task={task}
+                        onDelete={onDelete}
+                        onUpdate={onUpdate}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+                {totalPages > 1 && (
+                  <div className="mt-3 flex items-center justify-end gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setGroupPage(prev => ({
+                          ...prev,
+                          completed: Math.max(1, (prev['completed'] ?? 1) - 1),
+                        }));
+                      }}
+                      disabled={currentPage === 1}
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      p => (
+                        <Button
+                          key={p}
+                          variant={currentPage === p ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 min-w-8 p-0"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setGroupPage(prev => ({ ...prev, completed: p }));
+                          }}
+                          aria-label={`Page ${p}`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setGroupPage(prev => ({
+                          ...prev,
+                          completed: Math.min(
+                            totalPages,
+                            (prev['completed'] ?? 1) + 1
+                          ),
+                        }));
+                      }}
+                      disabled={currentPage === totalPages}
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
