@@ -192,6 +192,7 @@ export default function DashboardPage() {
                 <ProjectCard
                   key={project.id}
                   project={project}
+                  allProjectIds={projects.map(p => p.id)}
                   onDelete={handleDeleteProject}
                   onNavigate={handleNavigateToProject}
                   onUpdate={handleUpdateProject}
@@ -214,8 +215,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Active Timers Section */}
-        <ActiveTimersSection />
+        {/* Active Timers Section - pass full project list so colors match project cards */}
+        <ActiveTimersSection allProjectIds={projects.map(p => p.id)} />
 
         {/* Create Project Modal */}
         <ProjectModal

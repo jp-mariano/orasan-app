@@ -26,9 +26,16 @@ interface ProjectTaskData {
   tasks: Task[];
 }
 
+interface ActiveTimersSectionProps {
+  /** Full list of project IDs for consistent color assignment (e.g. from dashboard projects). When provided, project colors match project cards. */
+  allProjectIds?: string[];
+}
+
 const TIMERS_PER_PAGE = 10;
 
-export function ActiveTimersSection() {
+export function ActiveTimersSection({
+  allProjectIds,
+}: ActiveTimersSectionProps = {}) {
   const { activeTimers, pausedTimers, pauseAllTimers } =
     useTimeTrackingContext();
   const allActiveTimers = useMemo(
@@ -271,7 +278,10 @@ export function ActiveTimersSection() {
                   key={projectId}
                   className="pl-3 border-l-4"
                   style={{
-                    borderLeftColor: getProjectColor(projectId),
+                    borderLeftColor: getProjectColor(
+                      projectId,
+                      allProjectIds ?? projectsWithTimers.map(p => p.projectId)
+                    ),
                   }}
                 >
                   <div

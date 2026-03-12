@@ -21,6 +21,8 @@ import { Project } from '@/types/index';
 
 interface ProjectCardProps {
   project: Project;
+  /** All project IDs in the current list; used to assign unique colors when possible */
+  allProjectIds?: string[];
   onEdit?: (project: Project) => void;
   onDelete?: (project: Project) => void;
   onNavigate?: (project: Project) => void;
@@ -29,6 +31,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({
   project,
+  allProjectIds,
   onDelete,
   onNavigate,
   onUpdate,
@@ -75,7 +78,7 @@ export function ProjectCard({
     }
   };
 
-  const projectColor = getProjectColor(project.id);
+  const projectColor = getProjectColor(project.id, allProjectIds);
 
   return (
     <Card
