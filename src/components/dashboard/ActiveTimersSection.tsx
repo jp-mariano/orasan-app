@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,25 +15,22 @@ import {
 } from '@/components/ui/card';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { LocalTimer } from '@/hooks/useTimeTracker';
 import { getProjectColor } from '@/lib/utils';
 import { Project, Task } from '@/types';
 
-import { ActiveTimerCard } from './ActiveTimerCard';
+import { ActiveTimerTableRow } from './ActiveTimerTableRow';
 
 interface ProjectTaskData {
   project: Project;
   tasks: Task[];
 }
 
-// Auto-fit grid that automatically adjusts columns based on available space
-function getGridColsClass(): string {
-  return 'grid-cols-[repeat(auto-fit,minmax(200px,1fr))]';
-}
+const TIMERS_PER_PAGE = 10;
 
 export function ActiveTimersSection() {
   const { activeTimers, pausedTimers, pauseAllTimers } =
     useTimeTrackingContext();
-  // Combine running and paused timers for display
   const allActiveTimers = useMemo(
     () => [...activeTimers, ...pausedTimers],
     [activeTimers, pausedTimers]
@@ -45,48 +42,30 @@ export function ActiveTimersSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pause all state
   const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
 
-  // Accordion state - both sections open by default
-  const [expandedSections, setExpandedSections] = useState(
-    new Set(['active', 'paused'])
+  const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(
+    new Set()
   );
+  const [groupPage, setGroupPage] = useState<Record<string, number>>({});
 
-  // Keep ref updated with current allActiveTimers
   useEffect(() => {
     allActiveTimersRef.current = allActiveTimers;
   }, [allActiveTimers]);
 
-  // Toggle accordion section
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
+  const toggleProject = (projectId: string) => {
+    setExpandedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
     });
   };
 
-  // Get timers by state
-  const getTimersByState = (state: 'active' | 'paused') => {
-    const timers = state === 'active' ? activeTimers : pausedTimers;
-    return timers;
-  };
-
-  // Get total timers by state
-  const getTotalTimersByState = (state: 'active' | 'paused') => {
-    return getTimersByState(state).length;
-  };
-
-  // Fetch project and task details once when active timers change
   const fetchProjectTaskDetails = useCallback(async () => {
-    const currentActiveTimers = allActiveTimersRef.current;
-    if (currentActiveTimers.length === 0) {
+    const current = allActiveTimersRef.current;
+    if (current.length === 0) {
       setProjectTaskMap(new Map());
       return;
     }
@@ -95,47 +74,29 @@ export function ActiveTimersSection() {
     setError(null);
 
     try {
-      // Get unique project IDs from active timers
-      const projectIds = [
-        ...new Set(currentActiveTimers.map(timer => timer.projectId)),
-      ];
+      const projectIds = [...new Set(current.map(t => t.projectId))];
+      const projectsRes = await fetch('/api/projects');
+      if (!projectsRes.ok) throw new Error('Failed to fetch projects');
+      const { projects = [] }: { projects: Project[] } =
+        await projectsRes.json();
 
-      // Fetch all projects
-      const projectsResponse = await fetch('/api/projects');
-      if (!projectsResponse.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      const projectsData = await projectsResponse.json();
-      const projects: Project[] = projectsData.projects || [];
+      const taskResults = await Promise.all(
+        projectIds.map(async projectId => {
+          const res = await fetch(`/api/projects/${projectId}/tasks`);
+          if (!res.ok) return { projectId, tasks: [] as Task[] };
+          const data = await res.json();
+          return { projectId, tasks: data.tasks || [] };
+        })
+      );
 
-      // Fetch tasks for each project that has active timers
-      const taskPromises = projectIds.map(async projectId => {
-        const tasksResponse = await fetch(`/api/projects/${projectId}/tasks`);
-        if (!tasksResponse.ok) {
-          console.warn(`Failed to fetch tasks for project ${projectId}`);
-          return { projectId, tasks: [] };
-        }
-        const tasksData = await tasksResponse.json();
-        return { projectId, tasks: tasksData.tasks || [] };
-      });
-
-      const taskResults = await Promise.all(taskPromises);
-
-      // Create a map of project ID to project and tasks
-      const newProjectTaskMap = new Map<string, ProjectTaskData>();
+      const map = new Map<string, ProjectTaskData>();
       projects.forEach(project => {
-        const taskResult = taskResults.find(tr => tr.projectId === project.id);
-        if (taskResult) {
-          newProjectTaskMap.set(project.id, {
-            project,
-            tasks: taskResult.tasks,
-          });
-        }
+        const tr = taskResults.find(r => r.projectId === project.id);
+        if (tr) map.set(project.id, { project, tasks: tr.tasks });
       });
-
-      setProjectTaskMap(newProjectTaskMap);
+      setProjectTaskMap(map);
     } catch (err) {
-      console.error('Error fetching project/task details:', err);
+      console.error('Error fetching project/task details', err);
       setError(
         err instanceof Error
           ? err.message
@@ -146,39 +107,71 @@ export function ActiveTimersSection() {
     }
   }, []);
 
-  // Handle pause all timers
   const handlePauseAll = useCallback(async () => {
-    const runningTimerIds = allActiveTimers
-      .filter(timer => timer.isRunning)
-      .map(timer => timer.id);
-
-    if (runningTimerIds.length === 0) {
-      return;
-    }
-
+    const runningIds = allActiveTimers.filter(t => t.isRunning).map(t => t.id);
+    if (runningIds.length === 0) return;
     setIsPausingAll(true);
     try {
-      const success = await pauseAllTimers(runningTimerIds);
-      if (success) {
-        setShowPauseTimersModal(false);
-      }
-    } catch (error) {
-      console.error('Error pausing all timers:', error);
+      const success = await pauseAllTimers(runningIds);
+      if (success) setShowPauseTimersModal(false);
+    } catch (e) {
+      console.error('Error pausing all timers', e);
     } finally {
       setIsPausingAll(false);
     }
   }, [allActiveTimers, pauseAllTimers]);
 
-  // Create a stable key based on timer IDs (not array reference)
   const timerIdsKey = allActiveTimers
-    .map(timer => timer.id)
+    .map(t => t.id)
     .sort()
     .join(',');
-
-  // Fetch details when timer IDs actually change (not every second)
   useEffect(() => {
     fetchProjectTaskDetails();
   }, [timerIdsKey, fetchProjectTaskDetails]);
+
+  // Group by project, sort projects by name, sort timers: running first, then by task name
+  const projectsWithTimers = useMemo(() => {
+    if (allActiveTimers.length === 0) return [];
+
+    const byProject = new Map<string, LocalTimer[]>();
+    allActiveTimers.forEach(timer => {
+      const list = byProject.get(timer.projectId) || [];
+      list.push(timer);
+      byProject.set(timer.projectId, list);
+    });
+
+    const result: {
+      projectId: string;
+      project: Project;
+      timers: LocalTimer[];
+    }[] = [];
+
+    byProject.forEach((timers, projectId) => {
+      const data = projectTaskMap.get(projectId);
+      if (!data) return; // skip until we have project/task data
+
+      const getTaskName = (t: LocalTimer) => {
+        const task = data.tasks.find(tk => tk.id === t.taskId);
+        return task?.name ?? '';
+      };
+
+      const sorted = [...timers].sort((a, b) => {
+        if (a.isRunning !== b.isRunning) return a.isRunning ? -1 : 1;
+        const nameA = getTaskName(a);
+        const nameB = getTaskName(b);
+        return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+      });
+
+      result.push({ projectId, project: data.project, timers: sorted });
+    });
+
+    result.sort((a, b) =>
+      a.project.name.localeCompare(b.project.name, undefined, {
+        sensitivity: 'base',
+      })
+    );
+    return result;
+  }, [allActiveTimers, projectTaskMap]);
 
   if (error) {
     return (
@@ -210,7 +203,7 @@ export function ActiveTimersSection() {
               Currently running and paused timers
             </CardDescription>
           </div>
-          {allActiveTimers.some(timer => timer.isRunning) && (
+          {allActiveTimers.some(t => t.isRunning) && (
             <Button
               size="sm"
               onClick={() => setShowPauseTimersModal(true)}
@@ -223,27 +216,32 @@ export function ActiveTimersSection() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-white border rounded-lg p-6 space-y-4">
-                  {/* Project name skeleton */}
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-
-                  {/* Task name skeleton */}
-                  <div className="h-5 bg-gray-200 rounded w-full"></div>
-
-                  {/* Timer display skeleton */}
-                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-
-                  {/* Action buttons skeleton */}
-                  <div className="flex gap-2">
-                    <div className="h-8 bg-gray-200 rounded w-16"></div>
-                    <div className="h-8 bg-gray-200 rounded w-16"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-100 rounded w-48 animate-pulse" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium">
+                      Task name
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium">Timer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3].map(i => (
+                    <tr key={i} className="border-b">
+                      <td className="py-3 px-4">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="h-8 bg-gray-200 rounded w-24 animate-pulse" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : allActiveTimers.length === 0 ? (
           <div className="text-center py-8">
@@ -253,138 +251,155 @@ export function ActiveTimersSection() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Active Timers Section */}
-            {getTotalTimersByState('active') > 0 && (
-              <div className="pl-3">
-                {/* Active Timers Header */}
+          <div className="space-y-3">
+            {projectsWithTimers.map(({ projectId, project, timers }) => {
+              const totalPages = Math.max(
+                1,
+                Math.ceil(timers.length / TIMERS_PER_PAGE)
+              );
+              const rawPage = groupPage[projectId] ?? 1;
+              const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+              const pageTimers = timers.slice(
+                (currentPage - 1) * TIMERS_PER_PAGE,
+                currentPage * TIMERS_PER_PAGE
+              );
+              const projectTaskData = projectTaskMap.get(projectId);
+              const isExpanded = expandedProjectIds.has(projectId);
+
+              return (
                 <div
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
-                  onClick={() => toggleSection('active')}
+                  key={projectId}
+                  className="pl-3 border-l-4"
+                  style={{
+                    borderLeftColor: getProjectColor(projectId),
+                  }}
                 >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
+                  <div
+                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
+                    onClick={() => toggleProject(projectId)}
                   >
-                    {expandedSections.has('active') ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                  </Button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">Running Timers</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {getTotalTimersByState('active')}{' '}
-                      {getTotalTimersByState('active') === 1
-                        ? 'timer'
-                        : 'timers'}
-                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">
+                        {project.name}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {timers.length}{' '}
+                        {timers.length === 1 ? 'timer' : 'timers'}
+                      </Badge>
+                    </div>
                   </div>
+
+                  {isExpanded && projectTaskData && (
+                    <div className="ml-6 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4 font-medium">
+                              Task name
+                            </th>
+                            <th className="text-left py-3 px-4 font-medium">
+                              Timer
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pageTimers.map(timer => {
+                            const task = projectTaskData.tasks.find(
+                              t => t.id === timer.taskId
+                            );
+                            if (!task) return null;
+                            return (
+                              <ActiveTimerTableRow
+                                key={timer.id}
+                                timer={timer}
+                                taskName={task.name}
+                                projectId={projectId}
+                              />
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      {totalPages > 1 && (
+                        <div className="mt-3 flex items-center justify-end gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setGroupPage(prev => ({
+                                ...prev,
+                                [projectId]: Math.max(
+                                  1,
+                                  (prev[projectId] ?? 1) - 1
+                                ),
+                              }));
+                            }}
+                            disabled={currentPage === 1}
+                            aria-label="Previous page"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          {Array.from(
+                            { length: totalPages },
+                            (_, i) => i + 1
+                          ).map(p => (
+                            <Button
+                              key={p}
+                              variant={
+                                currentPage === p ? 'default' : 'outline'
+                              }
+                              size="sm"
+                              className="h-8 min-w-8 p-0"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setGroupPage(prev => ({
+                                  ...prev,
+                                  [projectId]: p,
+                                }));
+                              }}
+                              aria-label={`Page ${p}`}
+                            >
+                              {p}
+                            </Button>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setGroupPage(prev => ({
+                                ...prev,
+                                [projectId]: Math.min(
+                                  totalPages,
+                                  (prev[projectId] ?? 1) + 1
+                                ),
+                              }));
+                            }}
+                            disabled={currentPage === totalPages}
+                            aria-label="Next page"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Active Timers Grid */}
-                {expandedSections.has('active') && (
-                  <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
-                    {getTimersByState('active').map(timer => {
-                      const projectTaskData = projectTaskMap.get(
-                        timer.projectId
-                      );
-                      if (!projectTaskData) {
-                        return null; // Skip if we don't have the data yet
-                      }
-
-                      const task = projectTaskData.tasks.find(
-                        t => t.id === timer.taskId
-                      );
-                      if (!task) {
-                        return null; // Skip if task not found
-                      }
-
-                      return (
-                        <ActiveTimerCard
-                          key={timer.id}
-                          timer={timer}
-                          taskName={task.name}
-                          projectName={projectTaskData.project.name}
-                          projectColor={getProjectColor(
-                            projectTaskData.project.id
-                          )}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Paused Timers Section */}
-            {getTotalTimersByState('paused') > 0 && (
-              <div className="pl-3">
-                {/* Paused Timers Header */}
-                <div
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors p-1 rounded mb-1"
-                  onClick={() => toggleSection('paused')}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                  >
-                    {expandedSections.has('paused') ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
-                      <ChevronRight className="h-3 w-3" />
-                    )}
-                  </Button>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">Paused Timers</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {getTotalTimersByState('paused')}{' '}
-                      {getTotalTimersByState('paused') === 1
-                        ? 'timer'
-                        : 'timers'}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Paused Timers Grid */}
-                {expandedSections.has('paused') && (
-                  <div className={`grid gap-6 w-full ${getGridColsClass()}`}>
-                    {getTimersByState('paused').map(timer => {
-                      const projectTaskData = projectTaskMap.get(
-                        timer.projectId
-                      );
-                      if (!projectTaskData) {
-                        return null; // Skip if we don't have the data yet
-                      }
-
-                      const task = projectTaskData.tasks.find(
-                        t => t.id === timer.taskId
-                      );
-                      if (!task) {
-                        return null; // Skip if task not found
-                      }
-
-                      return (
-                        <ActiveTimerCard
-                          key={timer.id}
-                          timer={timer}
-                          taskName={task.name}
-                          projectName={projectTaskData.project.name}
-                          projectColor={getProjectColor(
-                            projectTaskData.project.id
-                          )}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })}
           </div>
         )}
       </CardContent>
