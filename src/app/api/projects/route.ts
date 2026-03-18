@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  getFreeTierProjectLimitState,
+  getUserSubscription,
+} from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { validatePricingConsistency } from '@/lib/utils';
 import { CreateProjectData } from '@/types/projects';
@@ -103,36 +107,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check project limit for free tier users
-    const { data: existingProjects, error: countError } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('user_id', user.id);
-
-    if (countError) {
-      console.error('Error checking project count:', countError);
-      return NextResponse.json(
-        { error: 'Failed to check project limit' },
-        { status: 500 }
+    // Check project limit for Free tier users (2 active projects).
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (tier === 'free') {
+      const { activeProjectCount } = await getFreeTierProjectLimitState(
+        supabase,
+        user.id
       );
-    }
-
-    const currentProjectCount = existingProjects?.length || 0;
-    const maxProjects = 2; // Free tier limit
-
-    if (currentProjectCount >= maxProjects) {
-      return NextResponse.json(
-        {
-          error: 'Project limit reached',
-          details: {
-            current: currentProjectCount,
-            limit: maxProjects,
-            message:
-              'You have reached the maximum number of projects for the free tier. Please delete an existing project or upgrade your account.',
+      const maxActiveProjects = 2;
+      if (activeProjectCount >= maxActiveProjects) {
+        return NextResponse.json(
+          {
+            error: 'Project limit reached',
+            details: {
+              current_active: activeProjectCount,
+              limit_active: maxActiveProjects,
+              message:
+                'Free tier allows up to 2 active projects. Complete or delete a project, or upgrade to Pro.',
+            },
           },
-        },
-        { status: 403 }
-      );
+          { status: 403 }
+        );
+      }
     }
 
     // Create the project with clean data mapping

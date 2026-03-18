@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { assertProjectWritableOrThrow } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
@@ -101,7 +102,7 @@ export async function PATCH(
     // First check if the time entry exists and belongs to the user
     const { data: existingTimeEntry, error: fetchError } = await supabase
       .from('time_entries')
-      .select('id, task_id, timer_status')
+      .select('id, task_id, timer_status, project_id')
       .eq('id', timeEntryId)
       .eq('user_id', user.id)
       .single();
@@ -111,6 +112,27 @@ export async function PATCH(
         { error: 'Time entry not found' },
         { status: 404 }
       );
+    }
+
+    try {
+      await assertProjectWritableOrThrow(
+        supabase,
+        user.id,
+        existingTimeEntry.project_id
+      );
+    } catch (e) {
+      const err = e as Error & { code?: string; writableProjectIds?: string[] };
+      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
+        return NextResponse.json(
+          {
+            error:
+              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            writable_project_ids: err.writableProjectIds ?? [],
+          },
+          { status: 403 }
+        );
+      }
+      throw e;
     }
 
     // If starting a timer, check for running timers on the same task
@@ -199,7 +221,7 @@ export async function DELETE(
     // First check if the time entry exists and belongs to the user
     const { data: existingTimeEntry, error: fetchError } = await supabase
       .from('time_entries')
-      .select('id, task_id, timer_status')
+      .select('id, task_id, timer_status, project_id')
       .eq('id', timeEntryId)
       .eq('user_id', user.id)
       .single();
@@ -209,6 +231,27 @@ export async function DELETE(
         { error: 'Time entry not found' },
         { status: 404 }
       );
+    }
+
+    try {
+      await assertProjectWritableOrThrow(
+        supabase,
+        user.id,
+        existingTimeEntry.project_id
+      );
+    } catch (e) {
+      const err = e as Error & { code?: string; writableProjectIds?: string[] };
+      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
+        return NextResponse.json(
+          {
+            error:
+              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            writable_project_ids: err.writableProjectIds ?? [],
+          },
+          { status: 403 }
+        );
+      }
+      throw e;
     }
 
     // Delete the time entry

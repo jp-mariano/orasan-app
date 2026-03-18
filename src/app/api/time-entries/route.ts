@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { assertProjectWritableOrThrow } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
@@ -129,6 +130,23 @@ export async function POST(request: NextRequest) {
 
     if (taskError || !task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    try {
+      await assertProjectWritableOrThrow(supabase, user.id, task.project_id);
+    } catch (e) {
+      const err = e as Error & { code?: string; writableProjectIds?: string[] };
+      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
+        return NextResponse.json(
+          {
+            error:
+              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            writable_project_ids: err.writableProjectIds ?? [],
+          },
+          { status: 403 }
+        );
+      }
+      throw e;
     }
 
     // Check for existing RUNNING timer on the same task (only one running timer per task allowed)

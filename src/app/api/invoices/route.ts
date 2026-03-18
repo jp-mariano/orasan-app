@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { generateInvoiceNumber } from '@/lib/invoice-utils';
+import { getUserSubscription } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { CreateInvoiceRequest } from '@/types';
 
@@ -81,6 +82,14 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (tier !== 'pro') {
+      return NextResponse.json(
+        { error: 'Invoicing is available on Pro only.' },
+        { status: 403 }
+      );
     }
 
     const invoiceData: CreateInvoiceRequest = await request.json();

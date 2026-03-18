@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getUserSubscription } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export interface InvoicePreviewRequest {
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (tier !== 'pro') {
+      return NextResponse.json(
+        { error: 'Invoicing is available on Pro only.' },
+        { status: 403 }
+      );
     }
 
     const body: InvoicePreviewRequest = await request.json();

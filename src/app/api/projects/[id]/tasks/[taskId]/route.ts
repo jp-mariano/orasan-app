@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { assertProjectWritableOrThrow } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { validatePricingConsistency } from '@/lib/utils';
 import { UpdateTaskRequest } from '@/types';
@@ -85,6 +86,23 @@ export async function PATCH(
 
     const { id: projectId, taskId } = await params;
     const updateData: UpdateTaskRequest = await request.json();
+
+    try {
+      await assertProjectWritableOrThrow(supabase, user.id, projectId);
+    } catch (e) {
+      const err = e as Error & { code?: string; writableProjectIds?: string[] };
+      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
+        return NextResponse.json(
+          {
+            error:
+              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            writable_project_ids: err.writableProjectIds ?? [],
+          },
+          { status: 403 }
+        );
+      }
+      throw e;
+    }
 
     // Validate that at least one field is being updated
     if (Object.keys(updateData).length === 0) {
@@ -273,6 +291,23 @@ export async function DELETE(
     }
 
     const { id: projectId, taskId } = await params;
+
+    try {
+      await assertProjectWritableOrThrow(supabase, user.id, projectId);
+    } catch (e) {
+      const err = e as Error & { code?: string; writableProjectIds?: string[] };
+      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
+        return NextResponse.json(
+          {
+            error:
+              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            writable_project_ids: err.writableProjectIds ?? [],
+          },
+          { status: 403 }
+        );
+      }
+      throw e;
+    }
 
     // First verify the project exists and belongs to the user
     const { data: project, error: projectError } = await supabase
