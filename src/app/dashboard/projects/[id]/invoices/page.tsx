@@ -378,22 +378,35 @@ export default function ProjectInvoicesPage() {
                   </tbody>
                 </table>
                 {invoices.length > INVOICES_PER_PAGE && (
-                  <div className="mt-4 flex items-center justify-end gap-2">
+                  <div className="mt-3 flex items-center justify-end gap-1">
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8 w-8 p-0"
                       onClick={() => setInvoicesPage(p => Math.max(1, p - 1))}
                       disabled={invoicesPage === 1}
                       aria-label="Previous page"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-sm text-muted-foreground">
-                      Page {invoicesPage} of {totalPages}
-                    </span>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      p => (
+                        <Button
+                          key={p}
+                          variant={invoicesPage === p ? 'default' : 'outline'}
+                          size="sm"
+                          className="h-8 min-w-8 p-0"
+                          onClick={() => setInvoicesPage(p)}
+                          aria-label={`Page ${p}`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8 w-8 p-0"
                       onClick={() =>
                         setInvoicesPage(p => Math.min(totalPages, p + 1))
                       }
