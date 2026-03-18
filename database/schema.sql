@@ -43,6 +43,8 @@ CREATE TABLE public.user_fs_entitlement (
   entitlement_type TEXT NOT NULL,
   expiration TIMESTAMP WITH TIME ZONE,
   is_canceled BOOLEAN NOT NULL DEFAULT false,
+  -- If set, user should be downgraded immediately (even if expiration is in the future).
+  refunded_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
@@ -230,6 +232,8 @@ CREATE INDEX idx_users_deletion_confirmed ON public.users(deletion_confirmed_at)
 WHERE deletion_confirmed_at IS NOT NULL;
 CREATE INDEX idx_user_fs_entitlement_user_id ON public.user_fs_entitlement(user_id);
 CREATE INDEX idx_user_fs_entitlement_entitlement_type ON public.user_fs_entitlement(entitlement_type);
+CREATE INDEX idx_user_fs_entitlement_refunded_at ON public.user_fs_entitlement(refunded_at)
+WHERE refunded_at IS NOT NULL;
 -- User activity log indexes
 CREATE INDEX idx_user_activity_log_user_id ON public.user_activity_log(user_id);
 CREATE INDEX idx_user_activity_log_action ON public.user_activity_log(action);
