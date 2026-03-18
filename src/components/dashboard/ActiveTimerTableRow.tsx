@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { TimerDisplay } from '@/components/ui/timer-display';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { LocalTimer } from '@/hooks/useTimeTracker';
 import { truncateTextSmart } from '@/lib/utils';
@@ -19,6 +20,8 @@ export function ActiveTimerTableRow({
   projectId,
 }: ActiveTimerTableRowProps) {
   const router = useRouter();
+  const freeTier = useFreeTierWritableProjects();
+  const isReadOnly = !freeTier.isProjectWritable(projectId);
   const {
     timer: timerData,
     duration,
@@ -61,10 +64,10 @@ export function ActiveTimerTableRow({
           duration={duration}
           isRunning={timerData?.isRunning ?? false}
           isPaused={timerData?.isPaused ?? false}
-          canStart={canStart}
-          canResume={canResume}
-          canPause={canPause}
-          canStop={canStop}
+          canStart={!isReadOnly && canStart}
+          canResume={!isReadOnly && canResume}
+          canPause={!isReadOnly && canPause}
+          canStop={!isReadOnly && canStop}
           onStart={startTimer}
           onPause={pauseTimer}
           onResume={resumeTimer}

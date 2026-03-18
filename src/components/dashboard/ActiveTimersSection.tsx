@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { LocalTimer } from '@/hooks/useTimeTracker';
 import { Project, Task } from '@/types';
 
@@ -30,6 +31,7 @@ const TIMERS_PER_PAGE = 10;
 export function ActiveTimersSection() {
   const { activeTimers, pausedTimers, pauseAllTimers } =
     useTimeTrackingContext();
+  const freeTier = useFreeTierWritableProjects();
   const allActiveTimers = useMemo(
     () => [...activeTimers, ...pausedTimers],
     [activeTimers, pausedTimers]
@@ -107,7 +109,9 @@ export function ActiveTimersSection() {
   }, []);
 
   const handlePauseAll = useCallback(async () => {
-    const runningIds = allActiveTimers.filter(t => t.isRunning).map(t => t.id);
+    const runningIds = allActiveTimers
+      .filter(t => t.isRunning && freeTier.isProjectWritable(t.projectId))
+      .map(t => t.id);
     if (runningIds.length === 0) return;
     setIsPausingAll(true);
     try {
@@ -118,7 +122,7 @@ export function ActiveTimersSection() {
     } finally {
       setIsPausingAll(false);
     }
-  }, [allActiveTimers, pauseAllTimers]);
+  }, [allActiveTimers, pauseAllTimers, freeTier]);
 
   const timerIdsKey = allActiveTimers
     .map(t => t.id)
@@ -206,6 +210,12 @@ export function ActiveTimersSection() {
             <Button
               size="sm"
               onClick={() => setShowPauseTimersModal(true)}
+              disabled={
+                allActiveTimers.filter(t => t.isRunning).length > 0 &&
+                allActiveTimers
+                  .filter(t => t.isRunning)
+                  .every(t => !freeTier.isProjectWritable(t.projectId))
+              }
               className="ml-4 bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
             >
               Pause Timers

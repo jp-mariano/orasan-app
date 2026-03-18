@@ -9,6 +9,7 @@ import { MoreVertical, Trash2, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TimerDisplay } from '@/components/ui/timer-display';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
 import {
@@ -29,6 +30,8 @@ interface TaskTableRowProps {
 
 export function TaskTableRow({ task, onDelete, onUpdate }: TaskTableRowProps) {
   const router = useRouter();
+  const freeTier = useFreeTierWritableProjects();
+  const isReadOnly = !freeTier.isProjectWritable(task.project_id);
   const [showActions, setShowActions] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -123,10 +126,10 @@ export function TaskTableRow({ task, onDelete, onUpdate }: TaskTableRowProps) {
             duration={duration}
             isRunning={timer?.isRunning ?? false}
             isPaused={timer?.isPaused ?? false}
-            canStart={canStart}
-            canResume={canResume}
-            canPause={canPause}
-            canStop={canStop}
+            canStart={!isReadOnly && canStart}
+            canResume={!isReadOnly && canResume}
+            canPause={!isReadOnly && canPause}
+            canStop={!isReadOnly && canStop}
             onStart={startTimer}
             onPause={pauseTimer}
             onResume={resumeTimer}

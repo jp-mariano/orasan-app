@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { TimerDisplay } from '@/components/ui/timer-display';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { useUser } from '@/hooks/useUser';
@@ -80,6 +81,8 @@ export default function TaskDetailPage() {
 
   const projectId = params.id as string;
   const taskId = params.taskId as string;
+  const freeTier = useFreeTierWritableProjects();
+  const isReadOnly = !freeTier.isProjectWritable(projectId);
 
   // Task management
   const { updateTask, deleteTask } = useTasks({ projectId });
@@ -604,11 +607,13 @@ export default function TaskDetailPage() {
                 <Button
                   size="sm"
                   onClick={() => setShowCreateEntryModal(true)}
-                  disabled={isTaskCompleted}
+                  disabled={isTaskCompleted || isReadOnly}
                   title={
                     isTaskCompleted
                       ? 'Time entries are locked for completed tasks'
-                      : 'Add time entry'
+                      : isReadOnly
+                        ? 'This project is read-only on the Free plan'
+                        : 'Add time entry'
                   }
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -684,16 +689,24 @@ export default function TaskDetailPage() {
                                       timerActions.timer?.isPaused ?? false
                                     }
                                     canStart={
-                                      !isTaskCompleted && timerActions.canStart
+                                      !isReadOnly &&
+                                      !isTaskCompleted &&
+                                      timerActions.canStart
                                     }
                                     canResume={
-                                      !isTaskCompleted && timerActions.canResume
+                                      !isReadOnly &&
+                                      !isTaskCompleted &&
+                                      timerActions.canResume
                                     }
                                     canPause={
-                                      !isTaskCompleted && timerActions.canPause
+                                      !isReadOnly &&
+                                      !isTaskCompleted &&
+                                      timerActions.canPause
                                     }
                                     canStop={
-                                      !isTaskCompleted && timerActions.canStop
+                                      !isReadOnly &&
+                                      !isTaskCompleted &&
+                                      timerActions.canStop
                                     }
                                     onStart={timerActions.startTimer}
                                     onPause={async () => {
