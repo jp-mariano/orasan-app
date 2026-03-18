@@ -43,6 +43,20 @@ export interface User {
   deletion_token_expires_at?: string;
 }
 
+/** Row in user_fs_entitlement — synced from Freemius (checkout + webhooks). */
+export interface UserFsEntitlement {
+  id: string;
+  user_id: string;
+  fs_license_id: string;
+  fs_plan_id: string;
+  fs_pricing_id: string;
+  fs_user_id: string;
+  entitlement_type: string;
+  expiration: string | null;
+  is_canceled: boolean;
+  created_at: string;
+}
+
 export interface UpdateUserRequest {
   name?: string;
   business_name?: string;

@@ -31,6 +31,21 @@ CREATE TABLE public.users (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Freemius subscription / license mirror (synced from checkout + webhooks)
+-- App enforcement uses users.subscription_tier; this table stores Freemius IDs and license state.
+CREATE TABLE public.user_fs_entitlement (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+  fs_license_id TEXT NOT NULL UNIQUE,
+  fs_plan_id TEXT NOT NULL,
+  fs_pricing_id TEXT NOT NULL,
+  fs_user_id TEXT NOT NULL,
+  entitlement_type TEXT NOT NULL,
+  expiration TIMESTAMP WITH TIME ZONE,
+  is_canceled BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 -- Create projects table
 CREATE TABLE public.projects (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -213,6 +228,8 @@ CREATE INDEX idx_invoice_items_task_id ON public.invoice_items(task_id);
 -- Account deletion cleanup index
 CREATE INDEX idx_users_deletion_confirmed ON public.users(deletion_confirmed_at) 
 WHERE deletion_confirmed_at IS NOT NULL;
+CREATE INDEX idx_user_fs_entitlement_user_id ON public.user_fs_entitlement(user_id);
+CREATE INDEX idx_user_fs_entitlement_entitlement_type ON public.user_fs_entitlement(entitlement_type);
 -- User activity log indexes
 CREATE INDEX idx_user_activity_log_user_id ON public.user_activity_log(user_id);
 CREATE INDEX idx_user_activity_log_action ON public.user_activity_log(action);
@@ -230,6 +247,7 @@ ALTER TABLE public.work_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_activity_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_fs_entitlement ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
 CREATE POLICY "Users can view own profile" ON public.users
@@ -243,6 +261,9 @@ CREATE POLICY "Users can update own profile" ON public.users
 
 CREATE POLICY "Users can delete own profile" ON public.users
   FOR DELETE USING ((SELECT auth.uid()) = id);
+
+CREATE POLICY "Users can view own Freemius entitlements" ON public.user_fs_entitlement
+  FOR SELECT USING ((SELECT auth.uid()) = user_id);
 
 -- RLS Policies for projects table
 CREATE POLICY "Users can view own projects" ON public.projects
