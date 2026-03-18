@@ -59,6 +59,13 @@ const eslintConfig = [
       prettier: prettierPlugin,
     },
   },
+  // Freemius shadcn starter kit — third-party import order
+  {
+    files: ['src/react-starter/**/*.{ts,tsx}'],
+    rules: {
+      'import/order': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;
