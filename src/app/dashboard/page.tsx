@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,7 @@ import { MetricsCards } from '@/components/dashboard/MetricsCards';
 import { DeleteProjectModal } from '@/components/projects/DeleteProjectModal';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { ProjectModal } from '@/components/projects/ProjectModal';
+import { FreeTierReadonlyModal } from '@/components/subscription/free-tier-readonly-modal';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,7 @@ import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useProjects } from '@/hooks/useProjects';
 import { Project } from '@/types/index';
 
@@ -56,6 +58,21 @@ export default function DashboardPage() {
 
   const { activeTimers, pausedTimers, stopAllTimers } =
     useTimeTrackingContext();
+
+  const freeTier = useFreeTierWritableProjects();
+  const [showFreeTierModal, setShowFreeTierModal] = useState(false);
+
+  const readOnlyProjectIds = useMemo(() => {
+    if (!freeTier.isFree || !freeTier.overLimit) return new Set<string>();
+    const writable = new Set(freeTier.writableProjectIds);
+    const active = projects.filter(p => p.status !== 'completed');
+    return new Set(active.filter(p => !writable.has(p.id)).map(p => p.id));
+  }, [
+    freeTier.isFree,
+    freeTier.overLimit,
+    freeTier.writableProjectIds,
+    projects,
+  ]);
 
   const handleCreateProject = () => {
     setIsCreateModalOpen(true);
@@ -140,6 +157,16 @@ export default function DashboardPage() {
       router.push('/auth/signin');
     }
   }, [loading, user, router]);
+
+  // Show the downgrade/read-only modal once per browser session.
+  useEffect(() => {
+    if (!freeTier.isFree || !freeTier.overLimit) return;
+    if (typeof window === 'undefined') return;
+    const key = 'free_tier_readonly_modal_shown';
+    if (window.sessionStorage.getItem(key) === '1') return;
+    window.sessionStorage.setItem(key, '1');
+    setShowFreeTierModal(true);
+  }, [freeTier.isFree, freeTier.overLimit]);
 
   // Show loading screen only when auth context is loading
   if (loading) {
@@ -239,6 +266,7 @@ export default function DashboardPage() {
                   onDelete={handleDeleteProject}
                   onNavigate={handleNavigateToProject}
                   onUpdate={handleUpdateProject}
+                  isReadOnly={readOnlyProjectIds.has(project.id)}
                 />
               ))}
             </div>
@@ -290,6 +318,13 @@ export default function DashboardPage() {
           confirmText="Mark as completed"
           onConfirm={handleConfirmCompleteProject}
           isLoading={isCompletingProject}
+        />
+
+        <FreeTierReadonlyModal
+          open={showFreeTierModal}
+          onOpenChange={setShowFreeTierModal}
+          writableProjectCount={Math.min(2, freeTier.activeCount)}
+          totalActiveProjectCount={freeTier.activeCount}
         />
       </main>
     </div>

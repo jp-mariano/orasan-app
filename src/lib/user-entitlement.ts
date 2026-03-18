@@ -1,5 +1,6 @@
-import type { PurchaseInfo } from '@freemius/sdk';
+import type { PurchaseEntitlementType, PurchaseInfo } from '@freemius/sdk';
 
+import { freemius } from '@/lib/freemius';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
@@ -207,4 +208,71 @@ export async function deleteEntitlement(fsLicenseId: string): Promise<void> {
   if (error) {
     throw new Error(`Failed to delete entitlement: ${error.message}`);
   }
+}
+
+type DbEntitlementRow = {
+  fs_license_id: string;
+  fs_plan_id: string;
+  fs_pricing_id: string;
+  fs_user_id: string;
+  entitlement_type: string;
+  expiration: string | null;
+  is_canceled: boolean;
+  created_at: string;
+  refunded_at?: string | null;
+};
+
+type SdkEntitlementRecord = {
+  fsLicenseId: string;
+  fsPlanId: string;
+  fsPricingId: string;
+  fsUserId: string;
+  type: PurchaseEntitlementType;
+  expiration: string | null;
+  isCanceled: boolean;
+  createdAt: string;
+  refundedAt?: string | null;
+};
+
+async function getUserEntitlement(userId: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('user_fs_entitlement')
+    .select(
+      'fs_license_id, fs_plan_id, fs_pricing_id, fs_user_id, entitlement_type, expiration, is_canceled, created_at, refunded_at'
+    )
+    .eq('user_id', userId)
+    .eq('entitlement_type', 'subscription');
+
+  if (error) {
+    throw new Error(`Failed to fetch entitlements: ${error.message}`);
+  }
+
+  const entitlements: SdkEntitlementRecord[] = (data ?? []).map(
+    (row: DbEntitlementRow) => ({
+      fsLicenseId: row.fs_license_id,
+      fsPlanId: row.fs_plan_id,
+      fsPricingId: row.fs_pricing_id,
+      fsUserId: row.fs_user_id,
+      type: row.entitlement_type as PurchaseEntitlementType,
+      expiration: row.expiration,
+      isCanceled: row.is_canceled,
+      createdAt: row.created_at,
+      refundedAt: row.refunded_at ?? null,
+    })
+  );
+
+  return freemius.entitlement.getActive(entitlements);
+}
+
+export async function getFsUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const entitlement = user ? await getUserEntitlement(user.id) : null;
+  const email = user?.email ?? undefined;
+
+  return freemius.entitlement.getFsUser(entitlement, email);
 }

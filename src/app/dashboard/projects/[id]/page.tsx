@@ -30,6 +30,7 @@ import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { formatDate } from '@/lib/utils';
@@ -72,6 +73,8 @@ export default function ProjectDetailPage() {
   const [isDeletingTask, setIsDeletingTask] = useState(false);
 
   const projectId = params.id as string;
+  const freeTier = useFreeTierWritableProjects();
+  const isReadOnly = !freeTier.isProjectWritable(projectId);
 
   // Task management
   const {
@@ -476,6 +479,14 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
+        {freeTier.isFree && freeTier.overLimit && isReadOnly && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+            This project is read-only on the Free plan because you have more
+            than 2 active projects. Only your newest 2 active projects are
+            editable.
+          </div>
+        )}
+
         {/* Project Stats & Description Section */}
         <Card className="mb-6">
           <CardHeader>
@@ -504,6 +515,7 @@ export default function ProjectDetailPage() {
                           setIsEditModalOpen(true);
                           setShowActions(false);
                         }}
+                        disabled={isReadOnly}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
                         <span>Edit Project</span>
@@ -513,6 +525,7 @@ export default function ProjectDetailPage() {
                           setShowStopAllTimersModal(true);
                           setShowActions(false);
                         }}
+                        disabled={isReadOnly}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
                       >
                         <span>Create Invoice</span>
@@ -534,6 +547,7 @@ export default function ProjectDetailPage() {
                           setIsDeleteModalOpen(true);
                           setShowActions(false);
                         }}
+                        disabled={isReadOnly}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -767,6 +781,7 @@ export default function ProjectDetailPage() {
                 <Button
                   size="sm"
                   onClick={() => setIsCreateTaskModalOpen(true)}
+                  disabled={isReadOnly}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Task

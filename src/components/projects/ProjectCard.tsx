@@ -25,6 +25,7 @@ interface ProjectCardProps {
   onDelete?: (project: Project) => void;
   onNavigate?: (project: Project) => void;
   onUpdate?: (projectId: string, updates: Partial<Project>) => Promise<void>;
+  isReadOnly?: boolean;
 }
 
 export function ProjectCard({
@@ -32,6 +33,7 @@ export function ProjectCard({
   onDelete,
   onNavigate,
   onUpdate,
+  isReadOnly = false,
 }: ProjectCardProps) {
   const [showActions, setShowActions] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -62,6 +64,7 @@ export function ProjectCard({
   };
 
   const handleMarkAsCompleted = async () => {
+    if (isReadOnly) return;
     if (!onUpdate || project.status === 'completed') return;
 
     try {
@@ -77,7 +80,9 @@ export function ProjectCard({
 
   return (
     <Card
-      className="hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full"
+      className={`hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-full ${
+        isReadOnly ? 'opacity-90' : ''
+      }`}
       onClick={handleCardClick}
     >
       <CardHeader>
@@ -99,6 +104,11 @@ export function ProjectCard({
             <Badge className={getStatusColor(project.status)}>
               {getStatusLabel(project.status)}
             </Badge>
+            {isReadOnly && (
+              <Badge variant="secondary" className="text-xs">
+                Read-only
+              </Badge>
+            )}
 
             <div className="relative" ref={actionsRef}>
               <Button
@@ -108,6 +118,7 @@ export function ProjectCard({
                   e.stopPropagation(); // Prevent card click when clicking options
                   setShowActions(!showActions);
                 }}
+                disabled={isReadOnly}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>

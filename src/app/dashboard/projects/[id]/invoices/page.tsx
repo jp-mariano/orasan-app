@@ -15,6 +15,7 @@ import { Header } from '@/components/ui/header';
 import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
 import { formatDate } from '@/lib/utils';
 import { Invoice, Project } from '@/types';
@@ -23,6 +24,7 @@ const INVOICES_PER_PAGE = 10;
 
 export default function ProjectInvoicesPage() {
   const { user, loading: authLoading } = useAuth();
+  const { user: userProfile } = useUser();
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
@@ -232,6 +234,7 @@ export default function ProjectInvoicesPage() {
                 <Button
                   onClick={() => setShowCreateInvoiceConfirm(true)}
                   className="shrink-0"
+                  disabled={userProfile?.subscription_tier !== 'pro'}
                 >
                   Create invoice
                 </Button>
