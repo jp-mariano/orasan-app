@@ -28,7 +28,7 @@ export interface User {
   name?: string;
   created_at: string;
   updated_at: string;
-  subscription_tier?: 'free' | 'pro' | 'enterprise';
+  subscription_tier?: 'free' | 'pro';
   subscription_status?: 'active' | 'inactive' | 'cancelled';
   // Business information for invoicing
   business_name?: string;

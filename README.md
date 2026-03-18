@@ -8,7 +8,7 @@
 - 📁 **Project Management**: Organize tasks within projects
 - 🔒 **Privacy First**: Row-level security with Supabase
 - 📱 **Offline Capable**: Works without internet, syncs when connection is restored
-- 💰 **Subscription Ready**: Built-in support for free/pro/enterprise tiers
+- 💰 **Subscription Ready**: Free / Pro tiers (Freemius integration planned)
 - 🎨 **Modern UI**: Built with shadcn/ui and Tailwind CSS
 
 ## Tech Stack
