@@ -45,50 +45,26 @@ async function applyPurchaseToUserEntitlement({
   userId,
   fsPurchase,
 }: ProcessPurchaseOptions): Promise<void> {
-  const toEntitlementRecord = getProp(fsPurchase, 'toEntitlementRecord');
-  const recordFromSdk =
-    typeof toEntitlementRecord === 'function'
-      ? (toEntitlementRecord as (args: { userId: string }) => unknown)({
-          userId,
-        })
-      : null;
+  // Call on the instance — extracting `toEntitlementRecord` and invoking it
+  // detached breaks `this` inside PurchaseInfo (e.g. reading `this.licenseId`).
+  const recordFromSdk = fsPurchase.toEntitlementRecord({ userId });
 
-  const fs_license_id =
-    getProp(recordFromSdk, 'fsLicenseId') ??
-    getProp(fsPurchase, 'licenseId') ??
-    getProp(fsPurchase, 'license_id');
-  const fs_plan_id =
-    getProp(recordFromSdk, 'fsPlanId') ??
-    getProp(fsPurchase, 'planId') ??
-    getProp(fsPurchase, 'plan_id');
-  const fs_pricing_id =
-    getProp(recordFromSdk, 'fsPricingId') ??
-    getProp(fsPurchase, 'pricingId') ??
-    getProp(fsPurchase, 'pricing_id');
-  const fs_user_id =
-    getProp(recordFromSdk, 'fsUserId') ??
-    getProp(fsPurchase, 'userId') ??
-    getProp(fsPurchase, 'user_id');
-  const entitlement_type =
-    getProp(recordFromSdk, 'type') ??
-    getProp(recordFromSdk, 'entitlementType') ??
-    getProp(fsPurchase, 'type') ??
-    getProp(fsPurchase, 'entitlement_type') ??
-    'subscription';
+  const fs_license_id = recordFromSdk.fsLicenseId || fsPurchase.licenseId;
+  const fs_plan_id = recordFromSdk.fsPlanId || fsPurchase.planId;
+  const fs_pricing_id = recordFromSdk.fsPricingId || fsPurchase.pricingId;
+  const fs_user_id = recordFromSdk.fsUserId || fsPurchase.userId;
+  const entitlement_type = recordFromSdk.type;
 
   const expiration = coerceIsoOrNull(
-    getProp(recordFromSdk, 'expiration') ?? getProp(fsPurchase, 'expiration')
+    recordFromSdk.expiration ?? fsPurchase.expiration
   );
+
   const is_canceled =
+    recordFromSdk.isCanceled ||
+    fsPurchase.canceled ||
     Boolean(
-      getProp(recordFromSdk, 'isCanceled') ??
-        getProp(fsPurchase, 'isCanceled') ??
-        // Some webhook/spec payloads use snake_case spelling.
-        getProp(fsPurchase, 'is_canceled') ??
-        getProp(fsPurchase, 'is_cancelled') ??
-        // Some SDK objects expose it as `canceled`.
-        getProp(fsPurchase, 'canceled')
-    ) || false;
+      getProp(fsPurchase, 'is_canceled') ?? getProp(fsPurchase, 'is_cancelled')
+    );
 
   const refunded_at =
     coerceIsoOrNull(
@@ -98,7 +74,6 @@ async function applyPurchaseToUserEntitlement({
         getProp(fsPurchase, 'refunded_at')
     ) ?? null;
 
-  // Some Freemius payloads represent refunds as a boolean flag instead of a timestamp.
   const isRefundedFlag = Boolean(
     refunded_at ??
       getProp(recordFromSdk, 'isRefunded') ??
