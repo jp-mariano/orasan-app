@@ -79,14 +79,32 @@ async function applyPurchaseToUserEntitlement({
   const expiration = coerceIsoOrNull(
     getProp(recordFromSdk, 'expiration') ?? getProp(fsPurchase, 'expiration')
   );
-  const is_canceled = Boolean(
-    getProp(recordFromSdk, 'isCanceled') ??
-      getProp(fsPurchase, 'isCanceled') ??
-      getProp(fsPurchase, 'is_canceled')
-  );
+  const is_canceled =
+    Boolean(
+      getProp(recordFromSdk, 'isCanceled') ??
+        getProp(fsPurchase, 'isCanceled') ??
+        // Some webhook/spec payloads use snake_case spelling.
+        getProp(fsPurchase, 'is_canceled') ??
+        getProp(fsPurchase, 'is_cancelled') ??
+        // Some SDK objects expose it as `canceled`.
+        getProp(fsPurchase, 'canceled')
+    ) || false;
 
-  const refunded_at = coerceIsoOrNull(
-    getProp(recordFromSdk, 'refundedAt') ?? getProp(fsPurchase, 'refunded_at')
+  const refunded_at =
+    coerceIsoOrNull(
+      getProp(recordFromSdk, 'refundedAt') ??
+        getProp(recordFromSdk, 'refunded_at') ??
+        getProp(fsPurchase, 'refundedAt') ??
+        getProp(fsPurchase, 'refunded_at')
+    ) ?? null;
+
+  // Some Freemius payloads represent refunds as a boolean flag instead of a timestamp.
+  const isRefundedFlag = Boolean(
+    refunded_at ??
+      getProp(recordFromSdk, 'isRefunded') ??
+      getProp(recordFromSdk, 'is_refunded') ??
+      getProp(fsPurchase, 'isRefunded') ??
+      getProp(fsPurchase, 'is_refunded')
   );
 
   if (!fs_license_id || !fs_plan_id || !fs_pricing_id || !fs_user_id) {
@@ -118,7 +136,7 @@ async function applyPurchaseToUserEntitlement({
   // Derive app tier/status for enforcement.
   const now = new Date();
   const expirationDate = expiration ? new Date(expiration) : null;
-  const isRefunded = Boolean(refunded_at);
+  const isRefunded = isRefundedFlag;
   const isActiveEntitlement =
     !isRefunded &&
     (!is_canceled || (expirationDate !== null && expirationDate > now));
@@ -200,6 +218,20 @@ export async function syncEntitlementFromWebhook(
 
 export async function deleteEntitlement(fsLicenseId: string): Promise<void> {
   const admin = createAdminClient();
+
+  // We need the app user id to keep `users.subscription_*` in sync.
+  const { data: existing, error: existingError } = await admin
+    .from('user_fs_entitlement')
+    .select('user_id')
+    .eq('fs_license_id', fsLicenseId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(
+      `Failed to lookup entitlement for deletion ${fsLicenseId}: ${existingError.message}`
+    );
+  }
+
   const { error } = await admin
     .from('user_fs_entitlement')
     .delete()
@@ -207,6 +239,24 @@ export async function deleteEntitlement(fsLicenseId: string): Promise<void> {
 
   if (error) {
     throw new Error(`Failed to delete entitlement: ${error.message}`);
+  }
+
+  const userId = existing?.user_id;
+  if (userId) {
+    const { error: userUpdateError } = await admin
+      .from('users')
+      .update({
+        subscription_tier: 'free',
+        subscription_status: 'inactive',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (userUpdateError) {
+      throw new Error(
+        `Failed to update user subscription after deletion: ${userUpdateError.message}`
+      );
+    }
   }
 }
 
