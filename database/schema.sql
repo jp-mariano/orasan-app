@@ -48,6 +48,21 @@ CREATE TABLE public.user_fs_entitlement (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+-- Freemius webhook idempotency (server-only; service role bypasses RLS)
+CREATE TABLE public.fs_webhook_events (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  event_id TEXT NOT NULL UNIQUE,
+  event_type TEXT NOT NULL,
+  environment SMALLINT,
+  received_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMP WITH TIME ZONE,
+  status TEXT NOT NULL CHECK (status IN ('received', 'processed', 'failed')),
+  error_message TEXT,
+  CONSTRAINT fs_webhook_events_error_message_only_when_failed CHECK (
+    error_message IS NULL OR status = 'failed'
+  )
+);
+
 -- Create projects table
 CREATE TABLE public.projects (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -234,6 +249,7 @@ CREATE INDEX idx_user_fs_entitlement_user_id ON public.user_fs_entitlement(user_
 CREATE INDEX idx_user_fs_entitlement_entitlement_type ON public.user_fs_entitlement(entitlement_type);
 CREATE INDEX idx_user_fs_entitlement_refunded_at ON public.user_fs_entitlement(refunded_at)
 WHERE refunded_at IS NOT NULL;
+CREATE INDEX idx_fs_webhook_events_received_at ON public.fs_webhook_events(received_at);
 -- User activity log indexes
 CREATE INDEX idx_user_activity_log_user_id ON public.user_activity_log(user_id);
 CREATE INDEX idx_user_activity_log_action ON public.user_activity_log(action);
@@ -252,6 +268,7 @@ ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_activity_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_fs_entitlement ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fs_webhook_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for users table
 CREATE POLICY "Users can view own profile" ON public.users

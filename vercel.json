@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/account-cleanup",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/freemius-webhook-events-cleanup",
+      "schedule": "15 2 * * *"
     }
   ]
 }
