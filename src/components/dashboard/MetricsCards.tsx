@@ -2,14 +2,33 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkSessionContext } from '@/contexts/work-session-context';
+import { useUser } from '@/hooks/useUser';
 import { formatDuration } from '@/lib/utils';
 
 interface MetricsCardsProps {
   projectCount: number;
+  /** Non-completed projects; used for Free-tier limits (same rule as read-only enforcement). */
+  activeProjectCount: number;
 }
 
-export function MetricsCards({ projectCount }: MetricsCardsProps) {
+export function MetricsCards({
+  projectCount,
+  activeProjectCount,
+}: MetricsCardsProps) {
   const { stats, statsLoading } = useWorkSessionContext();
+  const { user, loading: userLoading } = useUser();
+
+  const totalProjectsCaption = (() => {
+    if (projectCount === 0) return 'No projects yet';
+    if (userLoading) return '';
+    if (user?.subscription_tier === 'pro') {
+      return 'Unlimited on Pro';
+    }
+    if (activeProjectCount > 2) {
+      return 'Free plan: only 2 active projects stay fully editable; older active projects may be read-only.';
+    }
+    return `${2 - activeProjectCount} remaining on Free plan`;
+  })();
 
   return (
     <div className="grid grid-cols-3 gap-6 mb-8">
@@ -21,11 +40,7 @@ export function MetricsCards({ projectCount }: MetricsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">{projectCount}</div>
           <p className="text-xs text-muted-foreground">
-            {projectCount === 0
-              ? 'No projects yet'
-              : projectCount <= 2
-                ? `${2 - projectCount} remaining on free tier`
-                : ''}
+            {totalProjectsCaption}
           </p>
         </CardContent>
       </Card>

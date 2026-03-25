@@ -74,6 +74,11 @@ export default function DashboardPage() {
     projects,
   ]);
 
+  const activeProjectCount = useMemo(
+    () => projects.filter(p => p.status !== 'completed').length,
+    [projects]
+  );
+
   const handleCreateProject = () => {
     setIsCreateModalOpen(true);
   };
@@ -212,7 +217,10 @@ export default function DashboardPage() {
         </div>
 
         {/* Metrics Cards */}
-        <MetricsCards projectCount={projectCount} />
+        <MetricsCards
+          projectCount={projectCount}
+          activeProjectCount={activeProjectCount}
+        />
 
         {/* Projects Section */}
         <div className="space-y-6">
