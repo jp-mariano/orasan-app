@@ -14,8 +14,6 @@ import { Subscribe } from './subscribe';
 import { RestorePurchase } from './restore-purchase';
 import { CheckoutProvider } from './checkout-provider';
 import { PortalContext } from '../hooks/portal';
-import { SectionHeading } from './section-heading';
-import { PricingTable } from './pricing-table';
 
 export function CustomerPortal(props: {
   endpoint: string;
@@ -123,7 +121,6 @@ export function CustomerPortalUi(props: {
   refresh: () => void;
 }) {
   const { portalData, refresh } = props;
-  const locale = useLocale();
 
   return (
     <div className="fs-saas-starter-portal flex flex-col gap-16">
@@ -136,14 +133,6 @@ export function CustomerPortalUi(props: {
           afterCancel={refresh}
           afterCouponApplied={refresh}
         />
-      ) : null}
-
-      {portalData.subscriptions.primary &&
-      !portalData.subscriptions.primary.isActive ? (
-        <div>
-          <SectionHeading>{locale.portal.subscribe.title()}</SectionHeading>
-          <PricingTable plans={portalData.plans} />
-        </div>
       ) : null}
 
       {portalData.billing ? (
