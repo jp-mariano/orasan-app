@@ -246,7 +246,18 @@ export function UserSettingsClient(props: {
                 Billing & Subscription
               </h2>
               <p className="text-gray-600">
-                Manage your subscription, billing details, and payments
+                Manage your subscription, billing details, and payments.
+                Checkout, recurring billing, and invoices for your subscription
+                are handled by{' '}
+                <a
+                  href="https://freemius.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-gray-900 underline decoration-gray-400 underline-offset-2 hover:decoration-gray-900"
+                >
+                  Freemius
+                </a>
+                . Orasan does not collect or store your payment card details.
               </p>
             </div>
 
