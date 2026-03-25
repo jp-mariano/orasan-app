@@ -11,20 +11,27 @@ import { CheckoutProvider } from '@/react-starter/components/checkout-provider';
 export default function AppCheckoutProvider(props: {
   children: React.ReactNode;
   checkout: CheckoutSerialized;
+  /**
+   * Runs after a successful checkout → `/api/checkout` sync (e.g. refetch `/api/users`
+   * subscription fields). `router.refresh()` always runs first for RSC payloads.
+   */
+  onAfterPurchaseSync?: () => void | Promise<void>;
 }) {
+  const { checkout, children, onAfterPurchaseSync } = props;
   const router = useRouter();
 
   const onAfterSync = React.useCallback(() => {
     router.refresh();
-  }, [router]);
+    void onAfterPurchaseSync?.();
+  }, [router, onAfterPurchaseSync]);
 
   return (
     <CheckoutProvider
       onAfterSync={onAfterSync}
-      checkout={props.checkout}
+      checkout={checkout}
       endpoint={`${process.env.NEXT_PUBLIC_APP_URL}/api/checkout`}
     >
-      {props.children}
+      {children}
     </CheckoutProvider>
   );
 }

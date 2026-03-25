@@ -17,8 +17,15 @@ import { PortalContext } from '../hooks/portal';
 import { SectionHeading } from './section-heading';
 import { PricingTable } from './pricing-table';
 
-export function CustomerPortal(props: { endpoint: string }) {
-  const { endpoint } = props;
+export function CustomerPortal(props: {
+  endpoint: string;
+  /**
+   * Called when portal or checkout sync updates subscription-related data (e.g. cancel,
+   * coupon, purchase sync). Use to refetch app profile / revalidate RSC.
+   */
+  onAppStateRefresh?: () => void | Promise<void>;
+}) {
+  const { endpoint, onAppStateRefresh } = props;
   const checkoutContext = useContext(CheckoutContext);
   const { data, error, isLoading, refetch } = usePortalData(endpoint);
   const locale = useLocale();
@@ -31,18 +38,20 @@ export function CustomerPortal(props: { endpoint: string }) {
         }
         // Refetch portal data after restoring purchases
         refetch();
+        void onAppStateRefresh?.();
       } else {
         if (typeof window !== 'undefined') {
           window.alert(locale.refreshPurchase.alert.nothingToRestore());
         }
       }
     },
-    [refetch, locale]
+    [refetch, locale, onAppStateRefresh]
   );
 
   const refresh = React.useCallback(() => {
     refetch();
-  }, [refetch]);
+    void onAppStateRefresh?.();
+  }, [refetch, onAppStateRefresh]);
 
   const portalContextValue = React.useMemo(() => ({ endpoint }), [endpoint]);
 
@@ -70,11 +79,11 @@ export function CustomerPortal(props: { endpoint: string }) {
         ) : !data ? (
           <CustomerPortalEmpty
             endpoint={endpoint}
-            onSubscribe={refetch}
+            onSubscribe={refresh}
             onRestore={onRestored}
           />
         ) : (
-          <CustomerPortalUi portalData={data} refresh={refetch} />
+          <CustomerPortalUi portalData={data} refresh={refresh} />
         )}
       </CheckoutProvider>
     </PortalContext.Provider>

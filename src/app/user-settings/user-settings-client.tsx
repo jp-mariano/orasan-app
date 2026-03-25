@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -52,6 +52,16 @@ export function UserSettingsClient(props: {
   const { user, loading, error, updateUser, refreshUser } = useUser();
   const router = useRouter();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  /** After Freemius checkout/portal updates, RSC + client profile (subscription_tier) must both refresh. */
+  const reconcileFreemiusRelatedState = useCallback(() => {
+    router.refresh();
+    void refreshUser();
+  }, [router, refreshUser]);
+
+  const refreshUserAfterCheckoutSync = useCallback(() => {
+    void refreshUser();
+  }, [refreshUser]);
 
   // Account deletion state
   const {
@@ -248,10 +258,16 @@ export function UserSettingsClient(props: {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AppCheckoutProvider checkout={checkout}>
+                <AppCheckoutProvider
+                  checkout={checkout}
+                  onAfterPurchaseSync={refreshUserAfterCheckoutSync}
+                >
                   {user?.subscription_tier === 'pro' ||
                   user?.subscription_status === 'cancelled' ? (
-                    <CustomerPortal endpoint={portalEndpoint} />
+                    <CustomerPortal
+                      endpoint={portalEndpoint}
+                      onAppStateRefresh={reconcileFreemiusRelatedState}
+                    />
                   ) : (
                     <div className="space-y-3">
                       <p className="text-sm text-muted-foreground">
