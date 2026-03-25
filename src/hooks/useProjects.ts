@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
+import { useUser } from '@/hooks/useUser';
 import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 import {
   CreateProjectRequest,
@@ -40,6 +41,7 @@ export function useProjects(): UseProjectsReturn {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user, loading: userLoading } = useUser();
 
   // Get timer context for pause functionality
   const { activeTimers, pauseAllTimers } = useTimeTrackingContext();
@@ -249,12 +251,24 @@ export function useProjects(): UseProjectsReturn {
     };
   }, [refreshProjects]);
 
+  const canCreateProject = useMemo(() => {
+    if (userLoading) {
+      return true;
+    }
+    const tier = user?.subscription_tier ?? 'free';
+    if (tier === 'pro') {
+      return true;
+    }
+    const activeCount = projects.filter(p => p.status !== 'completed').length;
+    return activeCount < MAX_FREE_PROJECTS;
+  }, [user?.subscription_tier, userLoading, projects]);
+
   return {
     projects,
     loading,
     error,
     projectCount: projects.length,
-    canCreateProject: projects.length < MAX_FREE_PROJECTS,
+    canCreateProject,
     createProject,
     updateProject,
     deleteProject,
