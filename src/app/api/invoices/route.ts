@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { generateInvoiceNumber } from '@/lib/invoice-utils';
-import { getUserSubscription } from '@/lib/subscription-enforcement';
+import {
+  getUserSubscription,
+  INVOICE_PRO_ONLY_ERROR_MESSAGE,
+  invoiceMutationAllowedForTier,
+} from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { CreateInvoiceRequest } from '@/types';
 
@@ -85,9 +89,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { tier } = await getUserSubscription(supabase, user.id);
-    if (tier !== 'pro') {
+    if (!invoiceMutationAllowedForTier(tier)) {
       return NextResponse.json(
-        { error: 'Invoicing is available on Pro only.' },
+        { error: INVOICE_PRO_ONLY_ERROR_MESSAGE },
         { status: 403 }
       );
     }

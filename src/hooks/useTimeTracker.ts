@@ -1,7 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 import { useAuth } from '@/contexts/auth-context';
+import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { checkAndHandleUnauthorized } from '@/lib/unauthorized-handler';
 
 export interface TimeEntry {
@@ -62,6 +63,7 @@ export interface UseTimeTrackerReturn {
   // State
   isLoading: boolean;
   error: string | null;
+  timerNotice: string | null;
 }
 
 const STORAGE_KEY = 'orasan_timers';
@@ -69,12 +71,23 @@ const SYNC_INTERVAL = 60 * 1000; // 1 minute
 const UPDATE_INTERVAL = 1000; // 1 second for UI updates
 const STORAGE_SYNC_INTERVAL = 5 * 1000; // 5 seconds for localStorage sync
 
+const READ_ONLY_ENFORCEMENT_NOTICE =
+  'Active timers on read-only projects were stopped. Those projects are view-only on your Free plan when you have more than 2 active projects.';
+
 export function useTimeTracker(): UseTimeTrackerReturn {
   const { user } = useAuth();
+  const freeTier = useFreeTierWritableProjects();
   const [timers, setTimers] = useState<LocalTimer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [timerNotice, setTimerNotice] = useState<string | null>(null);
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timerNoticeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const stopAllTimersRef = useRef<(projectId: string) => Promise<boolean>>(
+    async () => false
+  );
 
   // Helper function to set error with auto-clear timeout
   const setErrorWithTimeout = useCallback((errorMessage: string) => {
@@ -95,15 +108,51 @@ export function useTimeTracker(): UseTimeTrackerReturn {
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const storageSyncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timersRef = useRef<LocalTimer[]>([]);
+  /** Writable check for periodic sync; interval callback is stale, so read `.current`. */
+  const isProjectWritableForSyncRef = useRef<(projectId: string) => boolean>(
+    () => true
+  );
 
   // Derived state
   const activeTimers = timers.filter(timer => timer.isRunning);
   const pausedTimers = timers.filter(timer => timer.isPaused);
 
+  const readOnlyEnforcementKey = useMemo(() => {
+    if (!user) return '';
+    if (freeTier.loading || !freeTier.isFree || !freeTier.overLimit) return '';
+    return timers
+      .filter(
+        t =>
+          (t.isRunning || t.isPaused) &&
+          !freeTier.isProjectWritable(t.projectId)
+      )
+      .map(t => `${t.projectId}:${t.id}`)
+      .sort()
+      .join('|');
+  }, [
+    user,
+    freeTier.loading,
+    freeTier.isFree,
+    freeTier.overLimit,
+    freeTier.isProjectWritable,
+    timers,
+  ]);
+
+  isProjectWritableForSyncRef.current = freeTier.isProjectWritable;
+
   // Update ref whenever timers change
   useEffect(() => {
     timersRef.current = timers;
   }, [timers]);
+
+  useEffect(() => {
+    return () => {
+      if (timerNoticeTimeoutRef.current) {
+        clearTimeout(timerNoticeTimeoutRef.current);
+        timerNoticeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Load timers from localStorage on mount
   useEffect(() => {
@@ -389,6 +438,9 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     try {
       for (const timer of timersRef.current) {
         if (timer.isRunning) {
+          if (!isProjectWritableForSyncRef.current(timer.projectId)) {
+            continue;
+          }
           // Calculate current total duration for running timers
           const currentDuration =
             timer.isRunning && timer.localStartTime
@@ -775,6 +827,58 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers, loadTimersFromDatabase]
   );
 
+  stopAllTimersRef.current = stopAllTimers;
+
+  useEffect(() => {
+    if (!readOnlyEnforcementKey || !user || freeTier.loading) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const projectIds = new Set<string>();
+      for (const t of timersRef.current) {
+        if (
+          (t.isRunning || t.isPaused) &&
+          freeTier.isFree &&
+          freeTier.overLimit &&
+          !freeTier.isProjectWritable(t.projectId)
+        ) {
+          projectIds.add(t.projectId);
+        }
+      }
+      if (projectIds.size === 0 || cancelled) return;
+
+      let anySuccess = false;
+      for (const pid of projectIds) {
+        if (cancelled) return;
+        const ok = await stopAllTimersRef.current(pid);
+        if (ok) anySuccess = true;
+      }
+
+      if (!cancelled && anySuccess) {
+        if (timerNoticeTimeoutRef.current) {
+          clearTimeout(timerNoticeTimeoutRef.current);
+        }
+        setTimerNotice(READ_ONLY_ENFORCEMENT_NOTICE);
+        timerNoticeTimeoutRef.current = setTimeout(() => {
+          setTimerNotice(null);
+          timerNoticeTimeoutRef.current = null;
+        }, 10000);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    readOnlyEnforcementKey,
+    user,
+    freeTier.loading,
+    freeTier.isFree,
+    freeTier.overLimit,
+    freeTier.isProjectWritable,
+  ]);
+
   // Resume timer
   const resumeTimer = useCallback(
     async (taskId: string): Promise<boolean> => {
@@ -1035,5 +1139,6 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     // State
     isLoading,
     error,
+    timerNotice,
   };
 }

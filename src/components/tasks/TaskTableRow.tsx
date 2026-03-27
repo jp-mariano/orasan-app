@@ -12,6 +12,7 @@ import { TimerDisplay } from '@/components/ui/timer-display';
 import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
+import { FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE } from '@/lib/subscription-enforcement';
 import {
   formatDate,
   getAssigneeDisplayName,
@@ -68,13 +69,14 @@ export function TaskTableRow({ task, onDelete, onUpdate }: TaskTableRowProps) {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isReadOnly) return;
     onDelete?.(task);
     setShowActions(false);
   };
 
   const handleMarkAsCompleted = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!onUpdate || task.status === 'completed') return;
+    if (isReadOnly || !onUpdate || task.status === 'completed') return;
     try {
       setIsUpdating(true);
       await onUpdate(task.id, { status: 'completed' });
@@ -167,7 +169,12 @@ export function TaskTableRow({ task, onDelete, onUpdate }: TaskTableRowProps) {
                 <button
                   type="button"
                   onClick={handleMarkAsCompleted}
-                  disabled={isUpdating}
+                  disabled={isReadOnly || isUpdating}
+                  title={
+                    isReadOnly
+                      ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                      : undefined
+                  }
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUpdating ? 'Marking…' : 'Mark as Completed'}
@@ -176,7 +183,13 @@ export function TaskTableRow({ task, onDelete, onUpdate }: TaskTableRowProps) {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                disabled={isReadOnly}
+                title={
+                  isReadOnly
+                    ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                    : undefined
+                }
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Task

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { assertProjectWritableOrThrow } from '@/lib/subscription-enforcement';
+import {
+  assertProjectWritableOrThrow,
+  FREE_TIER_PROJECT_READONLY_API_MESSAGE,
+} from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
@@ -125,8 +128,7 @@ export async function PATCH(
       if (err.code === 'FREE_TIER_PROJECT_READONLY') {
         return NextResponse.json(
           {
-            error:
-              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            error: FREE_TIER_PROJECT_READONLY_API_MESSAGE,
             writable_project_ids: err.writableProjectIds ?? [],
           },
           { status: 403 }
@@ -244,8 +246,7 @@ export async function DELETE(
       if (err.code === 'FREE_TIER_PROJECT_READONLY') {
         return NextResponse.json(
           {
-            error:
-              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            error: FREE_TIER_PROJECT_READONLY_API_MESSAGE,
             writable_project_ids: err.writableProjectIds ?? [],
           },
           { status: 403 }

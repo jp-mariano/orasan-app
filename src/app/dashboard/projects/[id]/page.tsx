@@ -33,6 +33,12 @@ import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
+import { useUser } from '@/hooks/useUser';
+import {
+  FREE_TIER_PROJECT_READONLY_BANNER_BASE,
+  FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE,
+  INVOICE_PRO_ONLY_ERROR_MESSAGE,
+} from '@/lib/subscription-enforcement';
 import { formatDate } from '@/lib/utils';
 import { validateEmail, validatePhone } from '@/lib/validation';
 import { TaskWithDetails } from '@/types';
@@ -74,7 +80,10 @@ export default function ProjectDetailPage() {
 
   const projectId = params.id as string;
   const freeTier = useFreeTierWritableProjects();
+  const { user: userProfile } = useUser();
   const isReadOnly = !freeTier.isProjectWritable(projectId);
+  const isPro = userProfile?.subscription_tier === 'pro';
+  const createInvoiceDisabled = isReadOnly || !isPro;
 
   // Task management
   const {
@@ -481,9 +490,7 @@ export default function ProjectDetailPage() {
 
         {freeTier.isFree && freeTier.overLimit && isReadOnly && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
-            This project is read-only on the Free plan because you have more
-            than 2 active projects. Only your newest 2 active projects are
-            editable.
+            {`${FREE_TIER_PROJECT_READONLY_BANNER_BASE} Only your newest 2 active projects are editable.`}
           </div>
         )}
 
@@ -521,12 +528,20 @@ export default function ProjectDetailPage() {
                         <span>Edit Project</span>
                       </button>
                       <button
+                        type="button"
                         onClick={() => {
                           setShowStopAllTimersModal(true);
                           setShowActions(false);
                         }}
-                        disabled={isReadOnly}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        disabled={createInvoiceDisabled}
+                        title={
+                          isReadOnly
+                            ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                            : !isPro
+                              ? INVOICE_PRO_ONLY_ERROR_MESSAGE
+                              : undefined
+                        }
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span>Create Invoice</span>
                       </button>
@@ -543,11 +558,11 @@ export default function ProjectDetailPage() {
                         </button>
                       </Link>
                       <button
+                        type="button"
                         onClick={() => {
                           setIsDeleteModalOpen(true);
                           setShowActions(false);
                         }}
-                        disabled={isReadOnly}
                         className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -565,6 +580,7 @@ export default function ProjectDetailPage() {
               <Label className="text-sm font-medium text-gray-500">Name</Label>
               <InlineEdit
                 value={project.name}
+                readOnly={isReadOnly}
                 onSave={async value => await handleSaveField('name', value)}
                 onError={error =>
                   setFieldErrors(prev => ({ ...prev, name: error }))
@@ -584,6 +600,7 @@ export default function ProjectDetailPage() {
                   value={project.description}
                   type="textarea"
                   multiline={true}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('description', value)
                   }
@@ -604,6 +621,7 @@ export default function ProjectDetailPage() {
                 </Label>
                 <InlineEdit
                   value={project.client_name}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('client_name', value)
                   }
@@ -624,6 +642,7 @@ export default function ProjectDetailPage() {
                 </Label>
                 <InlineEdit
                   value={project.client_email}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('client_email', value)
                   }
@@ -644,6 +663,7 @@ export default function ProjectDetailPage() {
                 </Label>
                 <InlineEdit
                   value={project.client_address}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('client_address', value)
                   }
@@ -664,6 +684,7 @@ export default function ProjectDetailPage() {
                 </Label>
                 <InlineEdit
                   value={project.client_phone}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('client_phone', value)
                   }
@@ -686,6 +707,7 @@ export default function ProjectDetailPage() {
                   <InlineEdit
                     value={project.rate_type}
                     type="rate-type"
+                    readOnly={isReadOnly}
                     onSave={async value =>
                       await handleSaveField('rate_type', value)
                     }
@@ -704,6 +726,7 @@ export default function ProjectDetailPage() {
                   <InlineEdit
                     value={`${project.currency_code || 'USD'} ${project.price}`}
                     type="price-currency"
+                    readOnly={isReadOnly}
                     onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
@@ -739,6 +762,7 @@ export default function ProjectDetailPage() {
               <InlineEdit
                 value={project.status}
                 type="status"
+                readOnly={isReadOnly}
                 onSave={async value => await handleSaveField('status', value)}
                 onError={error =>
                   setFieldErrors(prev => ({ ...prev, status: error }))
@@ -767,17 +791,18 @@ export default function ProjectDetailPage() {
                 <CardDescription>Manage tasks for this project</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                {activeTimers.some(
-                  timer => timer.isRunning && timer.projectId === projectId
-                ) && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowPauseTimersModal(true)}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
-                  >
-                    Pause Timers
-                  </Button>
-                )}
+                {!isReadOnly &&
+                  activeTimers.some(
+                    timer => timer.isRunning && timer.projectId === projectId
+                  ) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowPauseTimersModal(true)}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 hover:border-yellow-600"
+                    >
+                      Pause Timers
+                    </Button>
+                  )}
                 <Button
                   size="sm"
                   onClick={() => setIsCreateTaskModalOpen(true)}

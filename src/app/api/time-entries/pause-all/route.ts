@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getProjectIdsAllowedForTimeEntryMutation } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -45,7 +46,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validTimers = validTimersRaw || [];
+    let validTimers = validTimersRaw || [];
+
+    const allowedProjectIds = await getProjectIdsAllowedForTimeEntryMutation(
+      supabase,
+      user.id
+    );
+    if (allowedProjectIds !== null) {
+      validTimers = validTimers.filter(
+        t => t.project_id && allowedProjectIds.has(t.project_id)
+      );
+    }
 
     if (validTimers.length === 0) {
       return NextResponse.json({

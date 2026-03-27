@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getProjectIdsAllowedForTimeEntryMutation } from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -45,7 +46,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validTimers = validTimersRaw || [];
+    let validTimers = validTimersRaw || [];
+
+    const allowedProjectIds = await getProjectIdsAllowedForTimeEntryMutation(
+      supabase,
+      user.id
+    );
+    // Free over active-project limit: writable projects always allowed. For
+    // read-only projects, allow stop only for active timers (running/paused),
+    // which this route already validated — same rule as dashboard active timers.
+    if (allowedProjectIds !== null) {
+      validTimers = validTimers.filter(
+        t =>
+          !!t.project_id &&
+          (allowedProjectIds.has(t.project_id) ||
+            t.timer_status === 'running' ||
+            t.timer_status === 'paused')
+      );
+    }
 
     if (validTimers.length === 0) {
       return NextResponse.json({

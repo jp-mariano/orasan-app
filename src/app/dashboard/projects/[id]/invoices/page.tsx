@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
+import { INVOICE_PRO_ONLY_ERROR_MESSAGE } from '@/lib/subscription-enforcement';
 import { formatDate } from '@/lib/utils';
 import { Invoice, Project } from '@/types';
 
@@ -45,6 +46,8 @@ export default function ProjectInvoicesPage() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { stopAllTimers } = useTimeTrackingContext();
+
+  const isPro = userProfile?.subscription_tier === 'pro';
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -228,13 +231,21 @@ export default function ProjectInvoicesPage() {
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Invoices for this project. Click an invoice to view details.
+                  {!isPro && (
+                    <span className="block mt-1">
+                      On the Free plan you can view and download existing
+                      invoices; creating or changing them requires Pro.
+                    </span>
+                  )}
                 </p>
               </div>
               {project && (
                 <Button
+                  type="button"
                   onClick={() => setShowCreateInvoiceConfirm(true)}
                   className="shrink-0"
-                  disabled={userProfile?.subscription_tier !== 'pro'}
+                  disabled={!isPro}
+                  title={!isPro ? INVOICE_PRO_ONLY_ERROR_MESSAGE : undefined}
                 >
                   Create invoice
                 </Button>
@@ -244,7 +255,9 @@ export default function ProjectInvoicesPage() {
           <CardContent>
             {invoices.length === 0 ? (
               <p className="text-muted-foreground py-6">
-                No invoices yet. Create an invoice using the button above.
+                {isPro
+                  ? 'No invoices yet. Create an invoice using the button above.'
+                  : 'No invoices yet. Create invoice is available on Pro only.'}
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -266,7 +279,10 @@ export default function ProjectInvoicesPage() {
                       <th className="text-right py-3 px-4 font-medium">
                         Total
                       </th>
-                      <th className="w-10 py-3 px-4" aria-label="Options" />
+                      <th
+                        className="w-10 py-3 px-4 text-right"
+                        aria-label={isPro ? 'Options' : 'Download PDF'}
+                      />
                     </tr>
                   </thead>
                   <tbody>
@@ -309,72 +325,85 @@ export default function ProjectInvoicesPage() {
                           onClick={e => e.stopPropagation()}
                           onKeyDown={e => e.stopPropagation()}
                         >
-                          <div
-                            ref={openMenuId === inv.id ? menuRef : null}
-                            className="relative inline-block"
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setOpenMenuId(prev =>
-                                  prev === inv.id ? null : inv.id
-                                )
-                              }
-                              disabled={updatingId === inv.id}
-                              className="h-8 w-8 p-0"
-                              aria-label="Invoice options"
+                          {isPro ? (
+                            <div
+                              ref={openMenuId === inv.id ? menuRef : null}
+                              className="relative inline-block"
                             >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                            {openMenuId === inv.id && (
-                              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
-                                {inv.status === 'draft' && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      updateInvoiceStatus(inv.id, 'sent')
-                                    }
-                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
-                                  >
-                                    Mark as Sent
-                                  </button>
-                                )}
-                                {inv.status !== 'paid' &&
-                                  inv.status !== 'cancelled' && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setOpenMenuId(prev =>
+                                    prev === inv.id ? null : inv.id
+                                  )
+                                }
+                                disabled={updatingId === inv.id}
+                                className="h-8 w-8 p-0"
+                                aria-label="Invoice options"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                              {openMenuId === inv.id && (
+                                <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
+                                  {inv.status === 'draft' && (
                                     <button
                                       type="button"
                                       onClick={() =>
-                                        updateInvoiceStatus(inv.id, 'paid')
+                                        updateInvoiceStatus(inv.id, 'sent')
                                       }
                                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
                                     >
-                                      Mark as Paid
+                                      Mark as Sent
                                     </button>
                                   )}
-                                <a
-                                  href={`/api/invoices/${inv.id}/pdf`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-                                  onClick={() => setOpenMenuId(null)}
-                                >
-                                  Download PDF
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setInvoiceToDelete(inv);
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                                  {inv.status !== 'paid' &&
+                                    inv.status !== 'cancelled' && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          updateInvoiceStatus(inv.id, 'paid')
+                                        }
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                                      >
+                                        Mark as Paid
+                                      </button>
+                                    )}
+                                  <a
+                                    href={`/api/invoices/${inv.id}/pdf`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                                    onClick={() => setOpenMenuId(null)}
+                                  >
+                                    Download PDF
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInvoiceToDelete(inv);
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <a
+                              href={`/api/invoices/${inv.id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                              title="Download PDF"
+                            >
+                              Download PDF
+                            </a>
+                          )}
                         </td>
                       </tr>
                     ))}

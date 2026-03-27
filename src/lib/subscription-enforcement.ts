@@ -58,6 +58,48 @@ export async function getFreeTierProjectLimitState(
   return { overLimit, activeProjectCount, writableProjectIds };
 }
 
+/** Free users may not create, update, or delete invoices (view/download unchanged). */
+export function invoiceMutationAllowedForTier(tier: SubscriptionTier): boolean {
+  return tier === 'pro';
+}
+
+export const INVOICE_PRO_ONLY_ERROR_MESSAGE =
+  'Invoicing is available on Pro only.' as const;
+
+/** Tooltips and short disabled reasons when a control is blocked (read-only project on Free). */
+export const FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE =
+  'This project is read-only on the Free plan' as const;
+
+/**
+ * Opening sentence for in-app banners (Free plan + over active-project limit).
+ * Append a space and a page-specific suffix if needed.
+ */
+export const FREE_TIER_PROJECT_READONLY_BANNER_BASE =
+  `${FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE} because you have more than 2 active projects.` as const;
+
+/** `error` field in JSON 403 responses for blocked mutations (API wording uses “tier”). */
+export const FREE_TIER_PROJECT_READONLY_API_MESSAGE =
+  'This project is read-only on the Free tier because you have more than 2 active projects.' as const;
+
+/**
+ * For batch timer mutations: `null` means every project is allowed (Pro, or Free
+ * within active-project limit). Otherwise only IDs in the set may be mutated.
+ */
+export async function getProjectIdsAllowedForTimeEntryMutation(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Set<string> | null> {
+  const { tier } = await getUserSubscription(supabase, userId);
+  if (tier === 'pro') return null;
+
+  const { overLimit, writableProjectIds } = await getFreeTierProjectLimitState(
+    supabase,
+    userId
+  );
+  if (!overLimit) return null;
+  return new Set(writableProjectIds);
+}
+
 export async function assertProjectWritableOrThrow(
   supabase: SupabaseClient,
   userId: string,

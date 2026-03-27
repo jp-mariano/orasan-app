@@ -8,8 +8,17 @@
 - 📁 **Project Management**: Organize tasks within projects
 - 🔒 **Privacy First**: Row-level security with Supabase
 - 📱 **Offline Capable**: Works without internet, syncs when connection is restored
-- 💰 **Subscription Ready**: Free / Pro tiers (Freemius integration planned)
+- 💰 **Subscriptions**: Free / Pro tiers (Freemius)
 - 🎨 **Modern UI**: Built with shadcn/ui and Tailwind CSS
+
+## Subscription (Free vs Pro)
+
+- **Pro** — Full project, task, and time-entry mutations; create and edit invoices (including status changes and delete).
+- **Free — active project limit** — With **at most two** active (non-completed) projects, **all** of them are writable. With **more than two** active projects, only the **two newest** (by `created_at`) stay writable; **older** active projects are **read-only** (view history and data, **delete project** still allowed; no other writes on those projects).
+- **Free — invoices** — View lists, open details, and **download PDFs**. Creating or changing invoices requires Pro.
+- **Free — timers on read-only projects** — Users cannot start, resume, pause, or stop timers from the UI on read-only projects. If a session is still running or paused when a project becomes read-only, the app **stops those timers** via the batch stop API and may show a short in-app notice.
+
+Server and shared rules live in `src/lib/subscription-enforcement.ts` (e.g. `assertProjectWritableOrThrow`, `invoiceMutationAllowedForTier`, Free-tier writable project resolution).
 
 ## Tech Stack
 

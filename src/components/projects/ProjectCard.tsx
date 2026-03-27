@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { formatPrice } from '@/lib/currencies';
 import { getStatusColor, getStatusLabel } from '@/lib/status';
+import { FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE } from '@/lib/subscription-enforcement';
 import { formatDate, truncateTextSmart } from '@/lib/utils';
 import { Project } from '@/types/index';
 
@@ -118,7 +119,6 @@ export function ProjectCard({
                   e.stopPropagation(); // Prevent card click when clicking options
                   setShowActions(!showActions);
                 }}
-                disabled={isReadOnly}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -132,7 +132,12 @@ export function ProjectCard({
                         e.stopPropagation();
                         handleMarkAsCompleted();
                       }}
-                      disabled={isUpdating}
+                      disabled={isReadOnly || isUpdating}
+                      title={
+                        isReadOnly
+                          ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                          : undefined
+                      }
                       className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>

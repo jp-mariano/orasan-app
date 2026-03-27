@@ -37,6 +37,10 @@ import { useFreeTierWritableProjects } from '@/hooks/useFreeTierWritableProjects
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerActions } from '@/hooks/useTimerActions';
 import { useUser } from '@/hooks/useUser';
+import {
+  FREE_TIER_PROJECT_READONLY_BANNER_BASE,
+  FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE,
+} from '@/lib/subscription-enforcement';
 import { getTimerStatusColorClass, getTimerStatusText } from '@/lib/timer-ui';
 import { formatDate, formatDuration } from '@/lib/utils';
 import { ProjectStatus, TaskWithDetails, TimeEntry } from '@/types';
@@ -336,6 +340,12 @@ export default function TaskDetailPage() {
           </div>
         )}
 
+        {freeTier.isFree && freeTier.overLimit && isReadOnly && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+            {`${FREE_TIER_PROJECT_READONLY_BANNER_BASE} You can view this task and its time history, but you cannot edit or track new time here until you upgrade or free a slot.`}
+          </div>
+        )}
+
         {/* Task Details Card */}
         <Card>
           <CardHeader>
@@ -360,20 +370,36 @@ export default function TaskDetailPage() {
                   {showActions && (
                     <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[130px]">
                       <button
+                        type="button"
                         onClick={() => {
+                          if (isReadOnly) return;
                           setIsEditModalOpen(true);
                           setShowActions(false);
                         }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        disabled={isReadOnly}
+                        title={
+                          isReadOnly
+                            ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                            : undefined
+                        }
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span>Edit Task</span>
                       </button>
                       <button
+                        type="button"
                         onClick={() => {
+                          if (isReadOnly) return;
                           handleDeleteTask();
                           setShowActions(false);
                         }}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600"
+                        disabled={isReadOnly}
+                        title={
+                          isReadOnly
+                            ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                            : undefined
+                        }
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-red-50 text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Trash2 className="h-4 w-4" />
                         <span>Delete</span>
@@ -393,6 +419,7 @@ export default function TaskDetailPage() {
               </Label>
               <InlineEdit
                 value={task.name}
+                readOnly={isReadOnly}
                 onSave={async value => await handleSaveField('name', value)}
                 onError={error =>
                   setFieldErrors(prev => ({ ...prev, name: error }))
@@ -410,6 +437,7 @@ export default function TaskDetailPage() {
                 </Label>
                 <InlineEdit
                   value={task.description}
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('description', value)
                   }
@@ -433,6 +461,7 @@ export default function TaskDetailPage() {
                 <InlineEdit
                   value={task.due_date}
                   type="due-date"
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('due_date', value)
                   }
@@ -455,6 +484,7 @@ export default function TaskDetailPage() {
                 <InlineEdit
                   value={task.assignee}
                   type="assignee"
+                  readOnly={isReadOnly}
                   onSave={async value =>
                     await handleSaveField('assignee', value)
                   }
@@ -496,6 +526,7 @@ export default function TaskDetailPage() {
                   <InlineEdit
                     value={task.rate_type}
                     type="rate-type"
+                    readOnly={isReadOnly}
                     onSave={async value =>
                       await handleSaveField('rate_type', value)
                     }
@@ -517,6 +548,7 @@ export default function TaskDetailPage() {
                     }`}
                     type="price-currency"
                     currencyReadOnly
+                    readOnly={isReadOnly}
                     onSave={async value => {
                       // Parse the combined value format "USD|50.00"
                       if (typeof value === 'string' && value.includes('|')) {
@@ -551,6 +583,7 @@ export default function TaskDetailPage() {
               <InlineEdit
                 value={task.priority}
                 type="priority"
+                readOnly={isReadOnly}
                 onSave={async value => await handleSaveField('priority', value)}
                 onError={error =>
                   setFieldErrors(prev => ({ ...prev, priority: error }))
@@ -568,6 +601,7 @@ export default function TaskDetailPage() {
               <InlineEdit
                 value={task.status}
                 type="status"
+                readOnly={isReadOnly}
                 onSave={async value => await handleSaveField('status', value)}
                 onError={error =>
                   setFieldErrors(prev => ({ ...prev, status: error }))
@@ -612,9 +646,10 @@ export default function TaskDetailPage() {
                     isTaskCompleted
                       ? 'Time entries are locked for completed tasks'
                       : isReadOnly
-                        ? 'This project is read-only on the Free plan'
+                        ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
                         : 'Add time entry'
                   }
+                  type="button"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Time Entry
@@ -752,48 +787,52 @@ export default function TaskDetailPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    type="button"
                                     className="h-8 w-8 p-0"
                                     onClick={() =>
                                       setOpenTimeEntryMenuId(prev =>
                                         prev === entry.id ? null : entry.id
                                       )
                                     }
-                                    disabled={isTaskCompleted}
+                                    disabled={isTaskCompleted || isReadOnly}
                                     aria-label="Time entry options"
                                     title={
                                       isTaskCompleted
                                         ? 'Time entries are locked for completed tasks'
-                                        : 'Time entry options'
+                                        : isReadOnly
+                                          ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                                          : 'Time entry options'
                                     }
                                   >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
-                                  {openTimeEntryMenuId === entry.id && (
-                                    <div className="absolute right-0 top-full z-10 mt-1 min-w-[170px] rounded-md border bg-white py-1 shadow-lg">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setOpenTimeEntryMenuId(null);
-                                          setTimeEntryToEdit(entry);
-                                          setShowEditEntryModal(true);
-                                        }}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
-                                      >
-                                        Edit Timer
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setTimeEntryToDelete(entry);
-                                          setOpenTimeEntryMenuId(null);
-                                        }}
-                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                        Delete Time Entry
-                                      </button>
-                                    </div>
-                                  )}
+                                  {openTimeEntryMenuId === entry.id &&
+                                    !isReadOnly && (
+                                      <div className="absolute right-0 top-full z-10 mt-1 min-w-[170px] rounded-md border bg-white py-1 shadow-lg">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setOpenTimeEntryMenuId(null);
+                                            setTimeEntryToEdit(entry);
+                                            setShowEditEntryModal(true);
+                                          }}
+                                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                                        >
+                                          Edit Timer
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setTimeEntryToDelete(entry);
+                                            setOpenTimeEntryMenuId(null);
+                                          }}
+                                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          Delete Time Entry
+                                        </button>
+                                      </div>
+                                    )}
                                 </div>
                               </td>
                             </tr>
@@ -802,6 +841,12 @@ export default function TaskDetailPage() {
                     </tbody>
                   </table>
                 </div>
+                {isReadOnly && timeEntries.length > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Time entries are view-only for this project on your current
+                    plan.
+                  </p>
+                )}
                 {timeEntries.length > TIME_ENTRIES_PER_PAGE && (
                   <div className="mt-4 flex items-center justify-end gap-2">
                     <Button
@@ -886,7 +931,7 @@ export default function TaskDetailPage() {
         isDeleting={isDeletingTimeEntry}
       />
 
-      {!isTaskCompleted && (
+      {!isTaskCompleted && !isReadOnly && (
         <EditTimeEntryModal
           open={showEditEntryModal}
           onOpenChange={open => {
@@ -898,7 +943,7 @@ export default function TaskDetailPage() {
         />
       )}
 
-      {!isTaskCompleted && task && (
+      {!isTaskCompleted && !isReadOnly && task && (
         <CreateTimeEntryModal
           open={showCreateEntryModal}
           onOpenChange={setShowCreateEntryModal}

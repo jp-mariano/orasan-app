@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { assertProjectWritableOrThrow } from '@/lib/subscription-enforcement';
+import {
+  assertProjectWritableOrThrow,
+  FREE_TIER_PROJECT_READONLY_API_MESSAGE,
+} from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { validatePricingConsistency } from '@/lib/utils';
 import { UpdateProjectData } from '@/types/projects';
@@ -73,8 +76,7 @@ export async function PATCH(
       if (err.code === 'FREE_TIER_PROJECT_READONLY') {
         return NextResponse.json(
           {
-            error:
-              'This project is read-only on the Free tier because you have more than 2 active projects.',
+            error: FREE_TIER_PROJECT_READONLY_API_MESSAGE,
             writable_project_ids: err.writableProjectIds ?? [],
           },
           { status: 403 }
@@ -212,22 +214,7 @@ export async function DELETE(
 
     const { id: projectId } = await params;
 
-    try {
-      await assertProjectWritableOrThrow(supabase, user.id, projectId);
-    } catch (e) {
-      const err = e as Error & { code?: string; writableProjectIds?: string[] };
-      if (err.code === 'FREE_TIER_PROJECT_READONLY') {
-        return NextResponse.json(
-          {
-            error:
-              'This project is read-only on the Free tier because you have more than 2 active projects.',
-            writable_project_ids: err.writableProjectIds ?? [],
-          },
-          { status: 403 }
-        );
-      }
-      throw e;
-    }
+    // Free-tier read-only does not block project deletion (user can remove excess projects).
 
     // First check if the project exists and belongs to the user
     const { data: existingProject, error: fetchError } = await supabase

@@ -172,71 +172,96 @@ export default function InvoiceDetailPage() {
   const startIdx = (currentPage - 1) * INVOICE_ITEMS_PER_PAGE;
   const pageItems = items.slice(startIdx, startIdx + INVOICE_ITEMS_PER_PAGE);
   const isLastPage = currentPage === totalPages;
+  const isPro = profile?.subscription_tier === 'pro';
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Breadcrumb
-            items={[
-              { label: 'Dashboard', href: '/dashboard' },
-              { label: projectName, href: `/dashboard/projects/${projectId}` },
-              {
-                label: 'Invoices',
-                href: `/dashboard/projects/${projectId}/invoices`,
-              },
-              {
-                label: `Invoice ${invoice.invoice_number}`,
-                href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
-              },
-            ]}
-          />
-          <div className="relative shrink-0" ref={optionsMenuRef}>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-              className="h-9 w-9"
-              aria-label="Invoice options"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-            {showOptionsMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
-                <button
+        <div className="mb-6 space-y-2">
+          <div className="flex items-center justify-between gap-4">
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/dashboard' },
+                {
+                  label: projectName,
+                  href: `/dashboard/projects/${projectId}`,
+                },
+                {
+                  label: 'Invoices',
+                  href: `/dashboard/projects/${projectId}/invoices`,
+                },
+                {
+                  label: `Invoice ${invoice.invoice_number}`,
+                  href: `/dashboard/projects/${projectId}/invoices/${invoiceId}`,
+                },
+              ]}
+            />
+            {isPro ? (
+              <div className="relative shrink-0" ref={optionsMenuRef}>
+                <Button
                   type="button"
-                  onClick={() => {
-                    setIsEditModalOpen(true);
-                    setShowOptionsMenu(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                  className="h-9 w-9"
+                  aria-label="Invoice options"
                 >
-                  Edit
-                </button>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+                {showOptionsMenu && (
+                  <div className="absolute right-0 top-full z-10 mt-1 min-w-[130px] rounded-md border bg-white py-1 shadow-lg">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(true);
+                        setShowOptionsMenu(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100"
+                    >
+                      Edit
+                    </button>
+                    <a
+                      href={`/api/invoices/${invoiceId}/pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setShowOptionsMenu(false)}
+                    >
+                      Download PDF
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDeleteModal(true);
+                        setShowOptionsMenu(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Button variant="outline" asChild className="shrink-0">
                 <a
                   href={`/api/invoices/${invoiceId}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100"
-                  onClick={() => setShowOptionsMenu(false)}
                 >
                   Download PDF
                 </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDeleteModal(true);
-                    setShowOptionsMenu(false);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete
-                </button>
-              </div>
+              </Button>
             )}
           </div>
+          {!isPro && (
+            <p className="text-sm text-muted-foreground">
+              On the Free plan you can view and download this invoice. Editing
+              and deleting require Pro.
+            </p>
+          )}
         </div>
 
         {currentPage === 1 && (
@@ -414,20 +439,24 @@ export default function InvoiceDetailPage() {
           </div>
         )}
 
-        <EditInvoiceModal
-          open={isEditModalOpen}
-          onOpenChange={setIsEditModalOpen}
-          invoice={invoice}
-          onSaved={() => setRefreshTrigger(prev => prev + 1)}
-        />
+        {isPro && (
+          <>
+            <EditInvoiceModal
+              open={isEditModalOpen}
+              onOpenChange={setIsEditModalOpen}
+              invoice={invoice}
+              onSaved={() => setRefreshTrigger(prev => prev + 1)}
+            />
 
-        <DeleteInvoiceModal
-          open={showDeleteModal}
-          onOpenChange={setShowDeleteModal}
-          invoice={invoice}
-          onConfirmDelete={handleConfirmDeleteInvoice}
-          isDeleting={isDeleting}
-        />
+            <DeleteInvoiceModal
+              open={showDeleteModal}
+              onOpenChange={setShowDeleteModal}
+              invoice={invoice}
+              onConfirmDelete={handleConfirmDeleteInvoice}
+              isDeleting={isDeleting}
+            />
+          </>
+        )}
       </div>
     </div>
   );

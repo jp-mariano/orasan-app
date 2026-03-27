@@ -34,6 +34,8 @@ interface TimeTrackingContextType {
   // State
   isLoading: boolean;
   error: string | null;
+  /** Short-lived notice (e.g. read-only enforcement stopped timers). */
+  timerNotice: string | null;
 }
 
 const TimeTrackingContext = createContext<TimeTrackingContextType | undefined>(

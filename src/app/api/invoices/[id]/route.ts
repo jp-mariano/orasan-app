@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  getUserSubscription,
+  INVOICE_PRO_ONLY_ERROR_MESSAGE,
+  invoiceMutationAllowedForTier,
+} from '@/lib/subscription-enforcement';
 import { createClient } from '@/lib/supabase/server';
 import { UpdateInvoiceRequest } from '@/types';
 
@@ -74,6 +79,14 @@ export async function PUT(
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (!invoiceMutationAllowedForTier(tier)) {
+      return NextResponse.json(
+        { error: INVOICE_PRO_ONLY_ERROR_MESSAGE },
+        { status: 403 }
+      );
     }
 
     const { id: invoiceId } = await params;
@@ -383,6 +396,14 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (!invoiceMutationAllowedForTier(tier)) {
+      return NextResponse.json(
+        { error: INVOICE_PRO_ONLY_ERROR_MESSAGE },
+        { status: 403 }
+      );
+    }
+
     const { id: invoiceId } = await params;
     const body = await request.json();
     const newStatus = body?.status as string | undefined;
@@ -460,6 +481,14 @@ export async function DELETE(
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { tier } = await getUserSubscription(supabase, user.id);
+    if (!invoiceMutationAllowedForTier(tier)) {
+      return NextResponse.json(
+        { error: INVOICE_PRO_ONLY_ERROR_MESSAGE },
+        { status: 403 }
+      );
     }
 
     const { id: invoiceId } = await params;

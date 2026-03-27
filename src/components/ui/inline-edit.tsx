@@ -106,6 +106,8 @@ interface InlineEditProps {
   };
   /** When true and type is price-currency, currency is shown read-only (e.g. task uses project currency) */
   currencyReadOnly?: boolean;
+  /** When true, value is shown but the user cannot enter edit mode (e.g. Free tier read-only project). */
+  readOnly?: boolean;
   assigneeData?: {
     users: User[];
     currentUserId?: string;
@@ -125,6 +127,7 @@ export function InlineEdit({
   error,
   projectData,
   currencyReadOnly = false,
+  readOnly = false,
   assigneeData,
 }: InlineEditProps) {
   // Consolidated state management
@@ -168,6 +171,11 @@ export function InlineEdit({
       });
     }
   }, [value, type]);
+
+  useEffect(() => {
+    if (!readOnly) return;
+    setState(prev => (prev.isEditing ? { ...prev, isEditing: false } : prev));
+  }, [readOnly]);
 
   const handleSave = async () => {
     try {
@@ -280,6 +288,7 @@ export function InlineEdit({
   );
 
   const handleStartEdit = () => {
+    if (readOnly) return;
     // Clear any existing error when starting a new edit
     if (onError && error) {
       onError('');
@@ -287,7 +296,7 @@ export function InlineEdit({
     updateState({ isEditing: true });
   };
 
-  if (isEditing) {
+  if (isEditing && !readOnly) {
     if (type === 'rate-type') {
       return wrapWithError(
         <div className="flex items-center space-x-2">
@@ -643,8 +652,8 @@ export function InlineEdit({
   if (type === 'status' && value) {
     return wrapWithError(
       <div
-        onClick={handleStartEdit}
-        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Status)} ${className}`}
+        onClick={readOnly ? undefined : handleStartEdit}
+        className={`${readOnly ? 'cursor-default' : 'cursor-pointer'} inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getStatusColor(value as Status)} ${className}`}
       >
         {getStatusLabel(value as Status)}
       </div>
@@ -655,8 +664,8 @@ export function InlineEdit({
   if (type === 'priority' && value) {
     return wrapWithError(
       <div
-        onClick={handleStartEdit}
-        className={`cursor-pointer inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getPriorityColor(value as Priority)} ${className}`}
+        onClick={readOnly ? undefined : handleStartEdit}
+        className={`${readOnly ? 'cursor-default' : 'cursor-pointer'} inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium ${getPriorityColor(value as Priority)} ${className}`}
       >
         {getPriorityLabel(value as Priority)}
       </div>
@@ -674,8 +683,8 @@ export function InlineEdit({
     if (displayName) {
       return wrapWithError(
         <div
-          onClick={handleStartEdit}
-          className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] flex items-center ${
+          onClick={readOnly ? undefined : handleStartEdit}
+          className={`${readOnly ? 'cursor-default' : 'cursor-pointer'} border rounded px-3 py-2 min-h-[40px] flex items-center ${
             error ? 'border-red-500' : 'border-gray-200'
           } ${className}`}
         >
@@ -693,8 +702,8 @@ export function InlineEdit({
     if (isValidDate) {
       return wrapWithError(
         <div
-          onClick={handleStartEdit}
-          className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] flex items-center ${
+          onClick={readOnly ? undefined : handleStartEdit}
+          className={`${readOnly ? 'cursor-default' : 'cursor-pointer'} border rounded px-3 py-2 min-h-[40px] flex items-center ${
             error ? 'border-red-500' : 'border-gray-200'
           } ${className}`}
         >
@@ -706,8 +715,8 @@ export function InlineEdit({
 
   return wrapWithError(
     <div
-      onClick={handleStartEdit}
-      className={`cursor-pointer border rounded px-3 py-2 min-h-[40px] ${
+      onClick={readOnly ? undefined : handleStartEdit}
+      className={`${readOnly ? 'cursor-default' : 'cursor-pointer'} border rounded px-3 py-2 min-h-[40px] ${
         error ? 'border-red-500' : 'border-gray-200'
       } ${multiline || type === 'textarea' ? 'whitespace-pre-wrap' : 'flex items-center'} ${className}`}
     >
