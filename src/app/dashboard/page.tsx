@@ -65,8 +65,9 @@ export default function DashboardPage() {
   const readOnlyProjectIds = useMemo(() => {
     if (!freeTier.isFree || !freeTier.overLimit) return new Set<string>();
     const writable = new Set(freeTier.writableProjectIds);
-    const active = projects.filter(p => p.status !== 'completed');
-    return new Set(active.filter(p => !writable.has(p.id)).map(p => p.id));
+    // Match server: writable IDs are the two newest *active* projects; every other
+    // project (including completed) is read-only for mutations, so show the badge.
+    return new Set(projects.filter(p => !writable.has(p.id)).map(p => p.id));
   }, [
     freeTier.isFree,
     freeTier.overLimit,
