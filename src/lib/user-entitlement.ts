@@ -109,12 +109,16 @@ async function applyPurchaseToUserEntitlement({
   }
 
   // Derive app tier/status for enforcement.
+  // Pro is valid only until the expiration instant (strict `>`): paid through every
+  // moment before `expiration`, then downgrade regardless of `is_canceled` (Freemius may
+  // keep is_cancelled false on an expired license).
   const now = new Date();
   const expirationDate = expiration ? new Date(expiration) : null;
+  const expirationValid =
+    expirationDate !== null && !Number.isNaN(expirationDate.getTime());
   const isRefunded = isRefundedFlag;
   const isActiveEntitlement =
-    !isRefunded &&
-    (!is_canceled || (expirationDate !== null && expirationDate > now));
+    !isRefunded && expirationValid && expirationDate > now;
 
   const subscription_tier = isActiveEntitlement ? 'pro' : 'free';
   const subscription_status = isActiveEntitlement
