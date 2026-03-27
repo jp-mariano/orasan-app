@@ -25,11 +25,17 @@ export function useUser(): UseUserReturn {
       const response = await fetch('/api/users');
       const data = await response.json();
 
-      // Check for unauthorized errors before processing response
       if (!response.ok) {
+        // 401 = not signed in (expected on /auth/* and anywhere without a session).
+        // Do not run checkAndHandleUnauthorized — it hard-redirects to sign-in and
+        // causes an infinite reload loop when already on the sign-in page.
+        if (response.status === 401) {
+          setUser(null);
+          return;
+        }
         const handled = await checkAndHandleUnauthorized(response);
         if (handled) {
-          return; // User will be redirected, no need to continue
+          return;
         }
         throw new Error(data.error || 'Failed to fetch user data');
       }
