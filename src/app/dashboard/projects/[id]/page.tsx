@@ -85,6 +85,10 @@ export default function ProjectDetailPage() {
   const isPro = userProfile?.subscription_tier === 'pro';
   const createInvoiceDisabled = isReadOnly || !isPro;
 
+  useEffect(() => {
+    if (isReadOnly) setIsEditModalOpen(false);
+  }, [isReadOnly]);
+
   // Task management
   const {
     tasks,
@@ -518,12 +522,19 @@ export default function ProjectDetailPage() {
                   {showActions && (
                     <div className="absolute right-0 top-8 bg-white border rounded-md shadow-lg z-10 py-1 min-w-[130px]">
                       <button
+                        type="button"
                         onClick={() => {
+                          if (isReadOnly) return;
                           setIsEditModalOpen(true);
                           setShowActions(false);
                         }}
                         disabled={isReadOnly}
-                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100"
+                        title={
+                          isReadOnly
+                            ? FREE_TIER_PROJECT_READONLY_SHORT_MESSAGE
+                            : undefined
+                        }
+                        className="flex items-center space-x-2 w-full px-3 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span>Edit Project</span>
                       </button>
@@ -836,7 +847,7 @@ export default function ProjectDetailPage() {
 
       {/* Edit Project Modal */}
       <ProjectModal
-        open={isEditModalOpen}
+        open={isEditModalOpen && !isReadOnly}
         onOpenChange={setIsEditModalOpen}
         project={project}
         onUpdateProject={handleUpdateProject}
