@@ -5,6 +5,7 @@ import { PortalData } from '@freemius/sdk';
 import { useLocale } from '../utils/locale';
 import { BillingItem } from './billing-item';
 import { Button } from '@/components/ui/button';
+import { billingPhoneAsString } from '../utils/billing-phone';
 
 export function BillingInfo(props: {
   billing: NonNullable<PortalData['billing']>;
@@ -39,7 +40,7 @@ export function BillingInfo(props: {
           label={locale.portal.billing.label.phone()}
           value={
             <code className="font-mono tracking-wide">
-              {billing.phone ?? ''}
+              {billingPhoneAsString(billing.phone)}
             </code>
           }
         />
