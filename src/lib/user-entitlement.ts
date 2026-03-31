@@ -265,13 +265,17 @@ type SdkEntitlementRecord = {
 
 async function getUserEntitlement(userId: string) {
   const admin = createAdminClient();
+  // Drop expired and refunded rows in the query so freemius.entitlement.getActive
+  // never sees stale sibling licenses (e.g. resubscribe without license.deleted).
   const { data, error } = await admin
     .from('user_fs_entitlement')
     .select(
       'fs_license_id, fs_plan_id, fs_pricing_id, fs_user_id, entitlement_type, expiration, is_canceled, created_at, refunded_at'
     )
     .eq('user_id', userId)
-    .eq('entitlement_type', 'subscription');
+    .eq('entitlement_type', 'subscription')
+    .is('refunded_at', null)
+    .gt('expiration', new Date().toISOString());
 
   if (error) {
     throw new Error(`Failed to fetch entitlements: ${error.message}`);
