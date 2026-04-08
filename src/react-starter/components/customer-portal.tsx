@@ -127,8 +127,6 @@ export function CustomerPortalUi(props: {
       {portalData.subscriptions.primary ? (
         <PrimarySubscription
           subscription={portalData.subscriptions.primary}
-          plans={portalData.plans}
-          sellingUnit={portalData.sellingUnit}
           cancellationCoupons={portalData.cancellationCoupons}
           afterCancel={refresh}
           afterCouponApplied={refresh}

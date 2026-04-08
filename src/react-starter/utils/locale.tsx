@@ -31,31 +31,6 @@ export const defaultLocale = {
     action: {
       reactivate: () => <>Reactivate subscription</>,
       cancel: () => <>Cancel subscription</>,
-      update: () => <>Update subscription</>,
-      amount: (formattedAmount: string, period: string) => (
-        <>
-          {formattedAmount} / {period}
-        </>
-      ),
-      amountFrom: (formattedAmount: string, period: string) => (
-        <>
-          From {formattedAmount} / {period}
-        </>
-      ),
-      pricingTitle: (
-        formattedLicenses: string,
-        count: number,
-        sellingUnit: SellingUnit
-      ) => {
-        const unit = count === 1 ? sellingUnit.singular : sellingUnit.plural;
-
-        return (
-          <>
-            {formattedLicenses} {unit}
-          </>
-        );
-      },
-      current: () => <>Current subscription</>,
     },
     payment: {
       info: (method: PaymentMethod) => {

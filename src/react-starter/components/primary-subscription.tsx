@@ -9,20 +9,12 @@ import { SubscriptionInfo } from './subscription-info';
 
 export function PrimarySubscription(props: {
   subscription: NonNullable<PortalData['subscriptions']['primary']>;
-  plans: PortalData['plans'];
-  sellingUnit: PortalData['sellingUnit'];
   cancellationCoupons?: PortalData['cancellationCoupons'];
   afterCancel?: () => void;
   afterCouponApplied?: () => void;
 }) {
-  const {
-    subscription,
-    plans,
-    sellingUnit,
-    cancellationCoupons,
-    afterCancel,
-    afterCouponApplied,
-  } = props;
+  const { subscription, cancellationCoupons, afterCancel, afterCouponApplied } =
+    props;
   const [isCancelling, setIsCancelling] = React.useState<boolean>(false);
   const locale = useLocale();
 
@@ -41,8 +33,6 @@ export function PrimarySubscription(props: {
         <SubscriptionInfo
           onCancel={() => setIsCancelling(true)}
           subscription={subscription}
-          plans={plans}
-          sellingUnit={sellingUnit}
         />
       )}
     </div>
