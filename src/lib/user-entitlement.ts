@@ -67,7 +67,7 @@ async function applyPurchaseToUserEntitlement({
       getProp(fsPurchase, 'is_canceled') ?? getProp(fsPurchase, 'is_cancelled')
     );
 
-  const refunded_at =
+  const incomingRefundedAt =
     coerceFreemiusInstant(
       getProp(recordFromSdk, 'refundedAt') ??
         getProp(recordFromSdk, 'refunded_at') ??
@@ -79,19 +79,37 @@ async function applyPurchaseToUserEntitlement({
     throw new Error('Freemius purchase data missing required identifiers');
   }
 
+  const fsLicenseIdStr = String(fs_license_id);
+  const admin = createAdminClient();
+
+  // Purchase payloads often omit refunded_at after a refund; preserve DB value set by
+  // payment.refund (or a prior sync) so license.* webhooks do not clear it.
+  const { data: existingEntitlement, error: existingRefundError } = await admin
+    .from('user_fs_entitlement')
+    .select('refunded_at')
+    .eq('fs_license_id', fsLicenseIdStr)
+    .maybeSingle();
+
+  if (existingRefundError) {
+    throw new Error(
+      `Failed to load existing entitlement: ${existingRefundError.message}`
+    );
+  }
+
+  const mergedRefundedAt =
+    incomingRefundedAt ?? existingEntitlement?.refunded_at ?? null;
+
   const entitlementRow: EntitlementRecord = {
     user_id: userId,
-    fs_license_id: String(fs_license_id),
+    fs_license_id: fsLicenseIdStr,
     fs_plan_id: String(fs_plan_id),
     fs_pricing_id: String(fs_pricing_id),
     fs_user_id: String(fs_user_id),
     entitlement_type: String(entitlement_type),
     expiration,
     is_canceled,
-    refunded_at,
+    refunded_at: mergedRefundedAt,
   };
-
-  const admin = createAdminClient();
 
   const { error: upsertError } = await admin
     .from('user_fs_entitlement')
