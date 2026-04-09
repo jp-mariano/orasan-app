@@ -31,11 +31,12 @@ function getProp(obj: unknown, key: string): unknown {
   return isRecord(obj) ? obj[key] : undefined;
 }
 
-function coerceIsoOrNull(value: unknown): string | null {
+/** Normalizes Freemius date strings (e.g. webhook `created` / `updated`) to ISO for DB storage. */
+export function coerceFreemiusInstant(value: unknown): string | null {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'string') {
-    const d = new Date(value);
+    const d = new Date(value.includes('T') ? value : value.replace(' ', 'T'));
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
   }
   return null;
@@ -55,7 +56,7 @@ async function applyPurchaseToUserEntitlement({
   const fs_user_id = recordFromSdk.fsUserId || fsPurchase.userId;
   const entitlement_type = recordFromSdk.type;
 
-  const expiration = coerceIsoOrNull(
+  const expiration = coerceFreemiusInstant(
     recordFromSdk.expiration ?? fsPurchase.expiration
   );
 
@@ -67,20 +68,12 @@ async function applyPurchaseToUserEntitlement({
     );
 
   const refunded_at =
-    coerceIsoOrNull(
+    coerceFreemiusInstant(
       getProp(recordFromSdk, 'refundedAt') ??
         getProp(recordFromSdk, 'refunded_at') ??
         getProp(fsPurchase, 'refundedAt') ??
         getProp(fsPurchase, 'refunded_at')
     ) ?? null;
-
-  const isRefundedFlag = Boolean(
-    refunded_at ??
-      getProp(recordFromSdk, 'isRefunded') ??
-      getProp(recordFromSdk, 'is_refunded') ??
-      getProp(fsPurchase, 'isRefunded') ??
-      getProp(fsPurchase, 'is_refunded')
-  );
 
   if (!fs_license_id || !fs_plan_id || !fs_pricing_id || !fs_user_id) {
     throw new Error('Freemius purchase data missing required identifiers');
@@ -108,17 +101,27 @@ async function applyPurchaseToUserEntitlement({
     throw new Error(`Failed to upsert entitlement: ${upsertError.message}`);
   }
 
-  // Derive app tier/status for enforcement.
-  // Pro is valid only until the expiration instant (strict `>`): paid through every
-  // moment before `expiration`, then downgrade regardless of `is_canceled` (Freemius may
-  // keep is_cancelled false on an expired license).
+  await updateUserSubscriptionTierFromExpiration(
+    userId,
+    expiration,
+    is_canceled
+  );
+}
+
+/**
+ * Pro access follows license expiration only. `refunded_at` is stored for audit/support;
+ * a refund does not revoke Pro until `expiration` is past (see sync + webhooks).
+ */
+async function updateUserSubscriptionTierFromExpiration(
+  userId: string,
+  expiration: string | null,
+  is_canceled: boolean
+): Promise<void> {
   const now = new Date();
   const expirationDate = expiration ? new Date(expiration) : null;
   const expirationValid =
     expirationDate !== null && !Number.isNaN(expirationDate.getTime());
-  const isRefunded = isRefundedFlag;
-  const isActiveEntitlement =
-    !isRefunded && expirationValid && expirationDate > now;
+  const isActiveEntitlement = expirationValid && expirationDate > now;
 
   const subscription_tier = isActiveEntitlement ? 'pro' : 'free';
   const subscription_status = isActiveEntitlement
@@ -127,6 +130,7 @@ async function applyPurchaseToUserEntitlement({
       : 'active'
     : 'inactive';
 
+  const admin = createAdminClient();
   const { error: userUpdateError } = await admin
     .from('users')
     .update({
@@ -193,6 +197,27 @@ export async function syncEntitlementFromWebhook(
     userId: existing.user_id,
     fsPurchase: purchaseInfo,
   });
+}
+
+/**
+ * After a Freemius `payment.refund` webhook: refresh entitlement from the API, then set
+ * `refunded_at` from the webhook (API may omit it). Tier is derived only from expiration.
+ */
+export async function applyPaymentRefundWebhook(
+  fsLicenseId: string,
+  refundedAtIso: string
+): Promise<void> {
+  await syncEntitlementFromWebhook(fsLicenseId);
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from('user_fs_entitlement')
+    .update({ refunded_at: refundedAtIso })
+    .eq('fs_license_id', fsLicenseId);
+
+  if (error) {
+    throw new Error(`Failed to record refund timestamp: ${error.message}`);
+  }
 }
 
 export async function deleteEntitlement(fsLicenseId: string): Promise<void> {
@@ -265,8 +290,8 @@ type SdkEntitlementRecord = {
 
 async function getUserEntitlement(userId: string) {
   const admin = createAdminClient();
-  // Drop expired and refunded rows in the query so freemius.entitlement.getActive
-  // never sees stale sibling licenses (e.g. resubscribe without license.deleted).
+  // Drop expired rows only. Refunded-but-not-expired licenses stay eligible for portal
+  // until expiration (refund is audit-only in `refunded_at`).
   const { data, error } = await admin
     .from('user_fs_entitlement')
     .select(
@@ -274,7 +299,6 @@ async function getUserEntitlement(userId: string) {
     )
     .eq('user_id', userId)
     .eq('entitlement_type', 'subscription')
-    .is('refunded_at', null)
     .gt('expiration', new Date().toISOString());
 
   if (error) {
@@ -291,7 +315,8 @@ async function getUserEntitlement(userId: string) {
       expiration: row.expiration,
       isCanceled: row.is_canceled,
       createdAt: row.created_at,
-      refundedAt: row.refunded_at ?? null,
+      // Omit refund from SDK eligibility; access matches our expiration-based rule.
+      refundedAt: undefined,
     })
   );
 

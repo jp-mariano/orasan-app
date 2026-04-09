@@ -15,6 +15,8 @@ import {
   tryClaimFsWebhookEvent,
 } from '@/lib/fs-webhook-events';
 import {
+  applyPaymentRefundWebhook,
+  coerceFreemiusInstant,
   deleteEntitlement,
   syncEntitlementFromWebhook,
 } from '@/lib/user-entitlement';
@@ -46,6 +48,7 @@ const HANDLED_WEBHOOK_TYPES = new Set<string>([
   'license.expired',
   'license.plan.changed',
   'license.deleted',
+  'payment.refund',
 ]);
 
 /** Resolve `environment` from payload (license object, or root / data for e.g. license.deleted). */
@@ -54,6 +57,11 @@ function getWebhookEnvironment(event: unknown): number | undefined {
   const license = getProp(objects, 'license');
   if (license && typeof license === 'object') {
     const env = getProp(license, 'environment');
+    if (env === 0 || env === 1) return env;
+  }
+  const payment = getProp(objects, 'payment');
+  if (payment && typeof payment === 'object') {
+    const env = getProp(payment, 'environment');
     if (env === 0 || env === 1) return env;
   }
   const envFromEvent = getProp(event, 'environment');
@@ -103,6 +111,38 @@ listener.on('license.deleted', async event => {
   if (licenseId == null) return;
 
   await deleteEntitlement(String(licenseId));
+});
+
+// `payment.refund` is emitted by Freemius but may be missing from WebhookEventDataMap typings.
+(
+  listener as {
+    on: (n: string, h: (e: unknown) => void | Promise<void>) => void;
+  }
+).on('payment.refund', async event => {
+  const data = getProp(event, 'data');
+  const objects = getProp(event, 'objects');
+  const payment = getProp(objects, 'payment');
+
+  const licenseFromData =
+    data && typeof data === 'object' ? getProp(data, 'license_id') : undefined;
+  const licenseFromPayment =
+    payment && typeof payment === 'object'
+      ? getProp(payment, 'license_id')
+      : undefined;
+
+  const licenseId = licenseFromData ?? licenseFromPayment;
+  if (licenseId == null || licenseId === '') return;
+
+  const refundedAt =
+    coerceFreemiusInstant(
+      payment && typeof payment === 'object'
+        ? getProp(payment, 'updated')
+        : undefined
+    ) ??
+    coerceFreemiusInstant(getProp(event, 'created')) ??
+    new Date().toISOString();
+
+  await applyPaymentRefundWebhook(String(licenseId), refundedAt);
 });
 
 /** Never fail the HTTP response if the status update alone fails (row may stay `received`). */
