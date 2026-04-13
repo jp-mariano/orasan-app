@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { assertAccountDeletionAllowedByFreemius } from '@/lib/account-deletion-freemius';
 import {
   logAccountDeletionCancellation,
   logAccountDeletionRequest,
@@ -257,6 +258,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'Account deletion already confirmed and in progress' },
         { status: 400 }
+      );
+    }
+
+    const freemiusGate = await assertAccountDeletionAllowedByFreemius(user.id);
+    if (!freemiusGate.ok) {
+      return NextResponse.json(
+        { error: freemiusGate.message, code: freemiusGate.code },
+        { status: 409 }
       );
     }
 
