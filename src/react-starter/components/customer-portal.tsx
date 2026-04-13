@@ -22,8 +22,10 @@ export function CustomerPortal(props: {
    * coupon, purchase sync). Use to refetch app profile / revalidate RSC.
    */
   onAppStateRefresh?: () => void | Promise<void>;
+  /** When true, blocks checkout-driven actions inside the portal (upgrade, payment update). */
+  commerceDisabled?: boolean;
 }) {
-  const { endpoint, onAppStateRefresh } = props;
+  const { endpoint, onAppStateRefresh, commerceDisabled = false } = props;
   const checkoutContext = useContext(CheckoutContext);
   const { data, error, isLoading, refetch } = usePortalData(endpoint);
   const locale = useLocale();
@@ -79,9 +81,14 @@ export function CustomerPortal(props: {
             endpoint={endpoint}
             onSubscribe={refresh}
             onRestore={onRestored}
+            commerceDisabled={commerceDisabled}
           />
         ) : (
-          <CustomerPortalUi portalData={data} refresh={refresh} />
+          <CustomerPortalUi
+            portalData={data}
+            refresh={refresh}
+            commerceDisabled={commerceDisabled}
+          />
         )}
       </CheckoutProvider>
     </PortalContext.Provider>
@@ -92,8 +99,9 @@ export function CustomerPortalEmpty(props: {
   endpoint: string;
   onSubscribe: () => void;
   onRestore?: (data: PurchaseData[] | null) => void;
+  commerceDisabled?: boolean;
 }) {
-  const { endpoint, onSubscribe, onRestore } = props;
+  const { endpoint, onSubscribe, onRestore, commerceDisabled = false } = props;
   const locale = useLocale();
 
   return (
@@ -104,7 +112,7 @@ export function CustomerPortalEmpty(props: {
         </h2>
         <p className="mb-10">{locale.portal.subscribe.message()}</p>
       </div>
-      <Subscribe onCheckout={onSubscribe} />
+      <Subscribe onCheckout={onSubscribe} commerceDisabled={commerceDisabled} />
       <div className="mt-10 max-w-[65ch] mx-auto text-center">
         <p className="text-muted-foreground mb-5">
           {locale.portal.empty.message.restore()}
@@ -119,8 +127,9 @@ export function CustomerPortalEmpty(props: {
 export function CustomerPortalUi(props: {
   portalData: PortalData;
   refresh: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { portalData, refresh } = props;
+  const { portalData, refresh, commerceDisabled = false } = props;
 
   return (
     <div className="fs-saas-starter-portal flex flex-col gap-16">
@@ -130,6 +139,7 @@ export function CustomerPortalUi(props: {
           cancellationCoupons={portalData.cancellationCoupons}
           afterCancel={refresh}
           afterCouponApplied={refresh}
+          commerceDisabled={commerceDisabled}
         />
       ) : null}
 

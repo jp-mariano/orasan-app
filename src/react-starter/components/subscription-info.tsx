@@ -12,8 +12,9 @@ import { Badge } from '@/components/ui/badge';
 export function SubscriptionInfo(props: {
   subscription: NonNullable<PortalData['subscriptions']['primary']>;
   onCancel?: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { subscription, onCancel } = props;
+  const { subscription, onCancel, commerceDisabled = false } = props;
   const locale = useLocale();
 
   const renewalDate = subscription.renewalDate
@@ -62,12 +63,19 @@ export function SubscriptionInfo(props: {
           </p>
         </div>
         <div className="max-w-50 md:ml-auto">
-          <SubscriptionAction subscription={subscription} onCancel={onCancel} />
+          <SubscriptionAction
+            subscription={subscription}
+            onCancel={onCancel}
+            commerceDisabled={commerceDisabled}
+          />
         </div>
       </div>
       <div className="mt-4">
         {isActive ? (
-          <PaymentMethodUpdate subscription={subscription} />
+          <PaymentMethodUpdate
+            subscription={subscription}
+            commerceDisabled={commerceDisabled}
+          />
         ) : renewalDate && renewalDate > new Date() ? (
           <div className="flex items-center">
             <PaymentIcon method={subscription.paymentMethod!} />

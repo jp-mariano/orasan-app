@@ -40,8 +40,10 @@ export function PricingTableItem(props: {
   plan: PricingTableData;
   trial: 'free' | 'paid' | false;
   onCheckout?: () => void;
+  /** When true, checkout is blocked (e.g. account deletion in progress). */
+  commerceDisabled?: boolean;
 }) {
-  const { plan, trial = false, onCheckout } = props;
+  const { plan, trial = false, onCheckout, commerceDisabled = false } = props;
   const checkout = useCheckout();
   const locale = useLocale();
 
@@ -109,7 +111,9 @@ export function PricingTableItem(props: {
           className="w-full"
           variant={plan.featured ? 'default' : 'outline'}
           size="lg"
+          disabled={commerceDisabled}
           onClick={() => {
+            if (commerceDisabled) return;
             onCheckout?.();
             checkout.open({
               plan_id: plan.id,
@@ -132,8 +136,15 @@ export function PricingTable(props: {
   trial?: 'free' | 'paid' | false;
   currency?: CURRENCY;
   onCheckout?: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { plans, trial = false, currency = CURRENCY.USD, onCheckout } = props;
+  const {
+    plans,
+    trial = false,
+    currency = CURRENCY.USD,
+    onCheckout,
+    commerceDisabled = false,
+  } = props;
 
   const tableData: PricingTableData[] = React.useMemo(() => {
     const data: PricingTableData[] = [];
@@ -193,6 +204,7 @@ export function PricingTable(props: {
           plan={plan}
           trial={trial}
           onCheckout={onCheckout}
+          commerceDisabled={commerceDisabled}
         />
       ))}
     </div>

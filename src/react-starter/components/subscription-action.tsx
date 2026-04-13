@@ -8,8 +8,9 @@ import { useLocale } from '../utils/locale';
 export function SubscriptionAction(props: {
   subscription: PortalSubscription;
   onCancel?: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { subscription, onCancel } = props;
+  const { subscription, onCancel, commerceDisabled = false } = props;
   const locale = useLocale();
   const checkout = useCheckout();
 
@@ -17,13 +18,15 @@ export function SubscriptionAction(props: {
     return (
       <Button
         className="w-full"
-        onClick={() =>
+        disabled={commerceDisabled}
+        onClick={() => {
+          if (commerceDisabled) return;
           checkout.open({
             license_id: subscription.licenseId,
             authorization: subscription.checkoutUpgradeAuthorization,
             plan_id: subscription.planId,
-          })
-        }
+          });
+        }}
       >
         {locale.portal.action.reactivate()}
       </Button>

@@ -34,8 +34,9 @@ function TopupTableItem(props: {
   data: TopupTableData;
   sellingUnit: SellingUnit;
   onCheckout?: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { data, sellingUnit, onCheckout } = props;
+  const { data, sellingUnit, onCheckout, commerceDisabled = false } = props;
   const checkout = useCheckout();
   const locale = useLocale();
 
@@ -63,7 +64,9 @@ function TopupTableItem(props: {
           className="w-full"
           variant={data.isFeatured ? 'default' : 'outline'}
           size="lg"
+          disabled={commerceDisabled}
           onClick={() => {
+            if (commerceDisabled) return;
             onCheckout?.();
             checkout.open({
               plan_id: data.planId,
@@ -83,8 +86,15 @@ export function TopupTable(props: {
   sellingUnit: SellingUnit;
   currency?: CURRENCY;
   onCheckout?: () => void;
+  commerceDisabled?: boolean;
 }) {
-  const { plan, currency = CURRENCY.USD, onCheckout, sellingUnit } = props;
+  const {
+    plan,
+    currency = CURRENCY.USD,
+    onCheckout,
+    sellingUnit,
+    commerceDisabled = false,
+  } = props;
   const locale = useLocale();
 
   const tableData: TopupTableData[] = React.useMemo(() => {
@@ -140,6 +150,7 @@ export function TopupTable(props: {
           data={pricing}
           sellingUnit={sellingUnit}
           onCheckout={onCheckout}
+          commerceDisabled={commerceDisabled}
         />
       ))}
     </div>

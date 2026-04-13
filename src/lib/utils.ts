@@ -274,6 +274,17 @@ export function isDeletionConfirmed(user: {
 }
 
 /**
+ * True while a deletion pipeline is active (requested and/or confirmed until
+ * cleanup or cancel). Used to disable Freemius portal/checkout in UI and API.
+ */
+export function isAccountDeletionUnderway(user: {
+  deletion_requested_at?: string | null;
+}): boolean {
+  const v = user.deletion_requested_at;
+  return v != null && String(v).trim() !== '';
+}
+
+/**
  * Gets the deletion status message
  * @param user - The user object
  * @returns Status message for deletion

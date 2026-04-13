@@ -37,10 +37,17 @@ export type PaywallProps = {
   hidePaywall: () => void;
   topupPlanId?: number | string;
   portalNavigation?: React.ReactNode;
+  commerceDisabled?: boolean;
 };
 
 export function Paywall(props: PaywallProps) {
-  const { state, hidePaywall, topupPlanId, portalNavigation } = props;
+  const {
+    state,
+    hidePaywall,
+    topupPlanId,
+    portalNavigation,
+    commerceDisabled = false,
+  } = props;
   const { data, error, isLoading, refetch } = usePricingData(topupPlanId);
 
   const locale = useLocale();
@@ -83,12 +90,17 @@ export function Paywall(props: PaywallProps) {
                 }
               />
             ) : state === PaywallRestriction.NO_ACTIVE_PURCHASE ? (
-              <PricingTable plans={data.plans} onCheckout={hidePaywall} />
+              <PricingTable
+                plans={data.plans}
+                onCheckout={hidePaywall}
+                commerceDisabled={commerceDisabled}
+              />
             ) : (
               <TopupTable
                 plan={data.topupPlan}
                 sellingUnit={data.sellingUnit}
                 onCheckout={hidePaywall}
+                commerceDisabled={commerceDisabled}
               />
             )}
 

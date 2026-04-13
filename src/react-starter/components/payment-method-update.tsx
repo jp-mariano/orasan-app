@@ -7,8 +7,9 @@ import PaymentIcon from './payment-icon';
 
 export function PaymentMethodUpdate(props: {
   subscription: PortalSubscription;
+  commerceDisabled?: boolean;
 }) {
-  const { subscription } = props;
+  const { subscription, commerceDisabled = false } = props;
   const checkout = useCheckout();
   const locale = useLocale();
 
@@ -23,15 +24,17 @@ export function PaymentMethodUpdate(props: {
       </span>
       <Button
         variant="outline"
-        onClick={() =>
+        disabled={commerceDisabled}
+        onClick={() => {
+          if (commerceDisabled) return;
           checkout.open({
             is_payment_method_update: true,
             plan_id: subscription.planId,
             pricing_id: subscription.pricingId,
             license_id: subscription.licenseId,
             authorization: subscription.checkoutUpgradeAuthorization,
-          })
-        }
+          });
+        }}
       >
         {locale.portal.payment.update()}
       </Button>

@@ -24,6 +24,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { useAccountDeletion } from '@/hooks/useAccountDeletion';
 import { useDataExport } from '@/hooks/useDataExport';
 import { useUser } from '@/hooks/useUser';
+import { ACCOUNT_DELETION_COMMERCE_BLOCKED_MESSAGE } from '@/lib/commerce-constants';
+import { isAccountDeletionUnderway } from '@/lib/utils';
 import { validateEmail, validatePhone } from '@/lib/validation';
 import { CustomerPortal } from '@/react-starter/components/customer-portal';
 import { useCheckout } from '@/react-starter/hooks/checkout';
@@ -269,26 +271,39 @@ export function UserSettingsClient(props: {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <AppCheckoutProvider
-                  checkout={checkout}
-                  onAfterPurchaseSync={refreshUserAfterCheckoutSync}
-                >
-                  {user?.subscription_tier === 'pro' ||
-                  user?.subscription_status === 'cancelled' ? (
-                    <CustomerPortal
-                      endpoint={portalEndpoint}
-                      onAppStateRefresh={reconcileFreemiusRelatedState}
-                    />
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        You&apos;re currently on the Free tier. Upgrade to Pro
-                        to unlock invoicing and unlimited projects.
-                      </p>
-                      <UpgradeToProButton />
-                    </div>
-                  )}
-                </AppCheckoutProvider>
+                {user && isAccountDeletionUnderway(user) ? (
+                  <p className="text-sm text-muted-foreground">
+                    {ACCOUNT_DELETION_COMMERCE_BLOCKED_MESSAGE}{' '}
+                    <a
+                      href="#account-deletion"
+                      className="font-medium text-gray-900 underline decoration-gray-400 underline-offset-2 hover:decoration-gray-900"
+                    >
+                      Account Management
+                    </a>{' '}
+                    below has the cancel option when a request is pending.
+                  </p>
+                ) : (
+                  <AppCheckoutProvider
+                    checkout={checkout}
+                    onAfterPurchaseSync={refreshUserAfterCheckoutSync}
+                  >
+                    {user?.subscription_tier === 'pro' ||
+                    user?.subscription_status === 'cancelled' ? (
+                      <CustomerPortal
+                        endpoint={portalEndpoint}
+                        onAppStateRefresh={reconcileFreemiusRelatedState}
+                      />
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          You&apos;re currently on the Free tier. Upgrade to Pro
+                          to unlock invoicing and unlimited projects.
+                        </p>
+                        <UpgradeToProButton />
+                      </div>
+                    )}
+                  </AppCheckoutProvider>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -474,7 +489,7 @@ export function UserSettingsClient(props: {
           </div>
 
           {/* Account Deletion Section */}
-          <div>
+          <div id="account-deletion">
             <div className="mb-4">
               <h2 className="text-2xl font-bold text-gray-900">
                 Account Management
