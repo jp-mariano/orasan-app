@@ -59,7 +59,9 @@ function RegisterPageContent() {
                 <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-blue-600 font-semibold text-xs">1</span>
                 </div>
-                <p>Click any OAuth provider button (GitHub, Google, or X)</p>
+                <p>
+                  Use the OAuth buttons on the sign-in page (GitHub or Google)
+                </p>
               </div>
 
               <div className="flex items-start space-x-3">

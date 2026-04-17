@@ -18,7 +18,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isSigningOut: boolean;
-  signIn: (provider: 'github' | 'google' | 'x') => Promise<void>;
+  signIn: (provider: 'github' | 'google') => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -150,12 +150,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // No dependencies needed - this effect should only run once
 
-  const signIn = async (provider: 'github' | 'google' | 'x') => {
+  const signIn = async (provider: 'github' | 'google') => {
     try {
       setLoading(true);
-      // Supabase OAuth 2.0 for X uses provider 'x'; client types still list 'twitter'
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider as 'twitter',
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },

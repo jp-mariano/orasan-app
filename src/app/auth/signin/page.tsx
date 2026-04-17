@@ -5,7 +5,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-import { SiGithub, SiGoogle, SiX } from 'react-icons/si';
+import { SiGithub, SiGoogle } from 'react-icons/si';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +33,7 @@ function LoginPageContent() {
     return <ErrorDisplayComponent />;
   }
 
-  const handleOAuthSignIn = async (provider: 'github' | 'google' | 'x') => {
+  const handleOAuthSignIn = async (provider: 'github' | 'google') => {
     try {
       setIsLoading(provider);
       await signIn(provider);
@@ -86,20 +86,6 @@ function LoginPageContent() {
                 <SiGoogle className="h-4 w-4 mr-2" />
               )}
               Continue with Google
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={() => handleOAuthSignIn('x')}
-              disabled={isLoading !== null}
-            >
-              {isLoading === 'x' ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
-              ) : (
-                <SiX className="h-4 w-4 mr-2" />
-              )}
-              Continue with X (Twitter)
             </Button>
           </div>
 
