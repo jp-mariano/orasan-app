@@ -12,9 +12,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Header } from '@/components/ui/header';
-import { PauseTimersModal } from '@/components/ui/pause-timers-modal';
 import { useAuth } from '@/contexts/auth-context';
-import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
 import { INVOICE_PRO_ONLY_ERROR_MESSAGE } from '@/lib/subscription-enforcement';
@@ -38,14 +36,9 @@ export default function ProjectInvoicesPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showCreateInvoiceConfirm, setShowCreateInvoiceConfirm] =
-    useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [invoicesPage, setInvoicesPage] = useState(1);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const { stopAllTimers } = useTimeTrackingContext();
 
   const isPro = userProfile?.subscription_tier === 'pro';
 
@@ -157,21 +150,6 @@ export default function ProjectInvoicesPage() {
     }
   }
 
-  const handleCreateInvoiceConfirm = async () => {
-    setIsStoppingAll(true);
-    try {
-      const success = await stopAllTimers(projectId);
-      if (success) {
-        setShowCreateInvoiceConfirm(false);
-        setIsCreateModalOpen(true);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to stop timers');
-    } finally {
-      setIsStoppingAll(false);
-    }
-  };
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -242,7 +220,7 @@ export default function ProjectInvoicesPage() {
               {project && (
                 <Button
                   type="button"
-                  onClick={() => setShowCreateInvoiceConfirm(true)}
+                  onClick={() => setIsCreateModalOpen(true)}
                   className="shrink-0"
                   disabled={!isPro}
                   title={!isPro ? INVOICE_PRO_ONLY_ERROR_MESSAGE : undefined}
@@ -460,16 +438,6 @@ export default function ProjectInvoicesPage() {
           invoice={invoiceToDelete}
           onConfirmDelete={handleConfirmDeleteInvoice}
           isDeleting={isDeleting}
-        />
-
-        <PauseTimersModal
-          open={showCreateInvoiceConfirm}
-          onOpenChange={setShowCreateInvoiceConfirm}
-          title="Create Invoice"
-          description="This will prepare your project for invoice generation. All active timers (running or paused, if any) within the project will be stopped. New timer entries will be created when you start working on tasks again. Only completed tasks are included in the invoice."
-          confirmText="Create Invoice"
-          onConfirm={handleCreateInvoiceConfirm}
-          isLoading={isStoppingAll}
         />
 
         {project && (

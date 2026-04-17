@@ -23,6 +23,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import { useTimeTrackingContext } from '@/contexts/time-tracking-context';
 import { useUser } from '@/hooks/useUser';
 import { formatPriceWithCurrency } from '@/lib/currencies';
 import { cn, formatDate } from '@/lib/utils';
@@ -60,6 +61,8 @@ export function CreateInvoiceModal({
   onInvoiceCreated,
 }: CreateInvoiceModalProps) {
   const { user, refreshUser } = useUser();
+  const { stopTimersForEntryIds, syncWithDatabase, loadTimersFromDatabase } =
+    useTimeTrackingContext();
   const [formData, setFormData] = useState<CreateInvoiceRequest>({
     project_id: project.id,
     invoice_number: '',
@@ -82,6 +85,10 @@ export function CreateInvoiceModal({
   const [excludedTaskIds, setExcludedTaskIds] = useState<Set<string>>(
     new Set()
   );
+  const [activeCompletedTaskTimerIds, setActiveCompletedTaskTimerIds] =
+    useState<string[]>([]);
+  const [isStoppingCompletedTimers, setIsStoppingCompletedTimers] =
+    useState(false);
 
   // Calendar states
   const [fromDateOpen, setFromDateOpen] = useState(false);
@@ -110,6 +117,7 @@ export function CreateInvoiceModal({
       setErrorMessage(null);
       setPreviewItems([]);
       setExcludedTaskIds(new Set());
+      setActiveCompletedTaskTimerIds([]);
     }
   }, [open, project, refreshUser]);
 
@@ -141,6 +149,11 @@ export function CreateInvoiceModal({
       setPreviewItems(data.items ?? []);
       setPreviewCurrency(data.currency_code ?? 'USD');
       setExcludedTaskIds(new Set());
+      setActiveCompletedTaskTimerIds(
+        Array.isArray(data.active_completed_task_timer_ids)
+          ? data.active_completed_task_timer_ids
+          : []
+      );
     } catch (error) {
       console.error('Error fetching invoice preview:', error);
       setErrorMessage(
@@ -149,6 +162,7 @@ export function CreateInvoiceModal({
           : 'Failed to load invoice preview'
       );
       setPreviewItems([]);
+      setActiveCompletedTaskTimerIds([]);
     } finally {
       setIsLoadingPreview(false);
     }
@@ -171,6 +185,7 @@ export function CreateInvoiceModal({
     } else if (!hasRange || !open) {
       setPreviewItems([]);
       setExcludedTaskIds(new Set());
+      setActiveCompletedTaskTimerIds([]);
     }
   }, [
     formData.date_range.from,
@@ -190,6 +205,30 @@ export function CreateInvoiceModal({
 
   const removeItem = (taskId: string) => {
     setExcludedTaskIds(prev => new Set([...prev, taskId]));
+  };
+
+  const handleStopTimersOnCompletedTasks = async () => {
+    if (activeCompletedTaskTimerIds.length === 0) return;
+    setIsStoppingCompletedTimers(true);
+    setErrorMessage(null);
+    try {
+      await syncWithDatabase();
+      const ok = await stopTimersForEntryIds(activeCompletedTaskTimerIds);
+      if (!ok) {
+        setErrorMessage(
+          'Could not stop all timers. If this persists, refresh the page and try again.'
+        );
+        return;
+      }
+      await loadTimersFromDatabase();
+      await fetchInvoicePreview();
+    } catch (e) {
+      setErrorMessage(
+        e instanceof Error ? e.message : 'Failed to stop timers on tasks'
+      );
+    } finally {
+      setIsStoppingCompletedTimers(false);
+    }
   };
 
   const updateItem = (
@@ -348,7 +387,8 @@ export function CreateInvoiceModal({
           <DialogTitle>Create Invoice</DialogTitle>
           <DialogDescription>
             Generate an invoice for &quot;{project.name}&quot; based on stopped
-            time entries. Only completed tasks are included in the invoice.
+            time entries on completed tasks. Timers on incomplete tasks are not
+            changed.
           </DialogDescription>
         </DialogHeader>
 
@@ -418,6 +458,33 @@ export function CreateInvoiceModal({
             </div>
           </div>
         )}
+
+        {!isLoadingPreview &&
+          activeCompletedTaskTimerIds.length > 0 &&
+          formData.date_range.from &&
+          formData.date_range.to && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="font-medium">Active timers on completed tasks</p>
+              <p className="mt-1 text-amber-800">
+                {activeCompletedTaskTimerIds.length === 1
+                  ? 'One completed task still has a running or paused timer. That time is not included until the timer is stopped.'
+                  : `${activeCompletedTaskTimerIds.length} completed tasks still have running or paused timers. That time is not included until those timers are stopped.`}{' '}
+                Stop only those timers here (other tasks are unaffected), then
+                refresh the preview.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                className="mt-3"
+                disabled={isStoppingCompletedTimers}
+                onClick={() => void handleStopTimersOnCompletedTasks()}
+              >
+                {isStoppingCompletedTimers
+                  ? 'Stopping…'
+                  : 'Stop timers on completed tasks'}
+              </Button>
+            </div>
+          )}
 
         <div className="space-y-6">
           {/* Date Range */}
@@ -780,7 +847,8 @@ export function CreateInvoiceModal({
               !formData.date_range.from ||
               !formData.date_range.to ||
               !formData.issue_date ||
-              visibleItems.length === 0
+              visibleItems.length === 0 ||
+              activeCompletedTaskTimerIds.length > 0
             }
           >
             {isSubmitting ? 'Creating...' : 'Create Invoice'}

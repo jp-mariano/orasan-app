@@ -56,9 +56,6 @@ export default function ProjectDetailPage() {
   // Pause all state
   const [showPauseTimersModal, setShowPauseTimersModal] = useState(false);
   const [isPausingAll, setIsPausingAll] = useState(false);
-  // Stop all state (for invoice generation)
-  const [showStopAllTimersModal, setShowStopAllTimersModal] = useState(false);
-  const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [showInvoiceCreationModal, setShowInvoiceCreationModal] =
     useState(false);
 
@@ -394,23 +391,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Handle stop all timers for this project (for invoice generation)
-  const handleStopAllForInvoice = async () => {
-    setIsStoppingAll(true);
-    try {
-      const success = await stopAllTimers(projectId);
-      if (success) {
-        setShowStopAllTimersModal(false);
-        // Open invoice creation modal after stopping timers
-        setShowInvoiceCreationModal(true);
-      }
-    } catch (error) {
-      console.error('Error stopping all timers:', error);
-    } finally {
-      setIsStoppingAll(false);
-    }
-  };
-
   // Handle mark project as completed (stop active timers first)
   const handleConfirmCompleteProject = async () => {
     if (!project) return;
@@ -541,7 +521,7 @@ export default function ProjectDetailPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setShowStopAllTimersModal(true);
+                          setShowInvoiceCreationModal(true);
                           setShowActions(false);
                         }}
                         disabled={createInvoiceDisabled}
@@ -881,15 +861,6 @@ export default function ProjectDetailPage() {
         confirmText="Proceed"
         onConfirm={handlePauseAll}
         isLoading={isPausingAll}
-      />
-      <PauseTimersModal
-        open={showStopAllTimersModal}
-        onOpenChange={setShowStopAllTimersModal}
-        title="Create Invoice"
-        description="This will prepare your project for invoice generation. All active timers (running or paused, if any) within the project will be stopped. New timer entries will be created when you start working on tasks again. Only completed tasks are included in the invoice."
-        confirmText="Create Invoice"
-        onConfirm={handleStopAllForInvoice}
-        isLoading={isStoppingAll}
       />
       <PauseTimersModal
         open={showCompleteProjectModal}

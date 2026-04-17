@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       stoppedCount: updatedTimers.length,
-      message: `Successfully stopped ${updatedTimers.length} active timer(s) for invoice generation`,
+      message: `Successfully stopped ${updatedTimers.length} active timer(s)`,
     });
   } catch (error) {
     console.error('Error in stop-all endpoint:', error);

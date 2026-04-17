@@ -55,6 +55,8 @@ export interface UseTimeTrackerReturn {
   syncWithDatabase: () => Promise<void>;
   loadTimersFromDatabase: () => Promise<void>;
   refreshTimerForTask: (taskId: string) => Promise<void>;
+  /** Stop only the given time entry ids (running/paused), using local timer state for durations. */
+  stopTimersForEntryIds: (entryIds: string[]) => Promise<boolean>;
 
   // Utility functions
   formatDuration: (seconds: number) => string;
@@ -753,46 +755,20 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     [timers, loadTimersFromDatabase]
   );
 
-  // Stop all running timers for a project (for invoice generation)
-  const stopAllTimers = useCallback(
-    async (projectId: string): Promise<boolean> => {
+  type StopBatchUpdate = {
+    id: string;
+    duration_seconds: number;
+    timer_status: 'stopped';
+    end_time: string;
+    updated_at: string;
+  };
+
+  const stopTimerBatch = useCallback(
+    async (updates: StopBatchUpdate[]): Promise<boolean> => {
+      if (updates.length === 0) {
+        return true;
+      }
       try {
-        // Get all active timers (running or paused) for this project
-        const activeTimers = timers.filter(
-          t => t.projectId === projectId && (t.isRunning || t.isPaused)
-        );
-
-        if (activeTimers.length === 0) {
-          // No active timers to stop
-          return true;
-        }
-
-        // Pre-calculate durations using EXACT same logic as individual stop
-        const updates = activeTimers
-          .map(timer => {
-            // Calculate final duration by adding elapsed time
-            const finalDuration =
-              timer.isRunning && timer.localStartTime
-                ? timer.duration +
-                  Math.floor((Date.now() - timer.localStartTime) / 1000)
-                : timer.duration;
-
-            return {
-              id: timer.id,
-              duration_seconds: finalDuration,
-              timer_status: 'stopped',
-              end_time: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-          })
-          .filter(Boolean);
-
-        if (updates.length === 0) {
-          setError('No valid timers to stop');
-          return false;
-        }
-
-        // Call the batch stop API
         const response = await fetch('/api/time-entries/stop-all', {
           method: 'POST',
           headers: {
@@ -804,18 +780,100 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         if (!response.ok) {
           const handled = await checkAndHandleUnauthorized(response);
           if (handled) {
-            return false; // User will be redirected
+            return false;
           }
           const errorData = await response.json();
           setError(errorData.error || 'Failed to stop timers');
           return false;
         }
 
-        // Refresh all timers from database to get updated state
         await loadTimersFromDatabase();
-
         setError(null);
         return true;
+      } catch (error) {
+        console.error('Error stopping timers batch:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to stop timers'
+        );
+        return false;
+      }
+    },
+    [loadTimersFromDatabase]
+  );
+
+  const buildStopUpdatesForTimers = (
+    activeTimers: LocalTimer[]
+  ): StopBatchUpdate[] =>
+    activeTimers.map(timer => {
+      const finalDuration =
+        timer.isRunning && timer.localStartTime
+          ? timer.duration +
+            Math.floor((Date.now() - timer.localStartTime) / 1000)
+          : timer.duration;
+
+      return {
+        id: timer.id,
+        duration_seconds: finalDuration,
+        timer_status: 'stopped' as const,
+        end_time: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
+
+  const stopTimersForEntryIds = useCallback(
+    async (entryIds: string[]): Promise<boolean> => {
+      if (entryIds.length === 0) {
+        return true;
+      }
+      try {
+        const idSet = new Set(entryIds);
+        const toStop = timers.filter(
+          t => idSet.has(t.id) && (t.isRunning || t.isPaused)
+        );
+
+        if (toStop.length === 0) {
+          if (entryIds.length > 0) {
+            setError(
+              'Those timers are not loaded here. Open this project on the device where they are running, or refresh the page.'
+            );
+            return false;
+          }
+          await loadTimersFromDatabase();
+          return true;
+        }
+
+        const updates = buildStopUpdatesForTimers(toStop);
+        return stopTimerBatch(updates);
+      } catch (error) {
+        console.error('Error stopping timers for entry ids:', error);
+        setError(
+          error instanceof Error ? error.message : 'Failed to stop timers'
+        );
+        return false;
+      }
+    },
+    [timers, loadTimersFromDatabase, stopTimerBatch]
+  );
+
+  // Stop all running timers for a project (e.g. mark project complete)
+  const stopAllTimers = useCallback(
+    async (projectId: string): Promise<boolean> => {
+      try {
+        const activeTimers = timers.filter(
+          t => t.projectId === projectId && (t.isRunning || t.isPaused)
+        );
+
+        if (activeTimers.length === 0) {
+          return true;
+        }
+
+        const updates = buildStopUpdatesForTimers(activeTimers);
+        if (updates.length === 0) {
+          setError('No valid timers to stop');
+          return false;
+        }
+
+        return stopTimerBatch(updates);
       } catch (error) {
         console.error('Error stopping all timers:', error);
         setError(
@@ -824,7 +882,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
         return false;
       }
     },
-    [timers, loadTimersFromDatabase]
+    [timers, stopTimerBatch]
   );
 
   stopAllTimersRef.current = stopAllTimers;
@@ -1131,6 +1189,7 @@ export function useTimeTracker(): UseTimeTrackerReturn {
     syncWithDatabase,
     loadTimersFromDatabase,
     refreshTimerForTask,
+    stopTimersForEntryIds,
 
     // Utility functions
     formatDuration,

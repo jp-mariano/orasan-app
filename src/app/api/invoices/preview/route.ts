@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { fetchActiveTimerEntriesOnCompletedTasksInRange } from '@/lib/invoice-active-completed-task-timers';
 import {
   getUserSubscription,
   INVOICE_PRO_ONLY_ERROR_MESSAGE,
@@ -199,6 +200,15 @@ export async function POST(request: NextRequest) {
     const taxAmount = Math.round(((subtotal * tax_rate) / 100) * 100) / 100;
     const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100;
 
+    const activeOnCompleted =
+      await fetchActiveTimerEntriesOnCompletedTasksInRange(
+        supabase,
+        user.id,
+        project_id,
+        fromDate,
+        toDate
+      );
+
     return NextResponse.json({
       items,
       subtotal,
@@ -206,6 +216,8 @@ export async function POST(request: NextRequest) {
       tax_amount: taxAmount,
       total_amount: totalAmount,
       currency_code: resolvedCurrency,
+      active_completed_task_timer_count: activeOnCompleted.length,
+      active_completed_task_timer_ids: activeOnCompleted.map(e => e.id),
       project: {
         name: project.name,
         client_name: project.client_name,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { countActiveTimerEntriesOnCompletedTasksInRange } from '@/lib/invoice-active-completed-task-timers';
 import { generateInvoiceNumber } from '@/lib/invoice-utils';
 import {
   getUserSubscription,
@@ -157,6 +158,25 @@ export async function POST(request: NextRequest) {
     const fromDate = new Date(invoiceData.date_range.from);
     const toDate = new Date(invoiceData.date_range.to);
     toDate.setHours(23, 59, 59, 999); // Include the entire end date
+
+    const activeOnCompletedCount =
+      await countActiveTimerEntriesOnCompletedTasksInRange(
+        supabase,
+        user.id,
+        projectId,
+        fromDate,
+        toDate
+      );
+
+    if (activeOnCompletedCount > 0) {
+      return NextResponse.json(
+        {
+          error: `There ${activeOnCompletedCount === 1 ? 'is an active timer' : 'are active timers'} on completed tasks for this period. Stop ${activeOnCompletedCount === 1 ? 'it' : 'them'} from the invoice editor (or task timers) before creating the invoice.`,
+          code: 'ACTIVE_TIMERS_ON_COMPLETED_TASKS',
+        },
+        { status: 400 }
+      );
+    }
 
     // Fetch stopped time entries within date range for this project
     const { data: timeEntriesRaw, error: timeEntriesError } = await supabase

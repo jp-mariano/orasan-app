@@ -15,6 +15,7 @@ interface TimeTrackingContextType {
   pauseTimer: (taskId: string) => Promise<boolean>;
   pauseAllTimers: (timerIds: string[]) => Promise<boolean>;
   stopAllTimers: (projectId: string) => Promise<boolean>;
+  stopTimersForEntryIds: (entryIds: string[]) => Promise<boolean>;
   resumeTimer: (taskId: string) => Promise<boolean>;
   stopTimer: (taskId: string) => Promise<boolean>;
   resetTimer: (taskId: string) => Promise<boolean>;
@@ -29,6 +30,8 @@ interface TimeTrackingContextType {
   getTotalDuration: (taskId: string) => number;
 
   // Sync functions
+  syncWithDatabase: () => Promise<void>;
+  loadTimersFromDatabase: () => Promise<void>;
   refreshTimerForTask: (taskId: string) => Promise<void>;
 
   // State
