@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-import { Clock, FolderOpen, Shield, Wifi, Zap } from 'lucide-react';
+import { Clock, FileText, FolderOpen, Shield, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -54,9 +54,9 @@ function HomePageContent() {
             <span className="text-blue-600">Boost Productivity</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Orasan is a Filipino-inspired time tracking app designed for
-            freelancers. Manage projects, track tasks, and stay productive with
-            our offline-first approach.
+            Orasan is a time tracking appplication designed for freelancers.
+            Manage projects, track tasks, and stay productive in a clear, simple
+            workflow.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
@@ -68,15 +68,10 @@ function HomePageContent() {
             ) : (
               <Link href="/auth/register">
                 <Button size="lg" className="text-lg px-8 py-6">
-                  Start Free Trial
+                  Start for Free
                 </Button>
               </Link>
             )}
-            <Link href="#features">
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-                View Features
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -87,11 +82,11 @@ function HomePageContent() {
         >
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <Clock className="h-12 w-12 text-blue-600 mb-4" />
-              <CardTitle>Smart Time Tracking</CardTitle>
+              <Shield className="h-12 w-12 text-purple-600 mb-4" />
+              <CardTitle>Privacy First</CardTitle>
               <CardDescription>
-                Start, stop, and pause timers with ease. Track time spent on
-                tasks and projects automatically.
+                Your data is protected with row-level security. Full control
+                over your information.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -109,46 +104,33 @@ function HomePageContent() {
 
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <Shield className="h-12 w-12 text-purple-600 mb-4" />
-              <CardTitle>Privacy First</CardTitle>
+              <Clock className="h-12 w-12 text-blue-600 mb-4" />
+              <CardTitle>Smart Time Tracking</CardTitle>
               <CardDescription>
-                Your data is protected with row-level security. Full control
-                over your information.
+                Start, stop, and pause timers with ease. Track time spent on
+                tasks and projects automatically.
               </CardDescription>
             </CardHeader>
           </Card>
 
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <Wifi className="h-12 w-12 text-orange-600 mb-4" />
-              <CardTitle>Offline Capable</CardTitle>
-              <CardDescription>
-                Work without internet. Your data syncs automatically when
-                connection is restored.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <Zap className="h-12 w-12 text-yellow-600 mb-4" />
-              <CardTitle>Lightning Fast</CardTitle>
-              <CardDescription>
-                Built with Next.js 15 and modern technologies for the best
-                performance.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <div className="h-12 w-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg mb-4">
-                $
-              </div>
+              <Wallet className="h-12 w-12 text-blue-600 mb-4" />
               <CardTitle>Subscription Ready</CardTitle>
               <CardDescription>
                 Free tier available. Upgrade to Pro for unlimited projects and
                 advanced features.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardHeader>
+              <FileText className="h-12 w-12 text-orange-600 mb-4" />
+              <CardTitle>Invoices (Pro)</CardTitle>
+              <CardDescription>
+                Turn completed work into line items, preview, and download
+                client-ready PDF invoices.
               </CardDescription>
             </CardHeader>
           </Card>

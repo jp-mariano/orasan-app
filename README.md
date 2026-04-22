@@ -16,7 +16,11 @@
 - **Free vs Pro** — See **Subscription** below; enforcement is in `src/lib/subscription-enforcement.ts`.
 - **Security** — **Row-level security (RLS)** in PostgreSQL/Supabase so each user can only access their own data in normal operation.
 
-> **Local-first timers:** the UI may cache timer state in the browser for responsiveness; the database remains the source of truth. Do not rely on the marketing line “fully offline” for critical billing—see app behavior in your environment.
+**Connectivity:** v1 is **online-first**—sign-in, data, and billing expect a working internet connection. The timer UI may use short-lived **browser state** for responsiveness; the **database** remains the source of truth.
+
+## Roadmap (not in v1)
+
+- **Deeper offline / background sync** — use when disconnected, then reconcile when back online. Planned; not part of the first release.
 
 ## Subscription (Free vs Pro)
 
