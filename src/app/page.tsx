@@ -115,7 +115,7 @@ function HomePageContent() {
 
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardHeader>
-              <Wallet className="h-12 w-12 text-blue-600 mb-4" />
+              <Wallet className="h-12 w-12 text-purple-600 mb-4" />
               <CardTitle>Subscription Ready</CardTitle>
               <CardDescription>
                 Free tier available. Upgrade to Pro for unlimited projects and
