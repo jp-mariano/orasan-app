@@ -18,6 +18,8 @@ import { Header } from '@/components/ui/header';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
+const repositoryUrl = process.env.NEXT_PUBLIC_APP_REPOSITORY_URL?.trim();
+
 function HomePageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -156,11 +158,27 @@ function HomePageContent() {
       {/* Footer */}
       <footer className="border-t bg-white/80 backdrop-blur-sm mt-24">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">
-            <p>&copy; 2025 Orasan. Built with ❤️ for freelancers everywhere.</p>
-            <p className="mt-2">
+          <div className="text-center text-gray-600 text-sm space-y-2">
+            <p>&copy; 2026 Orasan. Built with ❤️ for freelancers everywhere.</p>
+            <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+              {repositoryUrl ? (
+                <a
+                  href={repositoryUrl}
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Source code
+                </a>
+              ) : null}
               <Link href="/license" className="text-blue-600 hover:underline">
-                MIT License
+                License
+              </Link>
+              <Link href="/privacy" className="text-blue-600 hover:underline">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-blue-600 hover:underline">
+                Terms of Service
               </Link>
             </p>
           </div>

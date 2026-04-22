@@ -1,139 +1,96 @@
-# Orasan - Time Tracking App
+# Orasan — Time tracking for freelancers
 
-> **Orasan** is a Filipino word for "clock" - a time-tracking application designed for freelancers and professionals to manage their projects and track time efficiently.
+**Orasan** is a Filipino word for “clock.” This app helps freelancers and teams manage **projects** and **tasks**, track time with **timers and work sessions**, and (on **Pro**) create **invoices** with PDF export. Authentication uses **Supabase** (OAuth: GitHub, Google), billing uses **Freemius** for Pro tier.
 
-## Features
+- **Public pages in the app:** `GET /privacy`, `GET /terms`, `GET /license` (see `src/app/privacy`, `src/app/terms`, `src/app/license`)
 
-- 🕐 **Time Tracking**: Track time spent on tasks with start/stop functionality
-- 📁 **Project Management**: Organize tasks within projects
-- 🔒 **Privacy First**: Row-level security with Supabase
-- 📱 **Offline Capable**: Works without internet, syncs when connection is restored
-- 💰 **Subscriptions**: Free / Pro tiers (Freemius)
-- 🎨 **Modern UI**: Built with shadcn/ui and Tailwind CSS
+## What’s in the product
+
+- **Time tracking** — Start, pause, resume, and stop timers per task; project-level batch pause/stop where supported.
+- **Projects & tasks** — CRUD, hourly/fixed rates (project and task), task status (e.g. completed for invoicing).
+- **Work sessions** — Group work into sessions for reporting and control.
+- **Invoices (Pro)** — Create invoices from **stopped** time on **completed** tasks in a date range, preview, line items, tax rate, **PDF** download; list/detail and status updates on Pro.
+- **Data export** — User-initiated export of projects, time data, and optional activity log (where implemented).
+- **Account deletion** — Request and confirm deletion with gating (e.g. active subscription / Freemius checks); commerce (portal, checkout) blocked while deletion is in progress.
+- **User & business profile** — Display name, business fields for invoices; **Freemius Customer Portal** and checkout for Pro.
+- **Free vs Pro** — See **Subscription** below; enforcement is in `src/lib/subscription-enforcement.ts`.
+- **Security** — **Row-level security (RLS)** in PostgreSQL/Supabase so each user can only access their own data in normal operation.
+
+> **Local-first timers:** the UI may cache timer state in the browser for responsiveness; the database remains the source of truth. Do not rely on the marketing line “fully offline” for critical billing—see app behavior in your environment.
 
 ## Subscription (Free vs Pro)
 
-- **Pro** — Full project, task, and time-entry mutations; create and edit invoices (including status changes and delete).
-- **Free — active project limit** — With **at most two** active (non-completed) projects, **all** of them are writable. With **more than two** active projects, only the **two newest** (by `created_at`) stay writable; **older** active projects are **read-only** (view history and data, **delete project** still allowed; no other writes on those projects).
-- **Free — invoices** — View lists, open details, and **download PDFs**. Creating or changing invoices requires Pro.
-- **Free — timers on read-only projects** — Users cannot start, resume, pause, or stop timers from the UI on read-only projects. If a session is still running or paused when a project becomes read-only, the app **stops those timers** via the batch stop API and may show a short in-app notice.
+- **Pro** — Full project, task, and time-entry writes on allowed projects; **create and manage invoices** (create, update status, delete) and use invoice preview.
+- **Free — project limit** — With **at most two** active (non-completed) projects, **all** of them are writable. With **more than two** active projects, only the **two newest** (by `created_at`) stay writable; **older** active projects are **read-only** (view and history; **delete project** may still be allowed; other writes blocked).
+- **Free — invoices** — View lists, open details, and **download PDFs**. **Creating** or **changing** invoices (including Pro-only mutations) requires Pro.
+- **Free — timers on read-only projects** — You cannot start, resume, pause, or stop timers on read-only projects. If a timer is still running or paused when a project becomes read-only, the app may **stop** those sessions and show a short notice.
 
-Server and shared rules live in `src/lib/subscription-enforcement.ts` (e.g. `assertProjectWritableOrThrow`, `invoiceMutationAllowedForTier`, Free-tier writable project resolution).
+Server rules live in `src/lib/subscription-enforcement.ts` (e.g. `assertProjectWritableOrThrow`, `invoiceMutationAllowedForTier`).
 
-## Tech Stack
+## Tech stack
 
-- **Framework**: Next.js 15 with App Router
-- **Language**: TypeScript
-- **Database**: PostgreSQL with Supabase
-- **Authentication**: Supabase Auth
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS v4
-- **Git Hooks**: Lefthook for pre-commit checks
+- **Framework** — Next.js 15 (App Router), TypeScript, React 19
+- **Database & auth** — Supabase (PostgreSQL, RLS, Auth)
+- **Subscriptions & checkout** — Freemius (SDK + webhooks, Customer Portal, checkout API routes)
+- **UI** — shadcn/ui, Tailwind CSS v4, Lucide icons
+- **Email** — Resend for transactional email
+- **Quality** — ESLint, Lefthook (pre-commit), Prettier
 
-## Getting Started
+## Getting started (development)
 
 ### Prerequisites
 
 - Node.js 18+
-- Supabase account (for database and authentication)
+- A Supabase project
+- (Optional) Freemius product keys and webhook secret for Pro billing in dev/staging
 
-### Installation
+### Install
 
-1. Clone the repository:
+```bash
+git clone git@github.com:jp-mariano/orasan-app.git
+cd orasan-app
+npm install
+cp .env.local.example .env.local
+# Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, etc.
+# For Freemius: FREEMIUS_* and NEXT_PUBLIC_APP_URL as needed
+```
 
-   ```bash
-   git clone <your-repo-url>
-   cd orasan-app
-   ```
+### Database
 
-2. Install dependencies:
+Run `database/schema.sql` in the Supabase SQL editor (or your migration pipeline) to create tables and RLS policies.
 
-   ```bash
-   npm install
-   ```
+### Run
 
-3. Set up environment variables:
+```bash
+npm run dev
+```
 
-   ```bash
-   cp .env.local.example .env.local
-   # Edit .env.local with your Supabase credentials:
-   # - NEXT_PUBLIC_SUPABASE_URL: Your Supabase project URL
-   # - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: Your publishable key (replaces anon key)
-   # - SUPABASE_SECRET_KEY: Your secret key (replaces service role key)
-   ```
+Open the app and sign in. Use `npm run lint` and `npm run build` before shipping changes.
 
-4. Set up the database:
-
-   ```bash
-   # Copy the schema from database/schema.sql
-   # Run it in your Supabase project's SQL editor
-   # This will create all tables with RLS policies
-   ```
-
-5. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-## Project Structure
+## Project structure (selected)
 
 ```
 src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable UI components
-│   ├── ui/             # shadcn/ui components
-│   ├── projects/       # Project-related components
-│   ├── time-tracking/  # Time tracking components
-│   └── auth/           # Authentication components
-├── lib/                 # Utility functions and configurations
-│   └── supabase/       # Supabase client configurations
-├── types/               # TypeScript type definitions
-└── hooks/               # Custom React hooks
+├── app/                 # App Router: pages, API routes, auth, dashboard, webhooks
+├── components/          # App UI: invoices, tasks, projects, modals, etc.
+├── contexts/            # React contexts (auth, time tracking, work sessions, …)
+├── hooks/               # Custom hooks
+├── lib/                 # Business logic, Supabase clients, Freemius, invoices, RLS helpers
+└── types/               # TypeScript types
 
 database/
-└── schema.sql          # Database schema for Supabase
+└── schema.sql
+
+react-starter/          # Freemius checkout / portal UI kit (embedded in app)
 ```
 
-## Database Schema
+## Legal & repository
 
-The app uses PostgreSQL with the following main tables:
-
-- `users` - User profiles and subscription information
-- `projects` - Project definitions with client and rate information
-- `tasks` - Tasks within projects
-- `time_entries` - Individual time tracking records
-
-All tables have Row Level Security (RLS) enabled for data privacy.
-
-## Development
-
-### Git Hooks
-
-This project uses Lefthook for pre-commit hooks:
-
-- Linting with ESLint
-- Type checking with TypeScript
-
-### Code Style
-
-- ESLint configuration follows Next.js recommendations
-- TypeScript strict mode enabled
-- Prettier formatting (if configured)
+- **App routes:** [`/privacy`](./src/app/privacy/page.tsx), [`/terms`](./src/app/terms/page.tsx), [`/license`](./src/app/license/page.tsx)
+- **Home footer — source code link (optional):** set `NEXT_PUBLIC_APP_REPOSITORY_URL` to your public GitHub (or other) repo URL to show a **Source code** link on the marketing home page.
+- **Operator contact (your deployment):** set optional `NEXT_PUBLIC_OPERATOR_LEGAL_NAME`, `NEXT_PUBLIC_OPERATOR_CONTACT_EMAIL`, and/or `NEXT_PUBLIC_OPERATOR_SUPPORT_URL` in `.env.local` (see `.env.local.example`). These appear on the legal pages; if unset, a short fallback explains that self-hosters should contact their admin.
+- **Source license:** this repository’s `LICENSE` file (MIT) governs the **code**; hosted service terms are separate—see the Terms of Service page in your deployment.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Roadmap
-
-- [ ] User authentication and profile management
-- [ ] Project and task CRUD operations
-- [ ] Time tracking with start/stop functionality
-- [ ] Offline support with IndexedDB
-- [ ] Data synchronization
-- [ ] Dashboard with time analytics
-- [ ] Subscription management
-- [ ] Client billing features
-- [ ] Export functionality (CSV, PDF reports)
-- [ ] Mobile responsive design
-- [ ] Dark mode support
+The Orasan **source code** in this repository is licensed under the **MIT License** — see the [LICENSE](LICENSE) file.
