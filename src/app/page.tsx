@@ -163,6 +163,13 @@ function HomePageContent() {
                 Terms of Service
               </Link>
             </p>
+            <p className="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
+              <span className="font-medium text-gray-600">
+                AI-assisted development:
+              </span>{' '}
+              We use AI for brainstorming and debugging, but all final code is
+              human-reviewed.
+            </p>
           </div>
         </div>
       </footer>

@@ -40,6 +40,10 @@ Server rules live in `src/lib/subscription-enforcement.ts` (e.g. `assertProjectW
 - **Email** — Resend for transactional email
 - **Quality** — ESLint, Lefthook (pre-commit), Prettier
 
+## AI-assisted development
+
+This project was developed with the assistance of AI coding tools (e.g. Cursor) to accelerate coding. All code was reviewed and verified for functionality by a human developer.
+
 ## Getting started (development)
 
 ### Prerequisites
