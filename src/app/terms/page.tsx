@@ -64,9 +64,19 @@ export default function TermsOfServicePage() {
               limits, and prices are as described in the app or on the
               Operator&apos;s pricing page. Pro subscriptions, checkout, and
               billing may be processed by a third party such as{' '}
-              <strong>Freemius</strong>; payment and subscription terms on that
-              platform also apply. If you cancel Pro or downgrade, you may lose
-              access to Pro-only features according to the then-current policy.
+              <strong>
+                <a
+                  href="https://freemius.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-gray-900 underline decoration-gray-400 underline-offset-2 hover:decoration-gray-900"
+                >
+                  Freemius
+                </a>
+              </strong>
+              ; payment and subscription terms on that platform also apply. If
+              you cancel Pro or downgrade, you may lose access to Pro-only
+              features according to the then-current policy.
             </p>
           </section>
 
