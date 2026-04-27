@@ -36,9 +36,13 @@ export function Header() {
     <header className="border-b bg-white/80 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo and Brand */}
-        <div className="flex items-center space-x-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Orasan home"
+        >
           <span className="text-2xl font-bold text-gray-900">Orasan</span>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
