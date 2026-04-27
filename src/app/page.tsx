@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
 const repositoryUrl = process.env.NEXT_PUBLIC_APP_REPOSITORY_URL?.trim();
+const xUrl = process.env.NEXT_PUBLIC_APP_X_URL?.trim();
 
 function HomePageContent() {
   const { user } = useAuth();
@@ -162,6 +163,16 @@ function HomePageContent() {
               <Link href="/terms" className="text-blue-600 hover:underline">
                 Terms of Service
               </Link>
+              {xUrl ? (
+                <a
+                  href={xUrl}
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Follow us on X
+                </a>
+              ) : null}
             </p>
             <p className="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
               <span className="font-medium text-gray-600">
