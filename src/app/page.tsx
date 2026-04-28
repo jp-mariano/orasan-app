@@ -17,6 +17,9 @@ import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 const repositoryUrl = process.env.NEXT_PUBLIC_APP_REPOSITORY_URL?.trim();
 const xUrl = process.env.NEXT_PUBLIC_APP_X_URL?.trim();
 
+const turbo0ListingUrl = 'https://turbo0.com/item/orasan-app';
+const turbo0BadgeImgSrc = 'https://img.turbo0.com/badge-listed-light.svg';
+
 function HomePageContent() {
   const heroRef = useRef<HTMLElement>(null);
   const { user } = useAuth();
@@ -284,7 +287,6 @@ function HomePageContent() {
       <footer className="border-t bg-white/80 backdrop-blur-sm mt-24">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-gray-600 text-sm space-y-2">
-            <p>&copy; 2026 Orasan. Built with ❤️ for freelancers everywhere.</p>
             <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
               {repositoryUrl ? (
                 <a
@@ -316,12 +318,30 @@ function HomePageContent() {
                 </a>
               ) : null}
             </p>
+            <p>&copy; 2026 Orasan. Built with ❤️ for freelancers everywhere.</p>
             <p className="text-xs text-gray-500 max-w-2xl mx-auto leading-relaxed">
               <span className="font-medium text-gray-600">
                 AI-assisted development:
               </span>{' '}
               We use AI for brainstorming and debugging, but all final code is
               human-reviewed.
+            </p>
+            <p className="flex justify-center pt-2">
+              <a
+                href={turbo0ListingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded-md opacity-90 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- external Turbo0 SVG badge */}
+                <img
+                  src={turbo0BadgeImgSrc}
+                  alt="Listed on Turbo0"
+                  height={54}
+                  width={180}
+                  className="h-[54px] w-auto"
+                />
+              </a>
             </p>
           </div>
         </div>
