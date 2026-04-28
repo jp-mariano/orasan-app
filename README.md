@@ -1,6 +1,6 @@
 # Orasan — Time tracking for freelancers
 
-**Orasan** is a Filipino word for “clock.” This app helps freelancers and teams manage **projects** and **tasks**, track time with **timers and work sessions**, and (on **Pro**) create **invoices** with PDF export. Authentication uses **Supabase** (OAuth: GitHub, Google), billing uses **Freemius** for Pro tier.
+**Orasan** is a Filipino word for “clock.” This app helps freelancers and teams manage **projects** and **tasks**, track time with **timers**, and (on **Pro**) create **invoices** with PDF export. Authentication uses **Supabase** (OAuth: GitHub, Google), billing uses **Freemius** for Pro tier.
 
 - **Public pages in the app:** `GET /privacy`, `GET /terms`, `GET /license` (see `src/app/privacy`, `src/app/terms`, `src/app/license`)
 
@@ -8,7 +8,7 @@
 
 - **Time tracking** — Start, pause, resume, and stop timers per task; project-level batch pause/stop where supported.
 - **Projects & tasks** — CRUD, hourly/fixed rates (project and task), task status (e.g. completed for invoicing).
-- **Work sessions** — Group work into sessions for reporting and control.
+- **Work sessions** — While at least one timer is **running**, the app keeps an active **work session** in the background; when every timer stops, that session ends. Totals from **completed** sessions feed **Work Time Today** and **Work Time This Week** on the dashboard (and session rows are included in **data export**).
 - **Invoices (Pro)** — Create invoices from **stopped** time on **completed** tasks in a date range, preview, line items, tax rate, **PDF** download; list/detail and status updates on Pro.
 - **Data export** — User-initiated export of projects, time data, and optional activity log (where implemented).
 - **Account deletion** — Request and confirm deletion with gating (e.g. active subscription / Freemius checks); commerce (portal, checkout) blocked while deletion is in progress.
