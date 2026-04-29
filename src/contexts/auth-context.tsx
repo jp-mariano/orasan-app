@@ -11,7 +11,13 @@ import {
 
 import { Session, User } from '@supabase/supabase-js';
 
+import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { createClient } from '@/lib/supabase/client';
+
+export type SignUpResult = {
+  /** False when the session is returned immediately (e.g. confirmations off). */
+  needsEmailConfirmation: boolean;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +25,13 @@ interface AuthContextType {
   loading: boolean;
   isSigningOut: boolean;
   signIn: (provider: 'github' | 'google') => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signUpWithPassword: (
+    email: string,
+    password: string
+  ) => Promise<SignUpResult>;
+  resetPasswordForEmail: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -172,6 +185,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithPassword = async (email: string, password: string) => {
+    const trimmedEmail = email.trim();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password,
+    });
+    if (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
+  const signUpWithPassword = async (
+    email: string,
+    password: string
+  ): Promise<SignUpResult> => {
+    const origin = window.location.origin;
+    const trimmedEmail = email.trim();
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent('/dashboard')}`,
+      },
+    });
+    if (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+    const needsEmailConfirmation = !data.session;
+    return { needsEmailConfirmation };
+  };
+
+  const resetPasswordForEmail = async (email: string) => {
+    const trimmedEmail = email.trim();
+    const origin = window.location.origin;
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent('/auth/update-password')}`,
+    });
+    if (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      throw new Error(getAuthErrorMessage(error));
+    }
+  };
+
   // Helper function to clear auth state
   const clearAuthState = useCallback(() => {
     setIsSigningOut(false);
@@ -255,6 +317,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     isSigningOut,
     signIn,
+    signInWithPassword,
+    signUpWithPassword,
+    resetPasswordForEmail,
+    updatePassword,
     signOut,
     refreshUser,
   };

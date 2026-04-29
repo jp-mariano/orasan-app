@@ -245,6 +245,9 @@ export const getInlineErrorMessage = (
     if (errorLower.includes('confirmation_failed')) {
       return 'Email confirmation failed. Please try signing in again.';
     }
+    if (errorLower.includes('session_required')) {
+      return 'Sign in to continue.';
+    }
     if (errorLower.includes('unauthorized')) {
       return 'Your session has expired. Please sign in again.';
     }

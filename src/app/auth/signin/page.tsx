@@ -3,7 +3,7 @@
 import { Suspense, useState } from 'react';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { SiGithub, SiGoogle } from 'react-icons/si';
 
@@ -15,30 +15,61 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
 function LoginPageContent() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const { signIn, signInWithPassword } = useAuth();
   const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next');
   const error = searchParams.get('error');
 
-  // Handle errors with the new error display hook
   const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
     useErrorDisplay(error, { context: 'auth', fallbackToInline: true });
 
-  // Show ErrorDisplay for critical auth errors
   if (shouldShowErrorDisplay && ErrorDisplayComponent) {
     return <ErrorDisplayComponent />;
   }
 
+  const destination =
+    nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+      ? nextParam
+      : '/dashboard';
+
   const handleOAuthSignIn = async (provider: 'github' | 'google') => {
     try {
+      setFormError(null);
       setIsLoading(provider);
       await signIn(provider);
-    } catch (error) {
-      console.error(`Error signing in with ${provider}:`, error);
+    } catch (err) {
+      console.error(`Error signing in with ${provider}:`, err);
+      setIsLoading(null);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!email.trim() || !password) {
+      setFormError('Please enter your email and password.');
+      return;
+    }
+    setIsLoading('email');
+    try {
+      await signInWithPassword(email, password);
+      router.replace(destination);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : 'Sign in failed. Try again.'
+      );
+    } finally {
       setIsLoading(null);
     }
   };
@@ -52,12 +83,76 @@ function LoginPageContent() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Non-Critical Error Message */}
           {inlineErrorMessage && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
               {inlineErrorMessage}
             </div>
           )}
+
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {formError}
+            </div>
+          )}
+
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="signin-email">Email</Label>
+              <Input
+                id="signin-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                disabled={isLoading !== null}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="signin-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                disabled={isLoading !== null}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              className="w-full h-11"
+              disabled={isLoading !== null}
+            >
+              {isLoading === 'email' ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                'Sign in with email'
+              )}
+            </Button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
 
           <div className="space-y-3">
             <Button
@@ -65,6 +160,7 @@ function LoginPageContent() {
               className="w-full h-11"
               onClick={() => handleOAuthSignIn('github')}
               disabled={isLoading !== null}
+              type="button"
             >
               {isLoading === 'github' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
@@ -79,6 +175,7 @@ function LoginPageContent() {
               className="w-full h-11"
               onClick={() => handleOAuthSignIn('google')}
               disabled={isLoading !== null}
+              type="button"
             >
               {isLoading === 'google' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" />
