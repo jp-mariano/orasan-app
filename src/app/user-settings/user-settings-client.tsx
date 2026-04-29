@@ -19,11 +19,13 @@ import {
 import { DeletionStatus } from '@/components/ui/deletion-status';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useAccountDeletion } from '@/hooks/useAccountDeletion';
 import { useDataExport } from '@/hooks/useDataExport';
 import { useUser } from '@/hooks/useUser';
+import { canManageAuthEmailAndPassword } from '@/lib/auth-account';
 import { ACCOUNT_DELETION_COMMERCE_BLOCKED_MESSAGE } from '@/lib/commerce-constants';
 import { isAccountDeletionUnderway } from '@/lib/utils';
 import { validateEmail, validatePhone } from '@/lib/validation';
@@ -41,6 +43,228 @@ function UpgradeToProButton() {
     >
       Upgrade to Pro
     </Button>
+  );
+}
+
+function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  const [newEmail, setNewEmail] = useState('');
+  const [confirmNewEmail, setConfirmNewEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError(null);
+    setPwSuccess(null);
+    if (!currentPassword || !newPassword) {
+      setPwError('Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('New passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPwError('New password must be at least 6 characters.');
+      return;
+    }
+    setPwLoading(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        setPwError(
+          data.error || 'Too many attempts. Please wait before trying again.'
+        );
+        return;
+      }
+      if (!res.ok) {
+        setPwError(data.error || 'Could not update password.');
+        return;
+      }
+      setPwSuccess('Password updated successfully.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      onUpdated();
+    } catch {
+      setPwError('Could not update password.');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const handleRequestEmailChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSuccess(null);
+    if (!newEmail.trim()) {
+      setEmailError('Enter a new email address.');
+      return;
+    }
+    if (
+      newEmail.trim().toLowerCase() !== confirmNewEmail.trim().toLowerCase()
+    ) {
+      setEmailError('Email addresses do not match.');
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      const res = await fetch('/api/auth/request-email-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newEmail: newEmail.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        setEmailError(
+          data.error || 'Too many attempts. Please wait before trying again.'
+        );
+        return;
+      }
+      if (!res.ok) {
+        setEmailError(data.error || 'Could not start email change.');
+        return;
+      }
+      setEmailSuccess(
+        data.message ||
+          'Check your current and new email inboxes to confirm the change.'
+      );
+      setNewEmail('');
+      setConfirmNewEmail('');
+      onUpdated();
+    } catch {
+      setEmailError('Could not start email change.');
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  return (
+    <div className="md:col-span-2 space-y-8 border-t border-gray-200 pt-6 mt-2">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">
+          Change password
+        </h3>
+        <p className="text-xs text-gray-600 mb-4">
+          Use a strong password you do not reuse on other sites.
+        </p>
+        <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
+          {pwError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {pwError}
+            </div>
+          )}
+          {pwSuccess && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
+              {pwSuccess}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="acct-current-pw">Current password</Label>
+            <Input
+              id="acct-current-pw"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              disabled={pwLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="acct-new-pw">New password</Label>
+            <Input
+              id="acct-new-pw"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              disabled={pwLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="acct-confirm-pw">Confirm new password</Label>
+            <Input
+              id="acct-confirm-pw"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              disabled={pwLoading}
+            />
+          </div>
+          <Button type="submit" disabled={pwLoading}>
+            {pwLoading ? 'Updating…' : 'Update password'}
+          </Button>
+        </form>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">
+          Change login email
+        </h3>
+        <p className="text-xs text-gray-600 mb-4">
+          For security, Supabase sends a confirmation link to your{' '}
+          <strong>current</strong> email and to your <strong>new</strong> email.
+          You must complete both before the change is final.
+        </p>
+        <form
+          onSubmit={handleRequestEmailChange}
+          className="space-y-3 max-w-md"
+        >
+          {emailError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+              {emailError}
+            </div>
+          )}
+          {emailSuccess && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
+              {emailSuccess}
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="acct-new-email">New email</Label>
+            <Input
+              id="acct-new-email"
+              type="email"
+              autoComplete="email"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              disabled={emailLoading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="acct-confirm-email">Confirm new email</Label>
+            <Input
+              id="acct-confirm-email"
+              type="email"
+              autoComplete="email"
+              value={confirmNewEmail}
+              onChange={e => setConfirmNewEmail(e.target.value)}
+              disabled={emailLoading}
+            />
+          </div>
+          <Button type="submit" disabled={emailLoading}>
+            {emailLoading ? 'Sending…' : 'Send confirmation emails'}
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 }
 
@@ -202,6 +426,8 @@ export function UserSettingsClient(props: {
   if (!authUser) {
     return null;
   }
+
+  const showCredentialAuth = canManageAuthEmailAndPassword(authUser);
 
   // Show error if user data failed to load
   if (error) {
@@ -475,15 +701,28 @@ export function UserSettingsClient(props: {
                       Email
                     </Label>
                     <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
-                      {user?.email || 'No email available'}
+                      {authUser.email || user?.email || 'No email available'}
                     </div>
-                    <p className="text-xs text-blue-800 font-medium">
-                      This email cannot be changed here. It is managed by your
-                      OAuth provider (GitHub, Google, etc.). To change this
-                      email, update it in your provider account settings.
-                    </p>
+                    {showCredentialAuth ? (
+                      <p className="text-xs text-gray-600">
+                        This is your sign-in email (email &amp; password
+                        account). You can change it below; you will need to
+                        confirm from both your current and new inboxes.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-blue-800 font-medium">
+                        This email cannot be changed here. It is managed by your
+                        OAuth provider (GitHub, Google, etc.). To change this
+                        email, update it in your provider account settings.
+                      </p>
+                    )}
                   </div>
                 </div>
+                {showCredentialAuth && (
+                  <AccountCredentialForms
+                    onUpdated={() => void refreshUser()}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>

@@ -91,6 +91,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const syncProfileEmailFromAuth = useCallback(async (authUser: User) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: authUser.email }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.error('Failed to sync profile email:', data);
+      }
+    } catch (e) {
+      console.error('syncProfileEmailFromAuth:', e);
+    }
+  }, []);
+
   useEffect(() => {
     // Prevent duplicate initialization
     if (isInitialized.current) return;
@@ -145,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session) {
           setSession(session);
           setUser(session.user);
+          void syncProfileEmailFromAuth(session.user);
         }
         if (!isSigningOut) {
           setLoading(false);

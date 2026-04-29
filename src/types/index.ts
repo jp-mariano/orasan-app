@@ -11,7 +11,9 @@ export type ActivityAction =
   | 'EXPORT_DATA'
   | 'REQUEST_ACCOUNT_DELETION'
   | 'CONFIRM_ACCOUNT_DELETION'
-  | 'CANCEL_ACCOUNT_DELETION';
+  | 'CANCEL_ACCOUNT_DELETION'
+  | 'CHANGE_PASSWORD'
+  | 'REQUEST_EMAIL_CHANGE';
 export type ActivityEntityType =
   | 'project'
   | 'task'

@@ -128,3 +128,17 @@ export async function logAccountDeletionCancellation(
     null
   );
 }
+
+/** Records a password-change attempt (success or failure) for rate limiting. */
+export async function logChangePasswordAttempt(
+  userId: string
+): Promise<boolean> {
+  return logActivity(userId, 'CHANGE_PASSWORD', 'user', null);
+}
+
+/** Records an email-change request for rate limiting. */
+export async function logRequestEmailChangeAttempt(
+  userId: string
+): Promise<boolean> {
+  return logActivity(userId, 'REQUEST_EMAIL_CHANGE', 'user', null);
+}
