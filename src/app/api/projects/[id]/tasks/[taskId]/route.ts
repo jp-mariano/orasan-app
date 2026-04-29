@@ -8,6 +8,26 @@ import { createClient } from '@/lib/supabase/server';
 import { validatePricingConsistency } from '@/lib/utils';
 import { UpdateTaskRequest } from '@/types';
 
+/** Final duration when forcing a stop on the server (paused = exact; running = DB total at last write + wall time since). */
+function stoppedDurationSecondsForEntry(entry: {
+  timer_status: string;
+  duration_seconds: number | null;
+  updated_at: string;
+}): number {
+  const base = entry.duration_seconds ?? 0;
+  if (entry.timer_status === 'paused') {
+    return base;
+  }
+  if (entry.timer_status === 'running') {
+    const elapsedSinceUpdated = Math.max(
+      0,
+      Math.floor((Date.now() - new Date(entry.updated_at).getTime()) / 1000)
+    );
+    return base + elapsedSinceUpdated;
+  }
+  return base;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
@@ -185,6 +205,57 @@ export async function PATCH(
       }
     }
 
+    const isTransitioningToCompleted =
+      updateData.status === 'completed' && existingTask.status !== 'completed';
+
+    // Stop any running/paused time entries for this task before completing it
+    // so the DB never keeps an active timer on a completed task.
+    if (isTransitioningToCompleted) {
+      const { data: activeEntries, error: activeEntriesError } = await supabase
+        .from('time_entries')
+        .select('id, timer_status, duration_seconds, updated_at')
+        .eq('task_id', taskId)
+        .eq('user_id', user.id)
+        .in('timer_status', ['running', 'paused']);
+
+      if (activeEntriesError) {
+        console.error(
+          'Error fetching active time entries for task completion:',
+          activeEntriesError
+        );
+        return NextResponse.json(
+          { error: activeEntriesError.message },
+          { status: 500 }
+        );
+      }
+
+      const nowIso = new Date().toISOString();
+      for (const entry of activeEntries ?? []) {
+        const finalDuration = stoppedDurationSecondsForEntry(entry);
+        const { error: stopError } = await supabase
+          .from('time_entries')
+          .update({
+            duration_seconds: finalDuration,
+            timer_status: 'stopped',
+            end_time: nowIso,
+            updated_at: nowIso,
+          })
+          .eq('id', entry.id)
+          .eq('user_id', user.id);
+
+        if (stopError) {
+          console.error(
+            'Error stopping time entry when completing task:',
+            stopError
+          );
+          return NextResponse.json(
+            { error: stopError.message },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
     // Prepare update data (only include defined fields)
     const updatePayload = Object.fromEntries(
       Object.entries(updateData)
@@ -225,8 +296,6 @@ export async function PATCH(
 
     // When a fixed-rate task is marked completed, create a synthetic time entry
     // so it can be included in invoice generation (start/end = now, duration 0).
-    const isTransitioningToCompleted =
-      updateData.status === 'completed' && existingTask.status !== 'completed';
     const isFixedRate = existingTask.rate_type === 'fixed';
 
     if (isTransitioningToCompleted && isFixedRate) {

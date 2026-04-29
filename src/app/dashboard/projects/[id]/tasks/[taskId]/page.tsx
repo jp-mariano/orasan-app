@@ -190,6 +190,13 @@ export default function TaskDetailPage() {
 
       // Update local task state
       setTask(updatedTask);
+      if (
+        field === 'status' &&
+        value === 'completed' &&
+        task.status !== 'completed'
+      ) {
+        await fetchTimeEntries();
+      }
       // Clear field error on success
       setFieldErrors(prev => ({ ...prev, [field]: '' }));
     } catch (err) {
@@ -217,6 +224,9 @@ export default function TaskDetailPage() {
       const updatedTask = await updateTask(taskId, taskData);
 
       setTask(updatedTask);
+      if (taskData.status === 'completed' && task.status !== 'completed') {
+        await fetchTimeEntries();
+      }
       setIsEditModalOpen(false);
     } catch (err) {
       console.error('Error updating task:', err);

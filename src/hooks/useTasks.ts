@@ -29,8 +29,9 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get timer context for pause functionality
-  const { getTimerForTask, pauseTimer } = useTimeTrackingContext();
+  // Get timer context for pause / refresh when task lifecycle affects timers
+  const { getTimerForTask, pauseTimer, refreshTimerForTask } =
+    useTimeTrackingContext();
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
@@ -164,13 +165,17 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
           prev.map(task => (task.id === id ? updatedTask : task))
         );
 
+        if (updates.status === 'completed') {
+          await refreshTimerForTask(id);
+        }
+
         return updatedTask;
       } catch (err) {
         // Re-throw the error so the page can handle it with specific error messages
         throw err;
       }
     },
-    [options.projectId]
+    [options.projectId, refreshTimerForTask]
   );
 
   // Delete task
