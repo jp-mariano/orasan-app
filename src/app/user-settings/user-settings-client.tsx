@@ -17,6 +17,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { DeletionStatus } from '@/components/ui/deletion-status';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Header } from '@/components/ui/header';
 import { InlineEdit } from '@/components/ui/inline-edit';
 import { Input } from '@/components/ui/input';
@@ -46,13 +54,14 @@ function UpgradeToProButton() {
   );
 }
 
-function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
+function AccountCredentialForms() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwError, setPwError] = useState<string | null>(null);
-  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
+  const [passwordSuccessDialogOpen, setPasswordSuccessDialogOpen] =
+    useState(false);
 
   const [newEmail, setNewEmail] = useState('');
   const [confirmNewEmail, setConfirmNewEmail] = useState('');
@@ -63,7 +72,7 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwError(null);
-    setPwSuccess(null);
+    setPasswordSuccessDialogOpen(false);
     if (!currentPassword || !newPassword) {
       setPwError('Please fill in all password fields.');
       return;
@@ -72,8 +81,8 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
       setPwError('New passwords do not match.');
       return;
     }
-    if (newPassword.length < 6) {
-      setPwError('New password must be at least 6 characters.');
+    if (newPassword.length < 8) {
+      setPwError('New password must be at least 8 characters.');
       return;
     }
     setPwLoading(true);
@@ -97,11 +106,10 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
         setPwError(data.error || 'Could not update password.');
         return;
       }
-      setPwSuccess('Password updated successfully.');
+      setPasswordSuccessDialogOpen(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      onUpdated();
     } catch {
       setPwError('Could not update password.');
     } finally {
@@ -147,7 +155,6 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
       );
       setNewEmail('');
       setConfirmNewEmail('');
-      onUpdated();
     } catch {
       setEmailError('Could not start email change.');
     } finally {
@@ -168,11 +175,6 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
           {pwError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
               {pwError}
-            </div>
-          )}
-          {pwSuccess && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-md text-green-800 text-sm">
-              {pwSuccess}
             </div>
           )}
           <div className="space-y-2">
@@ -213,6 +215,30 @@ function AccountCredentialForms({ onUpdated }: { onUpdated: () => void }) {
           </Button>
         </form>
       </div>
+
+      <Dialog
+        open={passwordSuccessDialogOpen}
+        onOpenChange={setPasswordSuccessDialogOpen}
+      >
+        <DialogContent showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Password updated</DialogTitle>
+            <DialogDescription className="text-left text-gray-600">
+              Your password has been changed. You can keep using Orasan on this
+              device. The next time you sign in on another device or after you
+              sign out, use your <strong>new password</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-end">
+            <Button
+              type="button"
+              onClick={() => setPasswordSuccessDialogOpen(false)}
+            >
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div>
         <h3 className="text-sm font-semibold text-gray-900 mb-1">
@@ -718,11 +744,7 @@ export function UserSettingsClient(props: {
                     )}
                   </div>
                 </div>
-                {showCredentialAuth && (
-                  <AccountCredentialForms
-                    onUpdated={() => void refreshUser()}
-                  />
-                )}
+                {showCredentialAuth && <AccountCredentialForms />}
               </CardContent>
             </Card>
           </div>
