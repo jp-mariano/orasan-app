@@ -25,12 +25,20 @@ interface AuthContextType {
   loading: boolean;
   isSigningOut: boolean;
   signIn: (provider: 'github' | 'google') => Promise<void>;
-  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signInWithPassword: (
+    email: string,
+    password: string,
+    captchaToken?: string
+  ) => Promise<void>;
   signUpWithPassword: (
     email: string,
-    password: string
+    password: string,
+    captchaToken?: string
   ) => Promise<SignUpResult>;
-  resetPasswordForEmail: (email: string) => Promise<void>;
+  resetPasswordForEmail: (
+    email: string,
+    captchaToken?: string
+  ) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -202,11 +210,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithPassword = async (email: string, password: string) => {
+  const signInWithPassword = async (
+    email: string,
+    password: string,
+    captchaToken?: string
+  ) => {
     const trimmedEmail = email.trim();
     const { error } = await supabase.auth.signInWithPassword({
       email: trimmedEmail,
       password,
+      ...(captchaToken ? { options: { captchaToken } } : {}),
     });
     if (error) {
       throw new Error(getAuthErrorMessage(error));
@@ -215,7 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUpWithPassword = async (
     email: string,
-    password: string
+    password: string,
+    captchaToken?: string
   ): Promise<SignUpResult> => {
     const origin = window.location.origin;
     const trimmedEmail = email.trim();
@@ -224,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent('/dashboard')}`,
+        ...(captchaToken ? { captchaToken } : {}),
       },
     });
     if (error) {
@@ -233,11 +248,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { needsEmailConfirmation };
   };
 
-  const resetPasswordForEmail = async (email: string) => {
+  const resetPasswordForEmail = async (
+    email: string,
+    captchaToken?: string
+  ) => {
     const trimmedEmail = email.trim();
     const origin = window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
       redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent('/auth/update-password')}`,
+      ...(captchaToken ? { captchaToken } : {}),
     });
     if (error) {
       throw new Error(getAuthErrorMessage(error));

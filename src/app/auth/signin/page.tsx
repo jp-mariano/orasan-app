@@ -1,12 +1,16 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { SiGithub, SiGoogle } from 'react-icons/si';
 
+import {
+  AuthTurnstile,
+  type AuthTurnstileHandle,
+} from '@/components/auth/auth-turnstile';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { getTurnstileSiteKey } from '@/lib/turnstile-config';
 
 function LoginPageContent() {
   const router = useRouter();
@@ -26,7 +31,10 @@ function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<AuthTurnstileHandle | null>(null);
   const { signIn, signInWithPassword } = useAuth();
+  const siteKeyReady = !!getTurnstileSiteKey();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
   const error = searchParams.get('error');
@@ -61,14 +69,24 @@ function LoginPageContent() {
       setFormError('Please enter your email and password.');
       return;
     }
+    if (!siteKeyReady || !captchaToken) {
+      setFormError(
+        siteKeyReady
+          ? 'Please complete the verification check below.'
+          : 'Sign in is temporarily unavailable.'
+      );
+      return;
+    }
     setIsLoading('email');
     try {
-      await signInWithPassword(email, password);
+      await signInWithPassword(email, password, captchaToken);
       router.replace(destination);
     } catch (err) {
       setFormError(
         err instanceof Error ? err.message : 'Sign in failed. Try again.'
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setIsLoading(null);
     }
@@ -130,10 +148,15 @@ function LoginPageContent() {
                 required
               />
             </div>
+            <AuthTurnstile
+              ref={turnstileRef}
+              onToken={setCaptchaToken}
+              className="flex justify-center min-h-[65px]"
+            />
             <Button
               type="submit"
               className="w-full h-11"
-              disabled={isLoading !== null}
+              disabled={isLoading !== null || !siteKeyReady || !captchaToken}
             >
               {isLoading === 'email' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

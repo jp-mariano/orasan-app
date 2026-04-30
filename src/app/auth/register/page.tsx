@@ -1,12 +1,16 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { SiGithub, SiGoogle } from 'react-icons/si';
 
+import {
+  AuthTurnstile,
+  type AuthTurnstileHandle,
+} from '@/components/auth/auth-turnstile';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -19,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { getTurnstileSiteKey } from '@/lib/turnstile-config';
 
 function RegisterPageContent() {
   const router = useRouter();
@@ -28,7 +33,10 @@ function RegisterPageContent() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<AuthTurnstileHandle | null>(null);
   const { signIn, signUpWithPassword } = useAuth();
+  const siteKeyReady = !!getTurnstileSiteKey();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -68,17 +76,28 @@ function RegisterPageContent() {
       setFormError('Password must be at least 8 characters.');
       return;
     }
+    if (!siteKeyReady || !captchaToken) {
+      setFormError(
+        siteKeyReady
+          ? 'Please complete the verification check below.'
+          : 'Sign up is temporarily unavailable.'
+      );
+      return;
+    }
 
     setIsLoading('email');
     try {
       const { needsEmailConfirmation } = await signUpWithPassword(
         email,
-        password
+        password,
+        captchaToken
       );
       if (needsEmailConfirmation) {
         setSuccessMessage(
           'Check your email for a confirmation link to finish creating your account.'
         );
+        setCaptchaToken(null);
+        turnstileRef.current?.reset();
       } else {
         router.replace('/dashboard');
       }
@@ -86,6 +105,8 @@ function RegisterPageContent() {
       setFormError(
         err instanceof Error ? err.message : 'Sign up failed. Try again.'
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setIsLoading(null);
     }
@@ -162,10 +183,20 @@ function RegisterPageContent() {
                 minLength={6}
               />
             </div>
+            <AuthTurnstile
+              ref={turnstileRef}
+              onToken={setCaptchaToken}
+              className="flex justify-center min-h-[65px]"
+            />
             <Button
               type="submit"
               className="w-full h-11"
-              disabled={isLoading !== null || !!successMessage}
+              disabled={
+                isLoading !== null ||
+                !!successMessage ||
+                !siteKeyReady ||
+                !captchaToken
+              }
             >
               {isLoading === 'email' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

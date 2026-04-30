@@ -1,10 +1,14 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import {
+  AuthTurnstile,
+  type AuthTurnstileHandle,
+} from '@/components/auth/auth-turnstile';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/auth-context';
 import { useErrorDisplay } from '@/hooks/useErrorDisplay';
+import { getTurnstileSiteKey } from '@/lib/turnstile-config';
 
 function ForgotPasswordContent() {
   const searchParams = useSearchParams();
@@ -24,7 +29,10 @@ function ForgotPasswordContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<AuthTurnstileHandle | null>(null);
   const { resetPasswordForEmail } = useAuth();
+  const siteKeyReady = !!getTurnstileSiteKey();
 
   const error = searchParams.get('error');
 
@@ -42,9 +50,17 @@ function ForgotPasswordContent() {
       setFormError('Please enter your email address.');
       return;
     }
+    if (!siteKeyReady || !captchaToken) {
+      setFormError(
+        siteKeyReady
+          ? 'Please complete the verification check below.'
+          : 'Password reset is temporarily unavailable.'
+      );
+      return;
+    }
     setIsLoading(true);
     try {
-      await resetPasswordForEmail(email);
+      await resetPasswordForEmail(email, captchaToken);
       setSent(true);
     } catch (err) {
       setFormError(
@@ -52,6 +68,8 @@ function ForgotPasswordContent() {
           ? err.message
           : 'Could not send reset email. Try again.'
       );
+      setCaptchaToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +117,15 @@ function ForgotPasswordContent() {
                   required
                 />
               </div>
+              <AuthTurnstile
+                ref={turnstileRef}
+                onToken={setCaptchaToken}
+                className="flex justify-center min-h-[65px]"
+              />
               <Button
                 type="submit"
                 className="w-full h-11"
-                disabled={isLoading}
+                disabled={isLoading || !siteKeyReady || !captchaToken}
               >
                 {isLoading ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
