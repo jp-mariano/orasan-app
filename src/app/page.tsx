@@ -323,7 +323,19 @@ function HomePageContent() {
               We use AI for brainstorming and debugging, but all final code is
               human-reviewed.
             </p>
-            <p className="flex justify-center pt-2">
+            <p className="flex justify-center pt-2 gap-4">
+              <a
+                href="https://www.producthunt.com/products/orasan?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-orasan"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- external Product Hunt SVG badge */}
+                <img
+                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1131309&amp;theme=neutral&amp;t=1777528232162"
+                  alt="Orasan - Time tracking web application built for freelancers | Product Hunt"
+                  style={{ height: '54px', width: 'auto' }}
+                />
+              </a>
               <a
                 href="https://turbo0.com/item/orasan-app"
                 target="_blank"
