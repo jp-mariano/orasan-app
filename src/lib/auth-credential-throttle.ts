@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { ActivityAction } from '@/types';
 
 export const AUTH_CREDENTIAL_THROTTLE_CONFIG = {
-  CHANGE_PASSWORD: { maxAttempts: 10, windowHours: 1 },
+  CHANGE_PASSWORD: { maxAttempts: 5, windowHours: 1 },
   REQUEST_EMAIL_CHANGE: { maxAttempts: 5, windowHours: 1 },
 } as const;
 
