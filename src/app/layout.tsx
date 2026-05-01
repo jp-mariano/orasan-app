@@ -1,5 +1,6 @@
 import { Inter } from 'next/font/google';
 
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata, Viewport } from 'next';
 
 import './globals.css';
@@ -34,6 +35,7 @@ export default function RootLayout({
           <TimeTrackingProvider>
             <WorkSessionProvider>
               <div className="min-h-screen bg-background">{children}</div>
+              <Analytics />
             </WorkSessionProvider>
           </TimeTrackingProvider>
         </AuthProvider>
