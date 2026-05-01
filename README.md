@@ -38,7 +38,26 @@ Server rules live in `src/lib/subscription-enforcement.ts` (e.g. `assertProjectW
 - **Subscriptions & checkout** — Freemius (SDK + webhooks, Customer Portal, checkout API routes)
 - **UI** — shadcn/ui, Tailwind CSS v4, Lucide icons
 - **Email** — Resend for transactional email
-- **Quality** — ESLint, Lefthook (pre-commit), Prettier
+- **Quality** — ESLint, Prettier, Lefthook (pre-commit, commit-msg, pre-push), Commitlint ([Conventional Commits](https://www.conventionalcommits.org/))
+- **Releases** — [Release Please](https://github.com/googleapis/release-please) (GitHub Action on `main`) updates `CHANGELOG.md` and `package.json` version via release pull requests
+
+## Commits and releases
+
+### Conventional Commits
+
+Contributors should write commit messages in the **Conventional Commits** style so automated releases can infer semver bumps (for example `feat:` → minor, `fix:` → patch, footer or `!` for breaking changes). A typical subject line looks like:
+
+```text
+feat: add export confirmation dialog
+```
+
+After `npm install`, run **`npx lefthook install`** once per clone so git hooks are active. The **commit-msg** hook runs [Commitlint](https://github.com/conventional-changelog/commitlint) with the [conventional config](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional); invalid messages are rejected before the commit is created. Merge commits and other Git-generated messages may need to be exempted in your workflow (squash merges on GitHub usually yield a single conventional subject).
+
+### Release Please
+
+The workflow [`.github/workflows/release-please.yml`](.github/workflows/release-please.yml) runs on every push to **`main`**. It opens or updates a **Release PR** that bumps the version in `package.json`, updates [`CHANGELOG.md`](CHANGELOG.md), and prepares a [GitHub Release](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). **Merge that Release PR** to publish the release (not every feature PR). The default `GITHUB_TOKEN` is enough for repositories that allow Actions to open PRs; if you need downstream workflows to run on those PRs exactly like human-opened ones, consider a **personal access token** as described in the [release-please-action](https://github.com/googleapis/release-please-action) README.
+
+This app is **private** (not published to npm); the `node` release type is still used so the repo keeps a clear version and changelog aligned with deploys or tags you care about.
 
 ## AI-assisted development
 
@@ -58,6 +77,7 @@ This project was developed with the assistance of AI coding tools (e.g. Cursor) 
 git clone git@github.com:jp-mariano/orasan-app.git
 cd orasan-app
 npm install
+npx lefthook install
 cp .env.local.example .env.local
 # Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY, etc.
 # For Freemius: FREEMIUS_* and NEXT_PUBLIC_APP_URL as needed

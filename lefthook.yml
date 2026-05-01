@@ -1,3 +1,9 @@
+# Commit message: enforce Conventional Commits (used by Release Please)
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no -- commitlint --edit {1}
+
 # Pre-commit hook: Runs before each commit to ensure code quality
 pre-commit:
   parallel: true
