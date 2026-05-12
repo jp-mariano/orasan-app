@@ -1,33 +1,24 @@
 'use client';
 
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ChevronUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-type GoBackUpButtonProps = {
-  /** Ref attached to the hero section. Button shows when the hero is out of view. */
-  sectionRef: RefObject<HTMLElement | null>;
-};
-
-export function GoBackUpButton({ sectionRef }: GoBackUpButtonProps) {
+/** Shows after the user scrolls past roughly one viewport height. */
+export function GoBackUpButton() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
+    const onScroll = () => {
+      setShow(window.scrollY > window.innerHeight * 0.8);
+    };
 
-    const ob = new IntersectionObserver(
-      ([entry]) => {
-        setShow(!entry.isIntersecting);
-      },
-      { root: null, threshold: 0, rootMargin: '0px' }
-    );
-    ob.observe(el);
-    return () => ob.disconnect();
-  }, [sectionRef]);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <div
