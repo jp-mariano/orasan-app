@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/jp-mariano/orasan-app/compare/v1.1.0...v1.2.0) (2026-05-12)
+
+
+### Features
+
+* added JSON-LD for improved SEO ([fa4edcc](https://github.com/jp-mariano/orasan-app/commit/fa4edccdb90d0c43fc1ee9ec1ea723b344c447ab))
+* improved SEO stuff and landing page refactor to be server component ([587afcb](https://github.com/jp-mariano/orasan-app/commit/587afcb6518f401f03e0890027b23c5bb6bd805b))
+
+
+### Bug Fixes
+
+* go-back-up-button to use scroll instead of ref ([9815b53](https://github.com/jp-mariano/orasan-app/commit/9815b53c0d46eb8d0f75148e61eff259cfded3bf))
+
 ## [1.1.0](https://github.com/jp-mariano/orasan-app/compare/v1.0.0...v1.1.0) (2026-05-01)
 
 
