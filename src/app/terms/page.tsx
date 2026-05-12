@@ -4,9 +4,18 @@ import { OperatorContactCard } from '@/components/legal/operator-contact-card';
 import { Header } from '@/components/ui/header';
 
 export const metadata = {
-  title: 'Terms of Service | Orasan',
+  title: 'Terms of Service',
   description:
     'Terms governing your use of the Orasan time tracking application.',
+  alternates: {
+    canonical: '/terms',
+  },
+  openGraph: {
+    title: 'Terms of Service | Orasan',
+    description:
+      'Terms governing your use of the Orasan time tracking application.',
+    url: '/terms',
+  },
 };
 
 export default function TermsOfServicePage() {

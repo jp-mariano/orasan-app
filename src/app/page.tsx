@@ -1,56 +1,56 @@
-'use client';
-
-import { Suspense, useRef } from 'react';
+import { Suspense } from 'react';
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 import { Clock, FileText, FolderOpen, Shield, Sparkles } from 'lucide-react';
+import type { Metadata } from 'next';
 
 import { GoBackUpButton } from '@/components/go-back-up-button';
-import { Button } from '@/components/ui/button';
+import { HomeCTA } from '@/components/home/home-cta';
+import { HomeErrorBanner } from '@/components/home/home-error-banner';
 import { Header } from '@/components/ui/header';
-import { useAuth } from '@/contexts/auth-context';
-import { useErrorDisplay } from '@/hooks/useErrorDisplay';
 
 const repositoryUrl = process.env.NEXT_PUBLIC_APP_REPOSITORY_URL?.trim();
 const xUrl = process.env.NEXT_PUBLIC_APP_X_URL?.trim();
 
-function HomePageContent() {
-  const heroRef = useRef<HTMLElement>(null);
-  const { user } = useAuth();
-  const searchParams = useSearchParams();
-  const error = searchParams.get('error');
+export const metadata: Metadata = {
+  title: 'Orasan - Time Tracking for Freelancers',
+  description:
+    'Track your time, manage projects, and boost productivity with Orasan - the Filipino-inspired time tracking app for freelancers.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Orasan - Time Tracking for Freelancers',
+    description:
+      'Track your time, manage projects, and boost productivity with Orasan - the Filipino-inspired time tracking app for freelancers.',
+    url: '/',
+    type: 'website',
+  },
+  twitter: {
+    title: 'Orasan - Time Tracking for Freelancers',
+    description:
+      'Track your time, manage projects, and boost productivity with Orasan - the Filipino-inspired time tracking app for freelancers.',
+  },
+};
 
-  // Handle errors with the new error display hook
-  const { shouldShowErrorDisplay, ErrorDisplayComponent, inlineErrorMessage } =
-    useErrorDisplay(error, { context: 'general', fallbackToInline: true });
-
-  // Show ErrorDisplay for critical errors
-  if (shouldShowErrorDisplay && ErrorDisplayComponent) {
-    return <ErrorDisplayComponent />;
-  }
-
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <Header />
 
       <main>
-        {/* Hero Section — min-height + vertical center so it fills most of the first view */}
+        {/* Hero Section */}
         <section
-          ref={heroRef}
           aria-label="Intro"
           className="flex min-h-[calc(100dvh-5rem)] flex-col justify-center"
         >
           <div className="container mx-auto px-4 py-20 sm:px-6 md:py-28 lg:px-8 lg:py-32">
-            {/* Non-Critical Error Message */}
-            {inlineErrorMessage && (
-              <div className="max-w-2xl mx-auto mb-8 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                {inlineErrorMessage}
-              </div>
-            )}
+            {/* Error banner — client only, needs useSearchParams */}
+            <Suspense>
+              <HomeErrorBanner />
+            </Suspense>
 
             <div className="text-center max-w-4xl mx-auto">
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
@@ -62,21 +62,8 @@ function HomePageContent() {
                 Manage projects, track tasks, and stay productive in a clear,
                 simple workflow.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {user ? (
-                  <Link href="/dashboard">
-                    <Button size="lg" className="text-lg px-8 py-6">
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/auth/register">
-                    <Button size="lg" className="text-lg px-8 py-6">
-                      Start for Free
-                    </Button>
-                  </Link>
-                )}
-              </div>
+              {/* CTA — client only, needs useAuth */}
+              <HomeCTA />
             </div>
           </div>
         </section>
@@ -278,7 +265,7 @@ function HomePageContent() {
         </div>
       </main>
 
-      <GoBackUpButton sectionRef={heroRef} />
+      <GoBackUpButton />
 
       {/* Footer */}
       <footer className="border-t bg-white/80 backdrop-blur-sm mt-24">
@@ -341,22 +328,5 @@ function HomePageContent() {
         </div>
       </footer>
     </div>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
-          </div>
-        </div>
-      }
-    >
-      <HomePageContent />
-    </Suspense>
   );
 }

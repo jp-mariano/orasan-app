@@ -4,8 +4,16 @@ import { OperatorContactCard } from '@/components/legal/operator-contact-card';
 import { Header } from '@/components/ui/header';
 
 export const metadata = {
-  title: 'Privacy Policy | Orasan',
+  title: 'Privacy Policy',
   description: 'How Orasan collects, uses, and protects your information.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy | Orasan',
+    description: 'How Orasan collects, uses, and protects your information.',
+    url: '/privacy',
+  },
 };
 
 export default function PrivacyPolicyPage() {

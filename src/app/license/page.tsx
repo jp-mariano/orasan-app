@@ -4,8 +4,16 @@ import { OperatorContactCard } from '@/components/legal/operator-contact-card';
 import { Header } from '@/components/ui/header';
 
 export const metadata = {
-  title: 'License | Orasan',
+  title: 'License',
   description: 'Orasan is released under the MIT License.',
+  alternates: {
+    canonical: '/license',
+  },
+  openGraph: {
+    title: 'License | Orasan',
+    description: 'Orasan is released under the MIT License.',
+    url: '/license',
+  },
 };
 
 export default function LicensePage() {
