@@ -336,18 +336,6 @@ function HomePageContent() {
                   style={{ height: '54px', width: 'auto' }}
                 />
               </a>
-              <a
-                href="https://turbo0.com/item/orasan-app"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- external Turbo0 SVG badge */}
-                <img
-                  src="https://img.turbo0.com/badge-listed-light.svg"
-                  alt="Listed on Turbo0"
-                  style={{ height: '54px', width: 'auto' }}
-                />
-              </a>
             </p>
           </div>
         </div>
